@@ -27,6 +27,19 @@ class AsyncMultiplexor(t.Generic[GT], LoggerMixin):
         self._running = True
         return self
 
+    @property
+    def status(self) -> str:
+        """Literal status"""
+        return (
+            "stopped"
+            if not self._running
+            else "running"
+            if self._reader_tasks
+            else "pending"
+            if not self._queue.empty()
+            else "idle"
+        )
+
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> bool:
         self.stop()
         return exc_type is None
