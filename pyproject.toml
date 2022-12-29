@@ -30,6 +30,7 @@ pytest-data-suites = "^1.0.4"
 pytest-asyncio = "^0.20.2"
 pytest-aiohttp = "^1.0.4"
 pytest-bandit = "^0.6.1"
+tox = "^3.28.0"
 tox-poetry = "^0.4.1"
 
 [tool.pytest.ini_options]
@@ -45,6 +46,10 @@ addopts = """
 filterwarnings = [
     "ignore",
 ]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 120
