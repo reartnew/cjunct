@@ -88,17 +88,19 @@ class Action(LoggerMixin):
     loader: BaseConfigLoader = field(repr=False)
     origin: t.Any = field(repr=False)
     name: str
+    command: str
     on_fail: t.Optional[str] = None
     visible: bool = True
     dependencies: t.Dict[str, int] = field(default_factory=dict)
     description: t.Optional[str] = None
 
+    # pylint: disable=inconsistent-return-statements
     @classmethod
     def build_from_origin(cls: t.Type[AT], origin: t.Any, loader: BaseConfigLoader) -> AT:
         """Prepare an instance from raw contents"""
         if isinstance(origin, ElementTree.Element):
             return cls._build_from_xml(node=origin, loader=loader)
-        return loader.throw(f"Non-recognized origin: {origin}")
+        loader.throw(f"Non-recognized origin: {origin}")
 
     @classmethod
     def _build_from_xml(cls: t.Type[AT], node: t.Any, loader: BaseConfigLoader) -> AT:
@@ -125,6 +127,7 @@ class Action(LoggerMixin):
         description: t.Optional[str] = None
         dependencies: t.Dict[str, int] = {}
         action_type: str = ""
+        action_command: t.Optional[str] = None
         for xml_property in node:
             assert xml_property.tag in (
                 "type",
@@ -165,11 +168,22 @@ class Action(LoggerMixin):
                 if xml_property.attrib:
                     loader.throw(f"'description' tag can't have given attributes: {sorted(xml_property.attrib)}")
                 description = xml_property.text.strip()
+            elif xml_property.tag in ("script", "command"):
+                if action_command is not None:
+                    loader.throw(f"Command is defined twice for action {name!r}")
+                if not tag_value:
+                    loader.throw(f"Command might not be empty for action {name!r}")
+                if xml_property.attrib:
+                    loader.throw(f"{xml_property.tag!r} tag can't have given attributes: {sorted(xml_property.attrib)}")
+                action_command = tag_value
 
+        if action_command is None:
+            loader.throw(f"Action {name!r} command is not specified")
         return cls(
             loader=loader,
             origin=node,
             name=name,
+            command=action_command,
             on_fail=on_fail,
             visible=visible,
             description=description,
