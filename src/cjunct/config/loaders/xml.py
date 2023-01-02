@@ -14,7 +14,7 @@ class XMLConfigLoader(BaseConfigLoader):
     """Loader extension for XML source files"""
 
     def _parse_action(self, node: ElementTree.Element) -> None:
-        action: Action = Action.build_from_origin(
+        action: Action = self.ACTION_FACTORY.build_from_origin(
             loader=self,
             origin=node,
         )
