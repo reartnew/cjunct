@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 from xml.etree import ElementTree
 
@@ -150,6 +151,8 @@ class BaseConfigLoader(LoggerMixin):
         self._files_stack: t.List[str] = []
         self._checklists: t.Dict[str, t.List[str]] = {}
         self._loaded_file: t.Optional[Path] = None
+        self._entrypoints: t.Set[str] = set()
+        self._bootstrapped: bool = False
 
     async def run(self) -> None:
         """Go-go power rangers"""
@@ -202,10 +205,8 @@ class BaseConfigLoader(LoggerMixin):
         """Load from text. Should be implemented in subclasses."""
         raise NotImplementedError
 
-    def _bootstrap(self) -> None:
-        # Check dependencies integrity
+    def _establish_descendants(self) -> None:
         missing_non_external_deps: t.Set[str] = set()
-        entrypoints: t.Set[str] = set()
         for action in self._actions.values():  # type: Action
             for dependency_action_name, dependency in list(action.ancestors.items()):
                 if dependency_action_name not in self._actions:
@@ -219,15 +220,16 @@ class BaseConfigLoader(LoggerMixin):
                 self._actions[dependency_action_name].descendants[action.name] = dependency
             # Check if there are any dependencies after removal at all
             if not action.ancestors:
-                entrypoints.add(action.name)
+                self._entrypoints.add(action.name)
         if missing_non_external_deps:
             self.throw(f"Missing actions among dependencies: {sorted(missing_non_external_deps)}")
         # Check entrypoints presence
-        if not entrypoints:
+        if not self._entrypoints:
             self.throw("No entrypoints for the graph")
-        # Now go Dijkstra
+
+    def _allocate_tiers(self) -> None:
         step_tier: int = 1
-        tier_actions_names: t.Set[str] = entrypoints
+        tier_actions_names: t.Set[str] = self._entrypoints
         while True:
             next_tier_actions_names: t.Set[str] = set()
             for tier_action_name in tier_actions_names:
@@ -244,6 +246,13 @@ class BaseConfigLoader(LoggerMixin):
         unreachable_action_names: t.Set[str] = {action.name for action in self._actions.values() if action.tier is None}
         if unreachable_action_names:
             self.throw(f"Unreachable actions found: {sorted(unreachable_action_names)}")
+
+    @lru_cache(1)
+    def _bootstrap(self) -> None:
+        # Check dependencies integrity
+        self._establish_descendants()
+        # Now go Dijkstra
+        self._allocate_tiers()
 
     def get_tree_representation(self) -> str:
         """Return tree representation of the action graph"""
