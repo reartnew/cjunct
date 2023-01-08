@@ -19,6 +19,14 @@ AT = t.TypeVar("AT", bound="Action")
 
 
 @dataclass
+class ActionDependency:
+    """Dependency info holder"""
+
+    strict: bool = False
+    external: bool = False
+
+
+@dataclass
 class Action(LoggerMixin):
     """Default action class"""
 
@@ -29,8 +37,10 @@ class Action(LoggerMixin):
     command: str
     on_fail: t.Optional[str] = field(default=None, repr=False)
     visible: bool = field(default=True, repr=False)
-    dependencies: t.Dict[str, int] = field(default_factory=dict, repr=False)
+    ancestors: t.Dict[str, ActionDependency] = field(default_factory=dict, repr=False)
     description: t.Optional[str] = None
+    descendants: t.Dict[str, ActionDependency] = field(init=False, default_factory=dict, repr=False)
+    tier: t.Optional[int] = field(init=False, default=None, repr=False)
 
     # def __post_init__(self) -> None:
     #     if self.type != "shell":
@@ -67,7 +77,7 @@ class Action(LoggerMixin):
             )
         visible: bool = visible_str != "false"
         description: t.Optional[str] = None
-        dependencies: t.Dict[str, int] = {}
+        dependencies: t.Dict[str, ActionDependency] = {}
         action_type: str = ""
         action_command: t.Optional[str] = None
         for xml_property in node:
@@ -88,18 +98,18 @@ class Action(LoggerMixin):
             elif xml_property.tag == "dependency":
                 if tag_value in dependencies:
                     loader.throw(f"Dependency {tag_value!r} is double-declared for action {name}")
-                dependency_type: int = 0
+                dependency: ActionDependency = ActionDependency()
                 for attr_name, attr_value in xml_property.attrib.items():
                     if attr_name != "type":
                         loader.throw(f"'dependency' tag can't have given attribute: {attr_name!r}")
                     for dependency_type_marker in attr_value.split():
                         if dependency_type_marker == "strict":
-                            dependency_type |= 1
+                            dependency.strict = True
                         elif dependency_type_marker == "external":
-                            dependency_type |= 2
+                            dependency.external = True
                         else:
                             loader.throw(f"Unknown dependency type marker: {dependency_type_marker!r}")
-                dependencies[tag_value] = dependency_type
+                dependencies[tag_value] = dependency
             elif xml_property.tag == "description":
                 if description is not None:
                     loader.throw(f"'description' is double-declared for action {name}")
@@ -126,7 +136,7 @@ class Action(LoggerMixin):
             on_fail=on_fail,
             visible=visible,
             description=description,
-            dependencies=dependencies,
+            ancestors=dependencies,
         )
 
 
@@ -139,6 +149,7 @@ class BaseConfigLoader(LoggerMixin):
         self._actions: t.Dict[str, Action] = {}
         self._files_stack: t.List[str] = []
         self._checklists: t.Dict[str, t.List[str]] = {}
+        self._loaded_file: t.Optional[Path] = None
 
     async def run(self) -> None:
         """Go-go power rangers"""
@@ -175,6 +186,9 @@ class BaseConfigLoader(LoggerMixin):
         """Load from file.
         :param source_file: either Path or string object pointing at a file"""
         source_file_path: Path = Path(source_file)
+        if self._loaded_file is None:
+            # TODO: raise on double load
+            self._loaded_file = source_file_path
         self._files_stack.append(str(source_file_path))
         self.logger.debug(f"Loading config file: {source_file_path}")
         try:
@@ -188,6 +202,50 @@ class BaseConfigLoader(LoggerMixin):
         """Load from text. Should be implemented in subclasses."""
         raise NotImplementedError
 
-    def get_tree(self) -> dict:
-        """???"""
-        return self._actions
+    def _bootstrap(self) -> None:
+        # Check dependencies integrity
+        missing_non_external_deps: t.Set[str] = set()
+        entrypoints: t.Set[str] = set()
+        for action in self._actions.values():  # type: Action
+            for dependency_action_name, dependency in list(action.ancestors.items()):
+                if dependency_action_name not in self._actions:
+                    if dependency.external:
+                        # Get rid of missing external deps
+                        action.ancestors.pop(dependency_action_name)
+                    else:
+                        missing_non_external_deps.add(dependency_action_name)
+                    continue
+                # Register symmetric descendant connection for further simplicity
+                self._actions[dependency_action_name].descendants[action.name] = dependency
+            # Check if there are any dependencies after removal at all
+            if not action.ancestors:
+                entrypoints.add(action.name)
+        if missing_non_external_deps:
+            self.throw(f"Missing actions among dependencies: {sorted(missing_non_external_deps)}")
+        # Check entrypoints presence
+        if not entrypoints:
+            self.throw("No entrypoints for the graph")
+        # Now go Dijkstra
+        step_tier: int = 1
+        tier_actions_names: t.Set[str] = entrypoints
+        while True:
+            next_tier_actions_names: t.Set[str] = set()
+            for tier_action_name in tier_actions_names:
+                tier_action: Action = self._actions[tier_action_name]
+                if tier_action.tier is not None:
+                    continue
+                tier_action.tier = step_tier
+                next_tier_actions_names |= set(tier_action.descendants)
+            if not next_tier_actions_names:
+                break
+            step_tier += 1
+            tier_actions_names = next_tier_actions_names
+        self.logger.debug(f"Number of tiers for source file {self._loaded_file}: {step_tier}")
+        unreachable_action_names: t.Set[str] = {action.name for action in self._actions.values() if action.tier is None}
+        if unreachable_action_names:
+            self.throw(f"Unreachable actions found: {sorted(unreachable_action_names)}")
+
+    def get_tree_representation(self) -> str:
+        """Return tree representation of the action graph"""
+        self._bootstrap()
+        return ""

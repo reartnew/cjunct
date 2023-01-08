@@ -9,6 +9,7 @@
 
     <Action name="Lister">
         <dependency type="strict">Sleeper</dependency>
+        <dependency type="external">NonExistent</dependency>
         <description>Элэсэлах</description>
         <type>shell</type>
         <command>ls -lah</command>
