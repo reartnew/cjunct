@@ -1,3 +1,4 @@
+"""XML-based configuration load routines"""
 from __future__ import annotations
 
 import typing as t

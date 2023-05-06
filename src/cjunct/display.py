@@ -1,3 +1,5 @@
+"""Runner output processors"""
+
 import textwrap
 import typing as t
 

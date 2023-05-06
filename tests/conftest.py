@@ -1,3 +1,4 @@
+"""Session-wide fixtures"""
 # pylint: disable=missing-function-docstring,unused-argument
 
 import sys

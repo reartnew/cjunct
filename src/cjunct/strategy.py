@@ -1,3 +1,8 @@
+"""
+A strategy is an async-iterable object,
+emitting actions one by one for further scheduling.
+"""
+
 import asyncio
 import typing as t
 
@@ -16,9 +21,7 @@ __all__ = [
 
 
 class BaseStrategy(classlogging.LoggerMixin, t.AsyncIterable[Action]):
-    """Strategy base.
-    A strategy is an async-iterable object,
-    emitting actions one by one for further scheduling."""
+    """Strategy abstract base"""
 
     def __init__(self, net: ActionNet) -> None:
         self._actions = net

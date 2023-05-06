@@ -1,3 +1,4 @@
+"""Runner public methods tests"""
 # pylint: disable=unused-argument
 import typing as t
 

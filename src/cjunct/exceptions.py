@@ -1,3 +1,5 @@
+"""All non-intercepted errors"""
+
 import typing as t
 
 __all__ = [

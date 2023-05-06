@@ -1,3 +1,8 @@
+"""
+Runner has too many dependencies,
+thus placed to a separate module.
+"""
+
 import asyncio
 import typing as t
 from pathlib import Path

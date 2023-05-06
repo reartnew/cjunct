@@ -1,3 +1,5 @@
+"""Everything related to a default action interpretation"""
+
 from __future__ import annotations
 
 import asyncio

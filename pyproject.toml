@@ -65,7 +65,6 @@ disable = [
     "too-few-public-methods",
     "broad-except",
     "fixme",
-    "missing-module-docstring",
 ]
 enable = ["unused-wildcard-import"]
 
