@@ -19,13 +19,23 @@ if __name__ == "__main__":
 ```
 
 ## Development environment setup
+Requires system-wide poetry>=1.3.2, see [official documentation](https://python-poetry.org).
 
 ```shell
 poetry install --no-root --sync
 ```
+The root directory for the source code is `src`,
+thus one may add it to the project's python path
+for better IDE integration.
 
-## Running tests
+#### Running tests on current environment
 
 ```shell
 pytest
+```
+
+#### Running tests on all available environments
+
+```shell
+tox
 ```
