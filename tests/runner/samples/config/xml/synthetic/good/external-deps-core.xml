@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Actions>
+
+    <Action name="RunGroovy">
+        <dependency type="external">RunAnsible</dependency>
+        <description>Run groovy</description>
+        <type>test-echo</type>
+        <command>groovy/Dummy.groovy</command>
+    </Action>
+
+    <Import>external-deps-additionals.xml</Import>
+
+</Actions>

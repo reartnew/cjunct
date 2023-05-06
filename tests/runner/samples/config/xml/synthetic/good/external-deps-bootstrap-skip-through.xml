@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Actions>
+
+    <Action name="RunAnsible">
+        <description>Run ansible</description>
+        <type>test-echo</type>
+        <command>playbooks/Dummy.yml</command>
+    </Action>
+
+    <Action name="EliminatedByBootstrap">
+        <dependency>RunAnsible</dependency>
+        <type>test-echo</type>
+        <command>whatever</command>
+    </Action>
+
+    <Action name="RunGroovy">
+        <dependency type="external">WhatIsThis</dependency>
+        <dependency>EliminatedByBootstrap</dependency>
+        <type>test-echo</type>
+        <command>groovy/Dummy.groovy</command>
+        <description>Run groovy</description>
+    </Action>
+
+</Actions>

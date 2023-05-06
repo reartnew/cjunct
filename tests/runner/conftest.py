@@ -6,6 +6,7 @@ import typing as t
 from pathlib import Path
 
 import pytest
+from _pytest.fixtures import SubRequest
 
 from cjunct.actions import Action
 from cjunct.display import BaseDisplay
@@ -56,4 +57,25 @@ def runner_context(tmp_path: Path) -> t.Generator:
     )
     os.chdir(tmp_path)
     yield
+    os.chdir(known_dir)
+
+
+@pytest.fixture(
+    params=[
+        "external-deps-additionals",
+        "external-deps-bootstrap-skip-through",
+        "external-deps-core",
+        "simple-with-checklists",
+        "simple-with-deps-and-dummies",
+        "simple-with-deps",
+        "simple-with-external-deps",
+        "simple",
+    ],
+)
+def good_xml_config(request: SubRequest, project_root: Path) -> t.Generator[Path, None, None]:
+    """Return sample config file path"""
+    configs_dir: Path = project_root / "tests" / "runner" / "samples" / "config" / "xml" / "synthetic" / "good"
+    known_dir: str = os.getcwd()
+    os.chdir(str(configs_dir))
+    yield configs_dir / f"{request.param}.xml"
     os.chdir(known_dir)

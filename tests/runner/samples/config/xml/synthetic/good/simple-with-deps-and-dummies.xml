@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Actions>
+
+    <Action name="BootstrapPrecedingDummy">
+        <type>test-echo</type>
+        <command>Useless</command>
+    </Action>
+
+    <Action name="RunAnsible">
+        <dependency>BootstrapPrecedingDummy</dependency>
+        <description>Run ansible</description>
+        <type>test-echo</type>
+        <command>playbooks/Dummy.yml</command>
+    </Action>
+
+    <Action name="BootstrapInnerDummy">
+        <dependency>RunAnsible</dependency>
+        <type>test-echo</type>
+        <command>Useless</command>
+    </Action>
+
+    <Action name="RunGroovy">
+        <dependency>BootstrapInnerDummy</dependency>
+        <description>Run groovy</description>
+        <type>test-echo</type>
+        <command>groovy/Dummy.groovy</command>
+    </Action>
+
+    <Action name="BootstrapTrailingDummy">
+        <dependency>RunGroovy</dependency>
+        <type>test-echo</type>
+        <command>Useless</command>
+    </Action>
+
+</Actions>

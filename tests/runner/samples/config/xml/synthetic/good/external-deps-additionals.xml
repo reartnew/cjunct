@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Actions>
+
+    <Action name="RunAnsible">
+        <description>Run ansible</description>
+        <type>test-echo</type>
+        <command>playbooks/Dummy.yml</command>
+    </Action>
+
+</Actions>
