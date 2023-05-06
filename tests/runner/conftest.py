@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 from _pytest.fixtures import SubRequest
 
+from cjunct import exceptions
 from cjunct.actions import Action
 from cjunct.display import BaseDisplay
 
@@ -87,3 +88,22 @@ def good_xml_config(request: SubRequest, project_root: Path) -> t.Generator[Path
     configs_dir: Path = project_root / "tests" / "runner" / "samples" / "config" / "xml" / "synthetic" / "good"
     with pushd(configs_dir):
         yield configs_dir / f"{request.param}.xml"
+
+
+@pytest.fixture(
+    params=[
+        ("plain-checklist-collision", exceptions.LoadError, "Checklist defined twice"),
+        ("plain-checklist-reserved-name", exceptions.LoadError, "Reserved checklist name used"),
+        ("plain-double-declaration", exceptions.LoadError, "Action declared twice"),
+        ("plain-missing-checklists-source", exceptions.LoadError, "No such directory"),
+        ("plain-missing-deps", exceptions.IntegrityError, "Missing actions among dependencies"),
+    ],
+)
+def bad_xml_config(
+    request: SubRequest, project_root: Path
+) -> t.Generator[t.Tuple[Path, t.Type[Exception], str], None, None]:
+    """Return sample config file path with error to handle"""
+    configs_dir: Path = project_root / "tests" / "runner" / "samples" / "config" / "xml" / "synthetic" / "bad"
+    config_name, exception, match = request.param
+    with pushd(configs_dir):
+        yield configs_dir / f"{config_name}.xml", exception, match

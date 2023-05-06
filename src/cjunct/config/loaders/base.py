@@ -20,6 +20,7 @@ __all__ = [
 class BaseConfigLoader(LoggerMixin):
     """Loaders base class"""
 
+    _RESERVED_CHECKLISTS_NAMES: t.Set[str] = {"ALL", "NONE"}
     ACTION_FACTORY: t.Type[Action] = Action
 
     def __init__(self) -> None:
@@ -27,6 +28,11 @@ class BaseConfigLoader(LoggerMixin):
         self._files_stack: t.List[str] = []
         self._checklists: t.Dict[str, t.List[str]] = {}
         self._loaded_file: t.Optional[Path] = None
+
+    def _register_action(self, action: Action) -> None:
+        if action.name in self._actions:
+            self._throw(f"Action declared twice: {action.name!r}")
+        self._actions[action.name] = action
 
     def _throw(self, message: str) -> t.NoReturn:
         """Raise loader exception from text"""
@@ -45,6 +51,8 @@ class BaseConfigLoader(LoggerMixin):
             checklist_name: str = checklist_file.stem
             if checklist_name in self._checklists:
                 self._throw(f"Checklist defined twice: {checklist_name!r}")
+            if checklist_name in self._RESERVED_CHECKLISTS_NAMES:
+                self._throw(f"Reserved checklist name used: {checklist_name!r}")
             self._checklists[checklist_name] = [
                 action_name.strip()
                 for action_name in checklist_file.read_text(encoding="utf-8").splitlines()

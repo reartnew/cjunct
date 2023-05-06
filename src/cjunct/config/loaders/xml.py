@@ -20,7 +20,7 @@ class XMLConfigLoader(BaseConfigLoader):
             origin=node,
             on_error=self._throw,
         )
-        self._actions[action.name] = action
+        self._register_action(action)
 
     def _parse_import(self, node: ElementTree.Element) -> None:
         if node.attrib:

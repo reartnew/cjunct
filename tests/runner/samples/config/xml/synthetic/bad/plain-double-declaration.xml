@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Actions>
 
-    <Checklists sourceDirectory="./checklists"/>
+    <Action name="RunAnsible">
+        <description>Run ansible</description>
+        <type>test-echo</type>
+        <command>playbooks/Dummy.yml</command>
+    </Action>
 
     <Action name="RunAnsible">
         <description>Run ansible</description>

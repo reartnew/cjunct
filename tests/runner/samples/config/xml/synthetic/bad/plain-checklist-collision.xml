@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Actions>
 
-    <Checklists sourceDirectory="./checklists"/>
+    <Checklists sourceDirectory="./ansible-checklists"/>
+    <Checklists sourceDirectory="./common-checklists"/>
 
     <Action name="RunAnsible">
         <description>Run ansible</description>
