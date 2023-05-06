@@ -4,8 +4,8 @@ import typing as t
 from dataclasses import dataclass, field
 from xml.etree import ElementTree
 
-from cjunct.config.loaders.base import Action, BaseConfigLoader
-from cjunct.config.loaders.xml import XMLConfigLoader
+from .xml import XMLConfigLoader
+from ...actions import Action
 
 __all__ = [
     "FulcrumXMLConfigLoader",
@@ -21,8 +21,14 @@ class FulcrumAction(Action):
     skip_on_missing_inventory: bool = False
     needs_distribution: bool = False
 
+    @Action.type_handler("ansible")
+    @Action.type_handler("groovy")
+    async def _run_stub(self) -> t.AsyncGenerator[str, None]:
+        """A stub"""
+        yield f"{self.type}: {self.name}"
+
     @classmethod
-    def _build_from_xml(cls, node: ElementTree.Element, loader: BaseConfigLoader) -> FulcrumAction:
+    def _build_from_xml(cls, node: ElementTree.Element, on_error: t.Callable[[str], t.NoReturn]) -> FulcrumAction:
         pushed_facts: t.Dict[str, t.Optional[str]] = {}
         skip_on_missing_inventory: bool = False
         needs_distribution: bool = False
@@ -39,7 +45,7 @@ class FulcrumAction(Action):
             elif sub_node.tag == "needs-distribution":
                 skip_on_missing_inventory = text == "true"
                 node.remove(sub_node)
-        action: FulcrumAction = t.cast(FulcrumAction, super()._build_from_xml(node, loader))
+        action: FulcrumAction = t.cast(FulcrumAction, super()._build_from_xml(node=node, on_error=on_error))
         action.pushed_facts = pushed_facts
         action.skip_on_missing_inventory = skip_on_missing_inventory
         action.needs_distribution = needs_distribution

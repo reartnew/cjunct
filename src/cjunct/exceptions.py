@@ -2,6 +2,7 @@ import typing as t
 
 __all__ = [
     "LoadError",
+    "IntegrityError",
     "SourceError",
 ]
 
@@ -16,6 +17,10 @@ class LoadError(Exception):
         if stack:
             text += f"\nCurrent stack: {' -> '.join(stack)}"
         super().__init__(text)
+
+
+class IntegrityError(Exception):
+    """Action net structure error"""
 
 
 class SourceError(Exception):

@@ -2,17 +2,17 @@ import typing as t
 from pathlib import Path
 
 from .base import BaseConfigLoader
-from .exceptions import SourceError
 from .xml import XMLConfigLoader
+from ...exceptions import SourceError
 
 __all__ = [
-    "get_default_loader_for_file",
+    "get_default_loader_class_for_file",
 ]
 
 
-def get_default_loader_for_file(source: t.Union[str, Path]) -> BaseConfigLoader:
-    """Return loader based on file stats"""
+def get_default_loader_class_for_file(source: t.Union[str, Path]) -> t.Type[BaseConfigLoader]:
+    """Return loader class based on file stats"""
     source_path: Path = Path(source)
     if source_path.suffix == ".xml":
-        return XMLConfigLoader()
+        return XMLConfigLoader
     raise SourceError(f"Unrecognized source: {source_path}")

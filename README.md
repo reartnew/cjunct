@@ -1,6 +1,6 @@
 # cjunct
 
-TBD.
+Declarative parallel process runner.
 
 ## Installation
 
@@ -10,4 +10,22 @@ pip install cjunct
 
 ## Usage example
 
-TBD
+```python
+# Put config files into the same directory as this script
+import cjunct
+
+if __name__ == "__main__":
+    cjunct.Runner().run_sync()
+```
+
+## Development environment setup
+
+```shell
+poetry install --no-root --sync
+```
+
+## Running tests
+
+```shell
+pytest
+```

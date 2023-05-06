@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "cjunct"
 version = "0.1.0"
-description = "TBD"
+description = "Declarative parallel process runner"
 license = "MIT"
 authors = [
     "Artem Novikov <artnew@list.ru>",
@@ -14,11 +14,12 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-aiohttp = "^3.8.3"
+aiohttp = "^3.8.4"
 named-env = "^2.1.0"
 classlogging = "^1.0.1"
-python-dotenv = "^0.21.0"
-async-lru = "^1.0.3"
+python-dotenv = "^1.0.0"
+async-lru = "^2.0.2"
+async-shell = "^1.0.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.0"
@@ -31,7 +32,6 @@ pytest-asyncio = "^0.20.2"
 pytest-aiohttp = "^1.0.4"
 pytest-bandit = "^0.6.1"
 tox = "^3.28.0"
-tox-poetry = "^0.4.1"
 
 [tool.pytest.ini_options]
 testpaths = [
@@ -63,9 +63,9 @@ unsafe-load-any-extension = "no"
 [tool.pylint."MESSAGES CONTROL"]
 disable = [
     "too-few-public-methods",
-    "missing-module-docstring",
     "broad-except",
     "fixme",
+    "missing-module-docstring",
 ]
 enable = ["unused-wildcard-import"]
 
@@ -179,6 +179,6 @@ analyse-fallback-blocks = "yes"
 
 [tool.pylint.EXCEPTIONS]
 overgeneral-exceptions = [
-    "BaseException",
-    "Exception",
+    "builtins.BaseException",
+    "builtins.Exception",
 ]
