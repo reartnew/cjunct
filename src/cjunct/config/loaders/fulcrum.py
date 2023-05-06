@@ -1,3 +1,9 @@
+"""
+DISCLAIMER:
+As far as `fulcrum` is the project's close-sourced direct predecessor,
+these loaders are used only temporarily to ensure local tests based on stable fulcrum-like configurations.
+"""
+
 from __future__ import annotations
 
 import typing as t
