@@ -1,6 +1,7 @@
 """Runner call fixtures"""
 # pylint: disable=unused-argument
 
+import contextlib
 import os
 import typing as t
 from pathlib import Path
@@ -10,6 +11,17 @@ from _pytest.fixtures import SubRequest
 
 from cjunct.actions import Action
 from cjunct.display import BaseDisplay
+
+
+@contextlib.contextmanager
+def pushd(target: Path) -> t.Generator[None, None, None]:
+    """Working directory change helper"""
+    known_dir: Path = Path.cwd()
+    os.chdir(target)
+    try:
+        yield
+    finally:
+        os.chdir(known_dir)
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -40,7 +52,6 @@ def display_collector(monkeypatch) -> t.List[str]:
 @pytest.fixture
 def runner_context(tmp_path: Path) -> t.Generator:
     """Prepare a directory with sample config files"""
-    known_dir: str = os.getcwd()
     (tmp_path / "network.xml").write_bytes(
         b"""<Actions>
     <Action name="Foo">
@@ -55,9 +66,8 @@ def runner_context(tmp_path: Path) -> t.Generator:
 </Actions>
 """
     )
-    os.chdir(tmp_path)
-    yield
-    os.chdir(known_dir)
+    with pushd(tmp_path):
+        yield
 
 
 @pytest.fixture(
@@ -75,7 +85,5 @@ def runner_context(tmp_path: Path) -> t.Generator:
 def good_xml_config(request: SubRequest, project_root: Path) -> t.Generator[Path, None, None]:
     """Return sample config file path"""
     configs_dir: Path = project_root / "tests" / "runner" / "samples" / "config" / "xml" / "synthetic" / "good"
-    known_dir: str = os.getcwd()
-    os.chdir(str(configs_dir))
-    yield configs_dir / f"{request.param}.xml"
-    os.chdir(known_dir)
+    with pushd(configs_dir):
+        yield configs_dir / f"{request.param}.xml"
