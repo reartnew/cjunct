@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from cjunct.actions import Action
 from cjunct.display import BaseDisplay
 
 
@@ -14,7 +15,7 @@ def display_collector(monkeypatch: pytest.MonkeyPatch) -> t.List[str]:
     """Creates display events list instead of putting them to stdout"""
     results: t.List[str] = []
 
-    def emit(self, source: t.Any, message: str) -> None:
+    def emit(self, source: Action, message: str) -> None:
         results.append(message)
 
     monkeypatch.setattr(BaseDisplay, "emit", emit)

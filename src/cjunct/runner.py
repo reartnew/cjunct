@@ -48,7 +48,7 @@ class Runner(classlogging.LoggerMixin):
             return maybe_xml
         raise SourceError(f"No config source detected in {scan_path}")
 
-    async def run_async(self):
+    async def run_async(self) -> None:
         """Primary coroutine for all further processing"""
         actions: ActionNet = self._loader_class().load(self._config_path)
         display: BaseDisplay = NetPrefixDisplay(net=actions)
@@ -63,7 +63,7 @@ class Runner(classlogging.LoggerMixin):
     @staticmethod
     async def _iterate_through_action(action: Action, display: BaseDisplay) -> None:
         async for message in action.run():
-            display.emit(source=action.name, message=message)
+            display.emit(source=action, message=message)
 
     def run_sync(self):
         """Wrap async run into an event loop"""
