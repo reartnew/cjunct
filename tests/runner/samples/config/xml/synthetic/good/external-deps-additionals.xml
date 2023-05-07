@@ -3,7 +3,7 @@
 
     <Action name="RunAnsible">
         <description>Run ansible</description>
-        <type>test-echo</type>
+        <type>shell</type>
         <command>playbooks/Dummy.yml</command>
     </Action>
 

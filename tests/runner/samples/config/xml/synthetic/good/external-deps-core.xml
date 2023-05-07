@@ -4,7 +4,7 @@
     <Action name="RunGroovy">
         <dependency type="external">RunAnsible</dependency>
         <description>Run groovy</description>
-        <type>test-echo</type>
+        <type>shell</type>
         <command>groovy/Dummy.groovy</command>
     </Action>
 

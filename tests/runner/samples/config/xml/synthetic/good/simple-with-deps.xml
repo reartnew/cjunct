@@ -3,14 +3,14 @@
 
     <Action name="RunAnsible">
         <description>Run ansible</description>
-        <type>test-echo</type>
+        <type>shell</type>
         <command>playbooks/Dummy.yml</command>
     </Action>
 
     <Action name="RunGroovy">
         <dependency>RunAnsible</dependency>
         <description>Run groovy</description>
-        <type>test-echo</type>
+        <type>shell</type>
         <command>groovy/Dummy.groovy</command>
     </Action>
 
