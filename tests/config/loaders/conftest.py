@@ -9,19 +9,29 @@ from _pytest.fixtures import SubRequest
 
 from cjunct import exceptions
 
+BadConfigType = t.Tuple[str, t.Type[Exception], str]
 
-@pytest.fixture(
-    params=[
-        "external-deps-additionals",
-        "external-deps-bootstrap-skip-through",
-        "external-deps-core",
-        "simple-with-checklists",
-        "simple-with-deps-and-dummies",
-        "simple-with-deps",
-        "simple-with-external-deps",
-        "simple",
-    ],
-)
+_GOOD_CONFIGS_NAMES: t.List[str] = [
+    "external-deps-additionals",
+    "external-deps-bootstrap-skip-through",
+    "external-deps-core",
+    "simple-with-checklists",
+    "simple-with-deps-and-dummies",
+    "simple-with-deps",
+    "simple-with-external-deps",
+    "simple",
+]
+
+_BAD_CONFIGS_NAMES: t.List[BadConfigType] = [
+    ("plain-checklist-collision", exceptions.LoadError, "Checklist defined twice"),
+    ("plain-checklist-reserved-name", exceptions.LoadError, "Reserved checklist name used"),
+    ("plain-double-declaration", exceptions.LoadError, "Action declared twice"),
+    ("plain-missing-checklists-source", exceptions.LoadError, "No such directory"),
+    ("plain-missing-deps", exceptions.IntegrityError, "Missing actions among dependencies"),
+]
+
+
+@pytest.fixture(params=_GOOD_CONFIGS_NAMES)
 def good_xml_config_path(
     request: SubRequest,
     project_root: Path,
@@ -33,15 +43,7 @@ def good_xml_config_path(
     return configs_dir / f"{request.param}.xml"
 
 
-@pytest.fixture(
-    params=[
-        ("plain-checklist-collision", exceptions.LoadError, "Checklist defined twice"),
-        ("plain-checklist-reserved-name", exceptions.LoadError, "Reserved checklist name used"),
-        ("plain-double-declaration", exceptions.LoadError, "Action declared twice"),
-        ("plain-missing-checklists-source", exceptions.LoadError, "No such directory"),
-        ("plain-missing-deps", exceptions.IntegrityError, "Missing actions among dependencies"),
-    ],
-)
+@pytest.fixture(params=_BAD_CONFIGS_NAMES, ids=[cfg[0] for cfg in _BAD_CONFIGS_NAMES])
 def bad_xml_config(
     request: SubRequest,
     project_root: Path,
