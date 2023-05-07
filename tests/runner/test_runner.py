@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 import cjunct
+from cjunct.config.loaders import XMLConfigLoader
 from cjunct.strategy import BaseStrategy
 
 
@@ -15,16 +16,16 @@ def test_simple_runner_call(runner_context: None) -> None:
     cjunct.Runner().run_sync()
 
 
-def test_runner_success_over_sample(good_xml_config: Path) -> None:
+def test_config_load_success_over_sample(good_xml_config_path: Path) -> None:
     """Check different variations of good configurations"""
-    cjunct.Runner(config=good_xml_config).run_sync()
+    XMLConfigLoader().load(good_xml_config_path)
 
 
-def test_runner_failure_over_sample(bad_xml_config: t.Tuple[Path, t.Type[Exception], str]) -> None:
+def test_config_load_failure_over_sample(bad_xml_config: t.Tuple[Path, t.Type[Exception], str]) -> None:
     """Check different variations of bad configurations"""
     config_path, exception, match = bad_xml_config
     with pytest.raises(exception, match=match):
-        cjunct.Runner(config=config_path).run_sync()
+        XMLConfigLoader().load(config_path)
 
 
 @pytest.mark.parametrize("strategy_class", [cjunct.FreeStrategy, cjunct.SequentialStrategy, cjunct.LooseStrategy])

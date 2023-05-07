@@ -55,7 +55,7 @@ class SequentialStrategy(FreeStrategy):
 
     async def __anext__(self) -> Action:
         if self._current is not None:
-            await self._current.finish_flag
+            await self._current
         self._current = await super().__anext__()
         return self._current
 
@@ -72,7 +72,7 @@ class LooseStrategy(BaseStrategy):
 
     def _get_maybe_next_action(self) -> t.Optional[Action]:
         """Completely non-optimal (always scan all actions), but readable yet"""
-        done_action_names: t.Set[str] = {action.name for action in self._actions.values() if action.finish_flag.done()}
+        done_action_names: t.Set[str] = {action.name for action in self._actions.values() if action.done()}
         # Copy into a list for further possible pop
         for maybe_next_action_name, maybe_next_action_blockers in list(self._action_blockers.items()):
             maybe_next_action_blockers -= done_action_names
@@ -89,9 +89,9 @@ class LooseStrategy(BaseStrategy):
         if maybe_next_action := self._get_maybe_next_action():
             return maybe_next_action
         # Await for any actions finished
-        await asyncio.wait([action.finish_flag for action in self._active_actions], return_when=asyncio.FIRST_COMPLETED)
+        await asyncio.wait(self._active_actions, return_when=asyncio.FIRST_COMPLETED)
         for action in list(self._active_actions):
-            if action.finish_flag.done():
+            if action.done():
                 self.logger.debug(f"Action {action.name!r} execution finished, removing from active set")
                 self._active_actions.remove(action)
         # Maybe now?

@@ -83,7 +83,7 @@ def runner_context(tmp_path: Path) -> t.Generator:
         "simple",
     ],
 )
-def good_xml_config(request: SubRequest, project_root: Path) -> t.Generator[Path, None, None]:
+def good_xml_config_path(request: SubRequest, project_root: Path) -> t.Generator[Path, None, None]:
     """Return sample config file path"""
     configs_dir: Path = project_root / "tests" / "runner" / "samples" / "config" / "xml" / "synthetic" / "good"
     with pushd(configs_dir):

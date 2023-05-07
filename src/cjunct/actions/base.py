@@ -71,7 +71,7 @@ class Action(ActionBase, LoggerMixin):
             async for str_event in unbound_callable(self):
                 yield str_event
         finally:
-            self.finish_flag.set_result(None)
+            self._finish_flag.set_result(None)
 
     origin: t.Any = field(repr=False)
     name: str
@@ -83,11 +83,25 @@ class Action(ActionBase, LoggerMixin):
     description: t.Optional[str] = None
     descendants: t.Dict[str, ActionDependency] = field(init=False, default_factory=dict, repr=False)
     tier: t.Optional[int] = field(init=False, default=None, repr=False)
-    finish_flag: asyncio.Future = field(default_factory=lambda: asyncio.get_event_loop().create_future(), repr=False)
+    # Do not create Future on constructing object to decouple from the event loop
+    _maybe_finish_flag: t.Optional[asyncio.Future] = field(init=False, default=None, repr=False)
 
     def __post_init__(self) -> None:
         if self.type not in self._TYPE_HANDLERS:
             raise ValueError(f"Unknown dispatched type: {self.type}")
+
+    @property
+    def _finish_flag(self) -> asyncio.Future:
+        if self._maybe_finish_flag is None:
+            self._maybe_finish_flag = asyncio.get_event_loop().create_future()
+        return self._maybe_finish_flag
+
+    def __await__(self) -> t.Generator:
+        return self._finish_flag.__await__()
+
+    def done(self) -> bool:
+        """Indicate whether the action is over"""
+        return self._finish_flag.done()
 
     # pylint: disable=inconsistent-return-statements
     @classmethod
