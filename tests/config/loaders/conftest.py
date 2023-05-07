@@ -28,7 +28,7 @@ def good_xml_config_path(
     pushd: t.Callable,
 ) -> t.Generator[Path, None, None]:
     """Return sample config file path"""
-    configs_dir: Path = project_root / "tests" / "runner" / "samples" / "config" / "xml" / "synthetic" / "good"
+    configs_dir: Path = project_root / "tests" / "config" / "loaders" / "samples" / "config" / "xml" / "good"
     with pushd(configs_dir):
         yield configs_dir / f"{request.param}.xml"
 
@@ -48,7 +48,7 @@ def bad_xml_config(
     pushd: t.Callable,
 ) -> t.Generator[t.Tuple[Path, t.Type[Exception], str], None, None]:
     """Return sample config file path with error to handle"""
-    configs_dir: Path = project_root / "tests" / "runner" / "samples" / "config" / "xml" / "synthetic" / "bad"
+    configs_dir: Path = project_root / "tests" / "config" / "loaders" / "samples" / "config" / "xml" / "bad"
     config_name, exception, match = request.param
     with pushd(configs_dir):
         yield configs_dir / f"{config_name}.xml", exception, match
