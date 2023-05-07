@@ -32,6 +32,7 @@ pytest-asyncio = "^0.20.2"
 pytest-aiohttp = "^1.0.4"
 pytest-bandit = "^0.6.1"
 tox = "^3.28.0"
+pytest-cov = "^4.0.0"
 
 [tool.pytest.ini_options]
 testpaths = [
@@ -42,9 +43,22 @@ addopts = """
 --pylint
 --mypy
 --black
+--cov
 """
 filterwarnings = [
     "ignore",
+]
+
+[tool.coverage.run]
+source = ["src"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "def __str__",
+  "raise NotImplementedError",
+  "if __name__ == .__main__.:",
 ]
 
 [build-system]
