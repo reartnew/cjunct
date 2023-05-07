@@ -25,12 +25,12 @@ from cjunct import exceptions
 def good_xml_config_path(
     request: SubRequest,
     project_root: Path,
-    pushd: t.Callable,
-) -> t.Generator[Path, None, None]:
+    monkeypatch: pytest.MonkeyPatch,
+) -> Path:
     """Return sample config file path"""
     configs_dir: Path = project_root / "tests" / "config" / "loaders" / "samples" / "config" / "xml" / "good"
-    with pushd(configs_dir):
-        yield configs_dir / f"{request.param}.xml"
+    monkeypatch.chdir(configs_dir)
+    return configs_dir / f"{request.param}.xml"
 
 
 @pytest.fixture(
@@ -45,10 +45,10 @@ def good_xml_config_path(
 def bad_xml_config(
     request: SubRequest,
     project_root: Path,
-    pushd: t.Callable,
-) -> t.Generator[t.Tuple[Path, t.Type[Exception], str], None, None]:
+    monkeypatch: pytest.MonkeyPatch,
+) -> t.Tuple[Path, t.Type[Exception], str]:
     """Return sample config file path with error to handle"""
     configs_dir: Path = project_root / "tests" / "config" / "loaders" / "samples" / "config" / "xml" / "bad"
     config_name, exception, match = request.param
-    with pushd(configs_dir):
-        yield configs_dir / f"{config_name}.xml", exception, match
+    monkeypatch.chdir(configs_dir)
+    return configs_dir / f"{config_name}.xml", exception, match

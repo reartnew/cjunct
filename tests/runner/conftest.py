@@ -36,7 +36,7 @@ def display_collector(monkeypatch) -> t.List[str]:
 
 
 @pytest.fixture
-def runner_context(tmp_path: Path, pushd: t.Callable) -> t.Generator:
+def runner_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Prepare a directory with sample config files"""
     (tmp_path / "network.xml").write_bytes(
         b"""<Actions>
@@ -52,5 +52,4 @@ def runner_context(tmp_path: Path, pushd: t.Callable) -> t.Generator:
 </Actions>
 """
     )
-    with pushd(tmp_path):
-        yield
+    monkeypatch.chdir(tmp_path)
