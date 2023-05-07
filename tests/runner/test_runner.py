@@ -23,6 +23,6 @@ def test_strategy_runner_call(
     """Check all strategies"""
     cjunct.Runner(strategy_class=strategy_class).run_sync()
     assert set(display_collector) == {
-        '[Foo] | echoing "foo"',
-        '[Bar] | echoing "bar"',
+        "[Foo] | foo",
+        "[Bar] | bar",
     }

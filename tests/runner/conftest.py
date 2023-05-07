@@ -6,25 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from cjunct.actions import Action
 from cjunct.display import BaseDisplay
 
 
-@pytest.fixture(autouse=True, scope="session")
-def action_echo_mock():
-    """Add action extra behaviours.
-    Normally it should be done via Action subclassing and loader change,
-    but who cares: it's just a test"""
-
-    async def echo(self) -> t.AsyncGenerator[str, None]:
-        yield self.command
-
-    # pylint: disable=protected-access
-    Action._TYPE_HANDLERS["test-echo"] = echo
-
-
 @pytest.fixture
-def display_collector(monkeypatch) -> t.List[str]:
+def display_collector(monkeypatch: pytest.MonkeyPatch) -> t.List[str]:
     """Creates display events list instead of putting them to stdout"""
     results: t.List[str] = []
 
@@ -39,14 +25,15 @@ def display_collector(monkeypatch) -> t.List[str]:
 def runner_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Prepare a directory with sample config files"""
     (tmp_path / "network.xml").write_bytes(
-        b"""<Actions>
+        b"""<?xml version="1.0" encoding="UTF-8"?>
+<Actions>
     <Action name="Foo">
-        <command>echoing "foo"</command>
-        <type>test-echo</type>
+        <command>echo "foo"</command>
+        <type>shell</type>
     </Action>
     <Action name="Bar">
-        <command>echoing "bar"</command>
-        <type>test-echo</type>
+        <command>echo "bar"</command>
+        <type>shell</type>
         <dependency>Foo</dependency>
     </Action>
 </Actions>
