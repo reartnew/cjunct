@@ -6,6 +6,7 @@ __all__ = [
     "LoadError",
     "IntegrityError",
     "SourceError",
+    "ActionStructureError",
 ]
 
 
@@ -27,3 +28,7 @@ class IntegrityError(Exception):
 
 class SourceError(Exception):
     """Source file not recognized"""
+
+
+class ActionStructureError(Exception):
+    """Certain action structure mismatch"""

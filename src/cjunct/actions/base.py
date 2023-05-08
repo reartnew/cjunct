@@ -11,6 +11,8 @@ from xml.etree import ElementTree
 from async_shell import Shell
 from classlogging import LoggerMixin
 
+from ..exceptions import ActionStructureError
+
 __all__ = [
     "Action",
     "ActionDependency",
@@ -105,30 +107,34 @@ class Action(ActionBase, LoggerMixin):
 
     # pylint: disable=inconsistent-return-statements
     @classmethod
-    def build_from_origin(cls: t.Type[AT], origin: t.Any, on_error: t.Callable[[str], t.NoReturn]) -> AT:
-        """Prepare an instance from raw contents"""
+    def build_from_origin(cls: t.Type[AT], origin: t.Any) -> AT:
+        """Prepare an instance from raw contents.
+        :raises:
+            ActionStructureError: in a structure problem case"""
         if isinstance(origin, ElementTree.Element):
-            return cls._build_from_xml(node=origin, on_error=on_error)
-        on_error(f"Non-recognized origin: {origin}")
+            return cls._build_from_xml(node=origin)
+        raise ActionStructureError(f"Non-recognized origin: {origin}")
 
     @classmethod
-    def _build_from_xml(cls: t.Type[AT], node: ElementTree.Element, on_error: t.Callable[[str], t.NoReturn]) -> AT:
+    def _build_from_xml(cls: t.Type[AT], node: ElementTree.Element) -> AT:
         if (node.text or "").strip():
-            on_error(f"Non-degenerate action node text: {node.text!r}")
+            raise ActionStructureError(f"Non-degenerate action node text: {node.text!r}")
         bad_attribs: t.Set[str] = set(node.attrib) - {"name", "onFail", "visible"}
         if bad_attribs:
-            on_error(f"Unrecognized action node attributes: {sorted(bad_attribs)}")
+            raise ActionStructureError(f"Unrecognized action node attributes: {sorted(bad_attribs)}")
         if "name" not in node.attrib:
-            on_error("Missing action node required attribute: 'name'")
+            raise ActionStructureError("Missing action node required attribute: 'name'")
         name: str = node.attrib["name"]
         if not name:
-            on_error("Action node name is empty")
+            raise ActionStructureError("Action node name is empty")
         on_fail: t.Optional[str] = node.attrib.get("onFail")
         if on_fail not in (None, "warn", "stop"):
-            on_error(f"Invalid 'onFail' attribute value {on_fail!r} (may be one of 'warn' and 'stop', or not set)")
+            raise ActionStructureError(
+                f"Invalid 'onFail' attribute value {on_fail!r} (may be one of 'warn' and 'stop', or not set)"
+            )
         visible_str: t.Optional[str] = node.attrib.get("visible")
         if visible_str not in (None, "true", "false"):
-            on_error(
+            raise ActionStructureError(
                 f"Invalid 'visible' attribute value {visible_str!r} "
                 f"(may be one of 'true' and 'false', or not set, which is considered visible)"
             )
@@ -144,46 +150,50 @@ class Action(ActionBase, LoggerMixin):
                 "dependency",
                 "command",
             ):
-                on_error(f"Unrecognized tag: {xml_property.tag!r}")
+                raise ActionStructureError(f"Unrecognized tag: {xml_property.tag!r}")
             tag_value: str = (xml_property.text or "").strip()
             if xml_property.tag == "type":
                 if action_type:
-                    on_error(f"'type' is double-declared for action {name}")
+                    raise ActionStructureError(f"'type' is double-declared for action {name}")
                 if xml_property.attrib:
-                    on_error(f"'type' tag can't have given attributes: {sorted(xml_property.attrib)}")
+                    raise ActionStructureError(f"'type' tag can't have given attributes: {sorted(xml_property.attrib)}")
                 action_type = tag_value
             elif xml_property.tag == "dependency":
                 if tag_value in dependencies:
-                    on_error(f"Dependency {tag_value!r} is double-declared for action {name}")
+                    raise ActionStructureError(f"Dependency {tag_value!r} is double-declared for action {name}")
                 dependency: ActionDependency = ActionDependency()
                 for attr_name, attr_value in xml_property.attrib.items():
                     if attr_name != "type":
-                        on_error(f"'dependency' tag can't have given attribute: {attr_name!r}")
+                        raise ActionStructureError(f"'dependency' tag can't have given attribute: {attr_name!r}")
                     for dependency_type_marker in attr_value.split():
                         if dependency_type_marker == "strict":
                             dependency.strict = True
                         elif dependency_type_marker == "external":
                             dependency.external = True
                         else:
-                            on_error(f"Unknown dependency type marker: {dependency_type_marker!r}")
+                            raise ActionStructureError(f"Unknown dependency type marker: {dependency_type_marker!r}")
                 dependencies[tag_value] = dependency
             elif xml_property.tag == "description":
                 if description is not None:
-                    on_error(f"'description' is double-declared for action {name}")
+                    raise ActionStructureError(f"'description' is double-declared for action {name}")
                 if xml_property.attrib:
-                    on_error(f"'description' tag can't have given attributes: {sorted(xml_property.attrib)}")
+                    raise ActionStructureError(
+                        f"'description' tag can't have given attributes: {sorted(xml_property.attrib)}"
+                    )
                 description = tag_value
             elif xml_property.tag == "command":
                 if action_command is not None:
-                    on_error(f"Command is defined twice for action {name!r}")
+                    raise ActionStructureError(f"Command is defined twice for action {name!r}")
                 if not tag_value:
-                    on_error(f"Command might not be empty for action {name!r}")
+                    raise ActionStructureError(f"Command might not be empty for action {name!r}")
                 if xml_property.attrib:
-                    on_error(f"'command' tag can't have given attributes: {sorted(xml_property.attrib)}")
+                    raise ActionStructureError(
+                        f"'command' tag can't have given attributes: {sorted(xml_property.attrib)}"
+                    )
                 action_command = tag_value
 
         if action_command is None:
-            on_error(f"Action {name!r} command is not specified")
+            raise ActionStructureError(f"Action {name!r} command is not specified")
         return cls(
             origin=node,
             name=name,

@@ -10,6 +10,7 @@ from classlogging import LoggerMixin
 from ...actions import Action, ActionNet
 from ...exceptions import (
     LoadError,
+    ActionStructureError,
 )
 
 __all__ = [
@@ -33,6 +34,14 @@ class BaseConfigLoader(LoggerMixin):
         if action.name in self._actions:
             self._throw(f"Action declared twice: {action.name!r}")
         self._actions[action.name] = action
+
+    def _parse_action_from_origin(self, origin: t.Any) -> None:
+        try:
+            action: Action = self.ACTION_FACTORY.build_from_origin(origin=origin)
+        except ActionStructureError as e:
+            self._throw(str(e))
+        else:
+            self._register_action(action)
 
     def _throw(self, message: str) -> t.NoReturn:
         """Raise loader exception from text"""

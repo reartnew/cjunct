@@ -1,11 +1,12 @@
 """XML-based configuration load routines"""
+
 from __future__ import annotations
 
 import typing as t
 from xml.etree import ElementTree
 
 from .base import BaseConfigLoader
-from ...actions import Action, ActionNet
+from ...actions import ActionNet
 
 __all__ = [
     "XMLConfigLoader",
@@ -14,13 +15,6 @@ __all__ = [
 
 class XMLConfigLoader(BaseConfigLoader):
     """Loader extension for XML source files"""
-
-    def _parse_action(self, node: ElementTree.Element) -> None:
-        action: Action = self.ACTION_FACTORY.build_from_origin(
-            origin=node,
-            on_error=self._throw,
-        )
-        self._register_action(action)
 
     def _parse_import(self, node: ElementTree.Element) -> None:
         if node.attrib:
@@ -48,7 +42,7 @@ class XMLConfigLoader(BaseConfigLoader):
             self._throw(f"Unrecognized root attributes: {root_node.attrib!r}")
         for child_node in root_node:
             if child_node.tag == "Action":
-                self._parse_action(child_node)
+                self._parse_action_from_origin(child_node)
             elif child_node.tag == "Import":
                 self._parse_import(child_node)
             elif child_node.tag == "Checklists":

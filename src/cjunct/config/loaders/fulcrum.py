@@ -34,7 +34,7 @@ class FulcrumAction(Action):
         yield f"{self.type}: {self.name}"
 
     @classmethod
-    def _build_from_xml(cls, node: ElementTree.Element, on_error: t.Callable[[str], t.NoReturn]) -> FulcrumAction:
+    def _build_from_xml(cls, node: ElementTree.Element) -> FulcrumAction:
         pushed_facts: t.Dict[str, t.Optional[str]] = {}
         skip_on_missing_inventory: bool = False
         needs_distribution: bool = False
@@ -51,7 +51,7 @@ class FulcrumAction(Action):
             elif sub_node.tag == "needs-distribution":
                 skip_on_missing_inventory = text == "true"
                 node.remove(sub_node)
-        action: FulcrumAction = t.cast(FulcrumAction, super()._build_from_xml(node=node, on_error=on_error))
+        action: FulcrumAction = t.cast(FulcrumAction, super()._build_from_xml(node=node))
         action.pushed_facts = pushed_facts
         action.skip_on_missing_inventory = skip_on_missing_inventory
         action.needs_distribution = needs_distribution
