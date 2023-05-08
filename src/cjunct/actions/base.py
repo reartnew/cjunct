@@ -90,7 +90,7 @@ class Action(ActionBase, LoggerMixin):
 
     def __post_init__(self) -> None:
         if self.type not in self._TYPE_HANDLERS:
-            raise ValueError(f"Unknown dispatched type: {self.type}")
+            raise ActionStructureError(f"Unknown dispatched type: {self.type}")
 
     @property
     def _finish_flag(self) -> asyncio.Future:
