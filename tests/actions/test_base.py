@@ -140,3 +140,53 @@ def test_xml_bad_visible_value() -> None:
                 """
             )
         )
+
+
+def test_xml_bad_tag() -> None:
+    """Unexpected tag"""
+    with pytest.raises(ActionStructureError, match="Unrecognized tag"):
+        Action.build_from_origin(
+            ElementTree.XML(
+                """
+<Action name="Foo">
+    <description>Simple printer</description>
+    <type>shell</type>
+    <command>echo foo</command>
+    <UNEXPECTED />
+</Action>
+                """
+            )
+        )
+
+
+def test_xml_double_type() -> None:
+    """Type declared twice"""
+    with pytest.raises(ActionStructureError, match="'type' is double-declared for action"):
+        Action.build_from_origin(
+            ElementTree.XML(
+                """
+<Action name="Foo">
+    <description>Simple printer</description>
+    <type>shell</type>
+    <type>shell</type>
+    <command>echo foo</command>
+</Action>
+                """
+            )
+        )
+
+
+def test_xml_type_unexpected_attrs() -> None:
+    """Type with attrs"""
+    with pytest.raises(ActionStructureError, match="'type' tag can't have given attributes"):
+        Action.build_from_origin(
+            ElementTree.XML(
+                """
+<Action name="Foo">
+    <description>Simple printer</description>
+    <type bar="baz">shell</type>
+    <command>echo foo</command>
+</Action>
+                """
+            )
+        )
