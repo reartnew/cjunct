@@ -17,6 +17,7 @@ def test_xml_ok() -> None:
     <description>Simple printer</description>
     <type>shell</type>
     <command>echo foo</command>
+    <dependency type="strict external">Bar</dependency>
 </Action>
             """
         )
@@ -186,6 +187,157 @@ def test_xml_type_unexpected_attrs() -> None:
     <description>Simple printer</description>
     <type bar="baz">shell</type>
     <command>echo foo</command>
+</Action>
+                """
+            )
+        )
+
+
+def test_xml_double_dependency() -> None:
+    """Dependency declared twice"""
+    with pytest.raises(ActionStructureError, match="Dependency .* is double-declared for action"):
+        Action.build_from_origin(
+            ElementTree.XML(
+                """
+<Action name="Foo">
+    <description>Simple printer</description>
+    <type>shell</type>
+    <command>echo foo</command>
+    <dependency>Bar</dependency>
+    <dependency>Bar</dependency>
+</Action>
+                """
+            )
+        )
+
+
+def test_xml_dependency_unexpected_attrs() -> None:
+    """Dependency unknown attrs"""
+    with pytest.raises(ActionStructureError, match="'dependency' tag can't have given attribute"):
+        Action.build_from_origin(
+            ElementTree.XML(
+                """
+<Action name="Foo">
+    <description>Simple printer</description>
+    <type>shell</type>
+    <command>echo foo</command>
+    <dependency bar="baz">Bar</dependency>
+</Action>
+                """
+            )
+        )
+
+
+def test_xml_dependency_unknown_type() -> None:
+    """Dependency unknown type"""
+    with pytest.raises(ActionStructureError, match="Unknown dependency type marker"):
+        Action.build_from_origin(
+            ElementTree.XML(
+                """
+<Action name="Foo">
+    <description>Simple printer</description>
+    <type>shell</type>
+    <command>echo foo</command>
+    <dependency type="baz">Bar</dependency>
+</Action>
+                """
+            )
+        )
+
+
+def test_xml_double_description() -> None:
+    """Description declared twice"""
+    with pytest.raises(ActionStructureError, match="'description' is double-declared for action"):
+        Action.build_from_origin(
+            ElementTree.XML(
+                """
+<Action name="Foo">
+    <description>Simple printer</description>
+    <description>Simple printer</description>
+    <type>shell</type>
+    <command>echo foo</command>
+</Action>
+                """
+            )
+        )
+
+
+def test_xml_description_unexpected_attrs() -> None:
+    """Description unknown attrs"""
+    with pytest.raises(ActionStructureError, match="'description' tag can't have given attributes"):
+        Action.build_from_origin(
+            ElementTree.XML(
+                """
+<Action name="Foo">
+    <description bar="baz">Simple printer</description>
+    <type>shell</type>
+    <command>echo foo</command>
+    <dependency>Bar</dependency>
+</Action>
+                """
+            )
+        )
+
+
+def test_xml_double_command() -> None:
+    """Command declared twice"""
+    with pytest.raises(ActionStructureError, match="Command is defined twice for action"):
+        Action.build_from_origin(
+            ElementTree.XML(
+                """
+<Action name="Foo">
+    <description>Simple printer</description>
+    <type>shell</type>
+    <command>echo foo</command>
+    <command>echo foo</command>
+</Action>
+                """
+            )
+        )
+
+
+def test_xml_empty_command() -> None:
+    """Command is empty"""
+    with pytest.raises(ActionStructureError, match="Command might not be empty for action"):
+        Action.build_from_origin(
+            ElementTree.XML(
+                """
+<Action name="Foo">
+    <description>Simple printer</description>
+    <type>shell</type>
+    <command />
+</Action>
+                """
+            )
+        )
+
+
+def test_xml_command_unexpected_attrs() -> None:
+    """Command unknown attrs"""
+    with pytest.raises(ActionStructureError, match="'command' tag can't have given attributes"):
+        Action.build_from_origin(
+            ElementTree.XML(
+                """
+<Action name="Foo">
+    <description>Simple printer</description>
+    <type>shell</type>
+    <command bar="baz">echo foo</command>
+    <dependency>Bar</dependency>
+</Action>
+                """
+            )
+        )
+
+
+def test_xml_no_command() -> None:
+    """Command undefined"""
+    with pytest.raises(ActionStructureError, match="command is not specified"):
+        Action.build_from_origin(
+            ElementTree.XML(
+                """
+<Action name="Foo">
+    <description>Simple printer</description>
+    <type>shell</type>
 </Action>
                 """
             )
