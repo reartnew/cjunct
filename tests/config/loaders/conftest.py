@@ -38,7 +38,7 @@ def good_xml_config_path(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Path:
     """Return sample config file path"""
-    configs_dir: Path = project_root / "tests" / "config" / "loaders" / "samples" / "xml" / "good"
+    configs_dir: Path = project_root / "tests" / "config" / "loaders" / "samples" / "xml"
     monkeypatch.chdir(configs_dir)
     return configs_dir / f"{request.param}.xml"
 
@@ -50,7 +50,7 @@ def bad_xml_config(
     monkeypatch: pytest.MonkeyPatch,
 ) -> t.Tuple[Path, t.Type[Exception], str]:
     """Return sample config file path with error to handle"""
-    configs_dir: Path = project_root / "tests" / "config" / "loaders" / "samples" / "xml" / "bad"
+    configs_dir: Path = project_root / "tests" / "config" / "loaders" / "samples" / "xml"
     config_name, exception, match = request.param
     monkeypatch.chdir(configs_dir)
     return configs_dir / f"{config_name}.xml", exception, match
