@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- exception: IntegrityError -->
+<!-- match: Missing actions among dependencies -->
 <Actions>
 
     <Action name="RunAnsible">

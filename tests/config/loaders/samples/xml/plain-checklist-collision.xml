@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- exception: LoadError -->
+<!-- match: Checklist defined twice -->
 <Actions>
 
     <Checklists sourceDirectory="./ansible-checklists"/>

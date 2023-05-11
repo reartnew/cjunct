@@ -1,6 +1,6 @@
 """Loader call fixtures"""
-# pylint: disable=unused-argument
 
+import re
 import typing as t
 from pathlib import Path
 
@@ -9,48 +9,34 @@ from _pytest.fixtures import SubRequest
 
 from cjunct import exceptions
 
-BadConfigType = t.Tuple[str, t.Type[Exception], str]
+# Get all sample files list
+XML_SAMPLES_DIR: Path = Path(__file__).parent / "samples" / "xml"
+XML_SAMPLES: t.List[Path] = [item for item in XML_SAMPLES_DIR.iterdir() if item.is_file()]
 
-_GOOD_CONFIGS_NAMES: t.List[str] = [
-    "external-deps-additionals",
-    "external-deps-bootstrap-skip-through",
-    "external-deps-core",
-    "simple-with-checklists",
-    "simple-with-deps-and-dummies",
-    "simple-with-deps",
-    "simple-with-external-deps",
-    "simple",
-]
-
-_BAD_CONFIGS_NAMES: t.List[BadConfigType] = [
-    ("plain-checklist-collision", exceptions.LoadError, "Checklist defined twice"),
-    ("plain-checklist-reserved-name", exceptions.LoadError, "Reserved checklist name used"),
-    ("plain-double-declaration", exceptions.LoadError, "Action declared twice"),
-    ("plain-missing-checklists-source", exceptions.LoadError, "No such directory"),
-    ("plain-missing-deps", exceptions.IntegrityError, "Missing actions among dependencies"),
-]
+# Prepare regex patterns for exception pragma search
+PRAGMA_MATCHER_TEMPLATE: str = r"^\s*<!--\s+{}:\s*(.*?)\s*-->\s*$"
+PRAGMA_EXCEPTION_TYPE_PATTERN: t.Pattern = re.compile(PRAGMA_MATCHER_TEMPLATE.format("exception"))
+PRAGMA_EXCEPTION_MATCH_PATTERN: t.Pattern = re.compile(PRAGMA_MATCHER_TEMPLATE.format("match"))
 
 
-@pytest.fixture(params=_GOOD_CONFIGS_NAMES)
-def good_xml_config_path(
+@pytest.fixture(params=XML_SAMPLES, ids=[item.stem for item in XML_SAMPLES])
+def xml_config(
     request: SubRequest,
-    project_root: Path,
     monkeypatch: pytest.MonkeyPatch,
-) -> Path:
-    """Return sample config file path"""
-    configs_dir: Path = project_root / "tests" / "config" / "loaders" / "samples" / "xml"
-    monkeypatch.chdir(configs_dir)
-    return configs_dir / f"{request.param}.xml"
+) -> t.Tuple[Path, t.Optional[t.Type[Exception]], t.Optional[str]]:
+    """Return sample config file path with (maybe) exception handling instructions"""
+    file_path: Path = request.param
+    # Find exception instructions
+    expected_exception_type: t.Optional[t.Type[Exception]] = None
+    expected_exception_match: t.Optional[str] = None
+    with file_path.open(encoding="utf-8") as f:
+        for line in f:
+            for match in PRAGMA_EXCEPTION_TYPE_PATTERN.finditer(line):
+                expected_exception_type = getattr(exceptions, match.group(1))
+                break
+            for match in PRAGMA_EXCEPTION_MATCH_PATTERN.finditer(line):
+                expected_exception_match = match.group(1)
+                break
 
-
-@pytest.fixture(params=_BAD_CONFIGS_NAMES, ids=[cfg[0] for cfg in _BAD_CONFIGS_NAMES])
-def bad_xml_config(
-    request: SubRequest,
-    project_root: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> t.Tuple[Path, t.Type[Exception], str]:
-    """Return sample config file path with error to handle"""
-    configs_dir: Path = project_root / "tests" / "config" / "loaders" / "samples" / "xml"
-    config_name, exception, match = request.param
-    monkeypatch.chdir(configs_dir)
-    return configs_dir / f"{config_name}.xml", exception, match
+    monkeypatch.chdir(file_path.parent)
+    return file_path, expected_exception_type, expected_exception_match

@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- exception: LoadError -->
+<!-- match: Reserved checklist name used -->
 <Actions>
 
     <Checklists sourceDirectory="./reserved-checklists"/>
