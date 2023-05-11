@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- exception: LoadError -->
+<!-- match: Unrecognized checklists node attribute -->
+<Actions>
+    <Checklists foo="bar" />
+</Actions>
