@@ -51,6 +51,7 @@ filterwarnings = [
 
 [tool.coverage.run]
 source = ["src"]
+omit = ["**/*fulcrum*"]
 
 [tool.coverage.report]
 exclude_lines = [

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- exception: IntegrityError -->
+<!-- match: No entrypoints for the graph -->
+<Actions>
+
+    <Action name="RunGroovy">
+        <dependency>RunGroovy</dependency>
+        <description>Run groovy</description>
+        <type>shell</type>
+        <command>groovy/Dummy.groovy</command>
+    </Action>
+
+</Actions>
