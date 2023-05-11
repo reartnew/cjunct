@@ -1,5 +1,4 @@
 """Config loaders public methods tests"""
-# pylint: disable=unused-argument
 
 import typing as t
 from pathlib import Path

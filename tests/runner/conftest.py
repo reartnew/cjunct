@@ -1,5 +1,4 @@
 """Runner call fixtures"""
-# pylint: disable=unused-argument
 
 import typing as t
 from pathlib import Path
@@ -15,6 +14,7 @@ def display_collector(monkeypatch: pytest.MonkeyPatch) -> t.List[str]:
     """Creates display events list instead of putting them to stdout"""
     results: t.List[str] = []
 
+    # pylint: disable=unused-argument
     def emit(self, source: Action, message: str) -> None:
         results.append(message)
 

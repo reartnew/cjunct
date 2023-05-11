@@ -105,7 +105,6 @@ class Action(ActionBase, LoggerMixin):
         """Indicate whether the action is over"""
         return self.get_future().done()
 
-    # pylint: disable=inconsistent-return-statements
     @classmethod
     def build_from_origin(cls: t.Type[AT], origin: t.Any) -> AT:
         """Prepare an instance from raw contents.
