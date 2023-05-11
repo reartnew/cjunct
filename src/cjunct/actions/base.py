@@ -73,7 +73,7 @@ class Action(ActionBase, LoggerMixin):
             async for str_event in unbound_callable(self):
                 yield str_event
         finally:
-            self._finish_flag.set_result(None)
+            self.get_future().set_result(None)
 
     origin: t.Any = field(repr=False)
     name: str
@@ -92,18 +92,18 @@ class Action(ActionBase, LoggerMixin):
         if self.type not in self._TYPE_HANDLERS:
             raise ActionStructureError(f"Unknown dispatched type: {self.type}")
 
-    @property
-    def _finish_flag(self) -> asyncio.Future:
+    def get_future(self) -> asyncio.Future:
+        """Return a Future object indicating the end of the action"""
         if self._maybe_finish_flag is None:
             self._maybe_finish_flag = asyncio.get_event_loop().create_future()
         return self._maybe_finish_flag
 
     def __await__(self) -> t.Generator:
-        return self._finish_flag.__await__()
+        return self.get_future().__await__()
 
     def done(self) -> bool:
         """Indicate whether the action is over"""
-        return self._finish_flag.done()
+        return self.get_future().done()
 
     # pylint: disable=inconsistent-return-statements
     @classmethod

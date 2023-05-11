@@ -88,8 +88,12 @@ class LooseStrategy(BaseStrategy):
         # Do we have anything pending already?
         if maybe_next_action := self._get_maybe_next_action():
             return maybe_next_action
-        # Await for any actions finished
-        await asyncio.wait(self._active_actions, return_when=asyncio.FIRST_COMPLETED)
+        # Await for any actions finished. Can't directly apply asyncio.wait to Action objects
+        # since python 3.11's implementation requires too many methods from an awaitable object.
+        await asyncio.wait(
+            [action.get_future() for action in self._active_actions],
+            return_when=asyncio.FIRST_COMPLETED,
+        )
         for action in list(self._active_actions):
             if action.done():
                 self.logger.debug(f"Action {action.name!r} execution finished, removing from active set")
