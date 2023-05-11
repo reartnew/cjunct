@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- exception: LoadError -->
+<!-- match: Checklist is not a file -->
+<Actions>
+    <Checklists sourceDirectory="non-file-checklists"/>
+</Actions>

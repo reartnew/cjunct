@@ -2,14 +2,14 @@
 # pylint: disable=unused-argument
 
 import os
-from pathlib import Path
 import typing as t
+from pathlib import Path
 
 import pytest
 
 import cjunct
+from cjunct import exceptions
 from cjunct.strategy import BaseStrategy
-from cjunct.exceptions import SourceError
 
 
 def test_simple_runner_call(runner_context: None) -> None:
@@ -17,11 +17,25 @@ def test_simple_runner_call(runner_context: None) -> None:
     cjunct.Runner().run_sync()
 
 
-def test_missing_config(tmp_path: Path) -> None:
-    """Check default call"""
+def test_not_found_config(tmp_path: Path) -> None:
+    """Empty source directory"""
     os.chdir(tmp_path)
-    with pytest.raises(SourceError, match="No config source detected in"):
-        cjunct.Runner()
+    with pytest.raises(exceptions.SourceError, match="No config source detected in"):
+        cjunct.Runner().run_sync()
+
+
+def test_non_existent_config(tmp_path: Path) -> None:
+    """No config file with given name"""
+    os.chdir(tmp_path)
+    with pytest.raises(exceptions.LoadError, match="Config file not found"):
+        cjunct.Runner(config=tmp_path / "network.xml").run_sync()
+
+
+def test_unrecognized_config(tmp_path: Path) -> None:
+    """Unknown config file format"""
+    os.chdir(tmp_path)
+    with pytest.raises(exceptions.SourceError, match="Unrecognized source"):
+        cjunct.Runner(config=tmp_path / "network.foo").run_sync()
 
 
 @pytest.mark.parametrize("strategy_class", [cjunct.FreeStrategy, cjunct.SequentialStrategy, cjunct.LooseStrategy])

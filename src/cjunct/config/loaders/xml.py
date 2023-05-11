@@ -6,7 +6,6 @@ import typing as t
 from xml.etree import ElementTree
 
 from .base import BaseConfigLoader
-from ...actions import ActionNet
 
 __all__ = [
     "XMLConfigLoader",
@@ -49,7 +48,3 @@ class XMLConfigLoader(BaseConfigLoader):
                 self._parse_checklists(child_node)
             else:
                 self._throw(f"Unknown child tag: {child_node.tag}")
-
-    def loads(self, data: t.Union[str, bytes]) -> ActionNet:
-        self._internal_loads(data=data)
-        return ActionNet(self._actions)
