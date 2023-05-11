@@ -44,7 +44,7 @@ addopts = """
 --mypy
 --black
 --cov
---cov-report=html
+--cov-report=html:.coverage_report
 """
 filterwarnings = [
     "ignore",

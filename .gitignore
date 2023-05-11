@@ -4,4 +4,4 @@ __pycache__
 .tox
 dist
 .coverage
-htmlcov
+.coverage_report
