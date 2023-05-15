@@ -66,7 +66,7 @@ class LooseStrategy(BaseStrategy):
     def __init__(self, net: ActionNet) -> None:
         super().__init__(net)
         # Actions that have been emitted by the strategy and not finished yet
-        self._active_actions: t.Set[ActionBase] = set()
+        self._active_actions_map: t.Dict[str, ActionBase] = {}
         # Just a structured mutable copy of the dependency map
         self._action_blockers: t.Dict[str, t.Set[str]] = {name: set(net[name].ancestors) for name in net}
 
@@ -80,7 +80,7 @@ class LooseStrategy(BaseStrategy):
                 self.logger.debug(f"Action {maybe_next_action_name!r} is ready for scheduling")
                 self._action_blockers.pop(maybe_next_action_name)
                 next_action: ActionBase = self._actions[maybe_next_action_name]
-                self._active_actions.add(next_action)
+                self._active_actions_map[next_action.name] = next_action
                 return next_action
         return None
 
@@ -90,14 +90,15 @@ class LooseStrategy(BaseStrategy):
             return maybe_next_action
         # Await for any actions finished. Can't directly apply asyncio.wait to Action objects
         # since python 3.11's implementation requires too many methods from an awaitable object.
+        active_actions: t.List[ActionBase] = list(self._active_actions_map.values())
         await asyncio.wait(
-            [action.get_future() for action in self._active_actions],
+            [action.get_future() for action in active_actions],
             return_when=asyncio.FIRST_COMPLETED,
         )
-        for action in list(self._active_actions):
+        for action in active_actions:  # type: ActionBase
             if action.done():
-                self.logger.debug(f"Action {action.name!r} execution finished, removing from active set")
-                self._active_actions.remove(action)
+                self.logger.debug(f"Action {action.name!r} execution finished, removing from active mapping")
+                del self._active_actions_map[action.name]
         # Maybe now?
         if maybe_next_action := self._get_maybe_next_action():
             return maybe_next_action

@@ -97,6 +97,3 @@ class ActionBase:
     def done(self) -> bool:
         """Indicate whether the action is over"""
         return self.get_future().done()
-
-    def __hash__(self) -> int:
-        return hash(self.name)
