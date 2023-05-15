@@ -22,6 +22,7 @@ if __name__ == "__main__":
 Requires system-wide poetry>=1.3.2, see [official documentation](https://python-poetry.org).
 
 ```shell
+poetry env use python3.8
 poetry install --no-root --sync
 ```
 The root directory for the source code is `src`,
@@ -31,11 +32,11 @@ for better IDE integration.
 #### Running tests on current environment
 
 ```shell
-pytest
+poetry run pytest
 ```
 
 #### Running tests on all available environments
 
 ```shell
-tox
+poetry run tox
 ```
