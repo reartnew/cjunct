@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- exception: LoadError -->
+<!-- match: 'command' tag can't have given attributes -->
+<Actions>
+
+    <Action name="Foo">
+        <description>Simple printer</description>
+        <type>shell</type>
+        <command bar="baz">echo foo</command>
+        <dependency>Bar</dependency>
+    </Action>
+
+</Actions>

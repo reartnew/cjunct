@@ -8,7 +8,7 @@
     </Action>
 
     <Action name="RunGroovy">
-        <dependency>RunAnsible</dependency>
+        <dependency type="strict">RunAnsible</dependency>
         <description>Run groovy</description>
         <type>shell</type>
         <command>groovy/Dummy.groovy</command>

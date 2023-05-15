@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- exception: LoadError -->
+<!-- match: 'type' tag can't have given attributes -->
+<Actions>
+
+    <Action name="Foo">
+        <description>Simple printer</description>
+        <type bar="baz">shell</type>
+        <command>echo foo</command>
+    </Action>
+
+</Actions>

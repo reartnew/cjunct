@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- exception: LoadError -->
+<!-- match: Invalid 'onFail' attribute value -->
+<Actions>
+
+    <Action name="Foo" onFail="bar">
+        <description>Simple printer</description>
+        <type>shell</type>
+        <command>echo foo</command>
+    </Action>
+
+</Actions>

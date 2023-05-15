@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- exception: LoadError -->
+<!-- match: 'dependency' tag can't have given attribute -->
+<Actions>
+
+    <Action name="Foo">
+        <description>Simple printer</description>
+        <type>shell</type>
+        <command>echo foo</command>
+        <dependency bar="baz">Bar</dependency>
+    </Action>
+
+</Actions>
