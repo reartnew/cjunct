@@ -7,7 +7,6 @@ from xml.etree import ElementTree
 
 from .base import BaseConfigLoader
 from ...actions.base import ActionBase, ActionDependency
-from ...actions.shell import ShellAction
 
 __all__ = [
     "XMLConfigLoader",
@@ -124,7 +123,9 @@ class XMLConfigLoader(BaseConfigLoader):
         if action_command is None:
             self._throw(f"Action {name!r} command is not specified")
 
-        action_class: t.Type[ActionBase] = ShellAction
+        if action_type not in self.ACTION_FACTORIES:
+            self._throw(f"Unknown dispatched type: {action_type}")
+        action_class: t.Type[ActionBase] = self.ACTION_FACTORIES[action_type]
         return action_class(
             name=name,
             type=action_type,

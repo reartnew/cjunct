@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- exception: LoadError -->
+<!-- match: Missing action node required attribute: 'name' -->
+<Actions>
+
+    <Action>
+        <description>Simple printer</description>
+        <type>shell</type>
+        <command>echo foo</command>
+    </Action>
+
+</Actions>
