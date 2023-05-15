@@ -3,7 +3,7 @@
 import textwrap
 import typing as t
 
-from .actions import Action
+from .actions import ActionBase
 
 __all__ = [
     "BaseDisplay",
@@ -15,7 +15,7 @@ class BaseDisplay:
     """Base class for possible customizations"""
 
     # pylint: disable=unused-argument
-    def emit(self, source: Action, message: str) -> None:
+    def emit(self, source: ActionBase, message: str) -> None:
         """Process a message from some source"""
         print(message)
 
@@ -28,7 +28,7 @@ class NetPrefixDisplay(BaseDisplay):
         self._justification_len = max(map(len, net)) + 2
         self._last_displayed_name: str = ""
 
-    def emit(self, source: Action, message: str) -> None:
+    def emit(self, source: ActionBase, message: str) -> None:
         # Construct prefix based on previous emitter action name
         formatted_name: str = (
             f"[{source.name}]".ljust(self._justification_len)

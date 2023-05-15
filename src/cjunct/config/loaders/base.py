@@ -7,11 +7,9 @@ from pathlib import Path
 
 from classlogging import LoggerMixin
 
-from ...actions import Action, ActionNet
-from ...exceptions import (
-    LoadError,
-    ActionStructureError,
-)
+from ...actions import ActionNet, ActionBase
+from ...actions.shell import ShellAction
+from ...exceptions import LoadError
 
 __all__ = [
     "BaseConfigLoader",
@@ -22,26 +20,18 @@ class BaseConfigLoader(LoggerMixin):
     """Loaders base class"""
 
     _RESERVED_CHECKLISTS_NAMES: t.Set[str] = {"ALL", "NONE"}
-    ACTION_FACTORY: t.Type[Action] = Action
+    ACTION_FACTORIES: t.Dict[str, t.Type[ActionBase]] = {"shell": ShellAction}
 
     def __init__(self) -> None:
-        self._actions: t.Dict[str, Action] = {}
+        self._actions: t.Dict[str, ActionBase] = {}
         self._files_stack: t.List[str] = []
         self._checklists: t.Dict[str, t.List[str]] = {}
         self._loaded_file: t.Optional[Path] = None
 
-    def _register_action(self, action: Action) -> None:
+    def _register_action(self, action: ActionBase) -> None:
         if action.name in self._actions:
             self._throw(f"Action declared twice: {action.name!r}")
         self._actions[action.name] = action
-
-    def _parse_action_from_origin(self, origin: t.Any) -> None:
-        try:
-            action: Action = self.ACTION_FACTORY.build_from_origin(origin=origin)
-        except ActionStructureError as e:
-            self._throw(str(e))
-        else:
-            self._register_action(action)
 
     def _throw(self, message: str) -> t.NoReturn:
         """Raise loader exception from text"""
@@ -69,7 +59,7 @@ class BaseConfigLoader(LoggerMixin):
             ]
 
     def _internal_load(self, source_file: t.Union[str, Path]) -> None:
-        """Load config partially from file (may be recursive).
+        """Load config partially from file (can be called recursively).
         :param source_file: either Path or string object pointing at a file"""
         source_file_path: Path = Path(source_file)
         if self._loaded_file is None:
@@ -85,7 +75,7 @@ class BaseConfigLoader(LoggerMixin):
             self._files_stack.pop()
 
     def _internal_loads(self, data: t.Union[str, bytes]) -> None:
-        """Load config partially from text (may be recursive)"""
+        """Load config partially from text (can be called recursively)"""
         raise NotImplementedError
 
     def loads(self, data: t.Union[str, bytes]) -> ActionNet:

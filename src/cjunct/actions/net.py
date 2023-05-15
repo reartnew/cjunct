@@ -6,7 +6,7 @@ import typing as t
 
 from classlogging import LoggerMixin
 
-from ..actions.base import Action
+from ..actions.base import ActionBase
 from ..exceptions import IntegrityError
 
 __all__ = [
@@ -14,10 +14,10 @@ __all__ = [
 ]
 
 
-class ActionNet(t.Dict[str, Action], LoggerMixin):
+class ActionNet(t.Dict[str, ActionBase], LoggerMixin):
     """Action relations map"""
 
-    def __init__(self, net: dict[str, Action], checklists: t.Dict[str, t.List[str]] | None = None) -> None:
+    def __init__(self, net: dict[str, ActionBase], checklists: t.Dict[str, t.List[str]] | None = None) -> None:
         super().__init__(net)
         self.entrypoints: t.Set[str] = set()
         self.checklists: t.Dict[str, t.List[str]] = checklists or {}
@@ -28,7 +28,7 @@ class ActionNet(t.Dict[str, Action], LoggerMixin):
 
     def _establish_descendants(self) -> None:
         missing_non_external_deps: t.Set[str] = set()
-        for action in self.values():  # type: Action
+        for action in self.values():  # type: ActionBase
             for dependency_action_name, dependency in list(action.ancestors.items()):
                 if dependency_action_name not in self:
                     if dependency.external:
@@ -54,7 +54,7 @@ class ActionNet(t.Dict[str, Action], LoggerMixin):
         while True:
             next_tier_actions_names: t.Set[str] = set()
             for tier_action_name in tier_actions_names:
-                tier_action: Action = self[tier_action_name]
+                tier_action: ActionBase = self[tier_action_name]
                 if tier_action.tier is not None:
                     continue
                 tier_action.tier = step_tier

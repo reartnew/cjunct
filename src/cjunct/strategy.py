@@ -8,7 +8,7 @@ import typing as t
 
 import classlogging
 
-from .actions import Action, ActionNet
+from .actions import ActionNet, ActionBase
 
 ST = t.TypeVar("ST", bound="BaseStrategy")
 
@@ -20,7 +20,7 @@ __all__ = [
 ]
 
 
-class BaseStrategy(classlogging.LoggerMixin, t.AsyncIterable[Action]):
+class BaseStrategy(classlogging.LoggerMixin, t.AsyncIterable[ActionBase]):
     """Strategy abstract base"""
 
     def __init__(self, net: ActionNet) -> None:
@@ -29,7 +29,7 @@ class BaseStrategy(classlogging.LoggerMixin, t.AsyncIterable[Action]):
     def __aiter__(self: ST) -> ST:
         return self
 
-    async def __anext__(self) -> Action:
+    async def __anext__(self) -> ActionBase:
         raise NotImplementedError
 
 
@@ -38,9 +38,9 @@ class FreeStrategy(BaseStrategy):
 
     def __init__(self, net: ActionNet) -> None:
         super().__init__(net)
-        self._unprocessed: t.List[Action] = list(net.values())
+        self._unprocessed: t.List[ActionBase] = list(net.values())
 
-    async def __anext__(self) -> Action:
+    async def __anext__(self) -> ActionBase:
         if not self._unprocessed:
             raise StopAsyncIteration
         return self._unprocessed.pop(0)
@@ -51,9 +51,9 @@ class SequentialStrategy(FreeStrategy):
 
     def __init__(self, net: ActionNet) -> None:
         super().__init__(net)
-        self._current: t.Optional[Action] = None
+        self._current: t.Optional[ActionBase] = None
 
-    async def __anext__(self) -> Action:
+    async def __anext__(self) -> ActionBase:
         if self._current is not None:
             await self._current
         self._current = await super().__anext__()
@@ -66,11 +66,11 @@ class LooseStrategy(BaseStrategy):
     def __init__(self, net: ActionNet) -> None:
         super().__init__(net)
         # Actions that have been emitted by the strategy and not finished yet
-        self._active_actions: t.Set[Action] = set()
+        self._active_actions: t.Set[ActionBase] = set()
         # Just a structured mutable copy of the dependency map
         self._action_blockers: t.Dict[str, t.Set[str]] = {name: set(net[name].ancestors) for name in net}
 
-    def _get_maybe_next_action(self) -> t.Optional[Action]:
+    def _get_maybe_next_action(self) -> t.Optional[ActionBase]:
         """Completely non-optimal (always scan all actions), but readable yet"""
         done_action_names: t.Set[str] = {action.name for action in self._actions.values() if action.done()}
         # Copy into a list for further possible pop
@@ -79,12 +79,12 @@ class LooseStrategy(BaseStrategy):
             if not maybe_next_action_blockers:
                 self.logger.debug(f"Action {maybe_next_action_name!r} is ready for scheduling")
                 self._action_blockers.pop(maybe_next_action_name)
-                next_action: Action = self._actions[maybe_next_action_name]
+                next_action: ActionBase = self._actions[maybe_next_action_name]
                 self._active_actions.add(next_action)
                 return next_action
         return None
 
-    async def __anext__(self) -> Action:
+    async def __anext__(self) -> ActionBase:
         # Do we have anything pending already?
         if maybe_next_action := self._get_maybe_next_action():
             return maybe_next_action

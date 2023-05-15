@@ -9,7 +9,7 @@ from pathlib import Path
 
 import classlogging
 
-from .actions import ActionNet, Action
+from .actions import ActionNet, ActionBase
 from .config.loaders import get_default_loader_class_for_file
 from .config.loaders.base import BaseConfigLoader
 from .display import NetPrefixDisplay, BaseDisplay
@@ -53,17 +53,22 @@ class Runner(classlogging.LoggerMixin):
         actions: ActionNet = self._loader_class().load(self._config_path)
         display: BaseDisplay = NetPrefixDisplay(net=actions)
         strategy: BaseStrategy = self._strategy_class(net=actions)
-        action_readers: t.List[asyncio.Task] = []
-        async for action in strategy:  # type: Action
+        action_tasks: t.List[asyncio.Task] = []
+        async for action in strategy:  # type: ActionBase
             self.logger.trace(f"Allocating action iterator for {action.name!r}")
-            action_readers.append(asyncio.create_task(self._iterate_through_action(action=action, display=display)))
-        for reader in action_readers:
-            await reader
+            action_tasks.append(asyncio.create_task(self._run_action(action=action)))
+            action_tasks.append(asyncio.create_task(self._dispatch_events(action=action, display=display)))
+        for task in action_tasks:
+            await task
 
     @staticmethod
-    async def _iterate_through_action(action: Action, display: BaseDisplay) -> None:
-        async for message in action.run():
+    async def _dispatch_events(action: ActionBase, display: BaseDisplay) -> None:
+        async for message in action.read_events():
             display.emit(source=action, message=message)
+
+    @staticmethod
+    async def _run_action(action: ActionBase) -> None:
+        await action
 
     def run_sync(self):
         """Wrap async run into an event loop"""

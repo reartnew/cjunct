@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from cjunct.actions import Action
+from cjunct.actions import ActionBase
 from cjunct.display import BaseDisplay
 
 
@@ -15,7 +15,7 @@ def display_collector(monkeypatch: pytest.MonkeyPatch) -> t.List[str]:
     results: t.List[str] = []
 
     # pylint: disable=unused-argument
-    def emit(self, source: Action, message: str) -> None:
+    def emit(self, source: ActionBase, message: str) -> None:
         results.append(message)
 
     monkeypatch.setattr(BaseDisplay, "emit", emit)

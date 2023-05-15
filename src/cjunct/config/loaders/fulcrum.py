@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from xml.etree import ElementTree
 
 from .xml import XMLConfigLoader
-from ...actions import Action
+from ...actions import ActionBase
 
 __all__ = [
     "FulcrumXMLConfigLoader",
@@ -20,21 +20,22 @@ __all__ = [
 
 
 @dataclass
-class FulcrumAction(Action):
+class FulcrumAction(ActionBase):
     """Fulcrum-specific extension"""
 
     pushed_facts: t.Dict[str, t.Optional[str]] = field(default_factory=dict)
     skip_on_missing_inventory: bool = False
     needs_distribution: bool = False
 
-    @Action.type_handler("ansible")
-    @Action.type_handler("groovy")
-    async def _run_stub(self) -> t.AsyncGenerator[str, None]:
+    async def run(self) -> None:
         """A stub"""
-        yield f"{self.type}: {self.name}"
+        self.emit(f"{self.name}")
 
-    @classmethod
-    def _build_from_xml(cls, node: ElementTree.Element) -> FulcrumAction:
+
+class FulcrumXMLConfigLoader(XMLConfigLoader):
+    """Fulcrum-specific extension"""
+
+    def _build_action_from_xml_node(self, node: ElementTree.Element) -> ActionBase:
         pushed_facts: t.Dict[str, t.Optional[str]] = {}
         skip_on_missing_inventory: bool = False
         needs_distribution: bool = False
@@ -51,14 +52,13 @@ class FulcrumAction(Action):
             elif sub_node.tag == "needs-distribution":
                 skip_on_missing_inventory = text == "true"
                 node.remove(sub_node)
-        action: FulcrumAction = t.cast(FulcrumAction, super()._build_from_xml(node=node))
+        action: FulcrumAction = t.cast(FulcrumAction, super()._build_action_from_xml_node(node=node))
         action.pushed_facts = pushed_facts
         action.skip_on_missing_inventory = skip_on_missing_inventory
         action.needs_distribution = needs_distribution
         return action
 
-
-class FulcrumXMLConfigLoader(XMLConfigLoader):
-    """Fulcrum-specific extension"""
-
-    ACTION_FACTORY = FulcrumAction
+    ACTION_FACTORIES = {
+        "groovy": FulcrumAction,
+        "ansible": FulcrumAction,
+    }

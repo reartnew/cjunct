@@ -1,7 +1,7 @@
 """The package describes actions and their mutual relations"""
 
 from .base import (
-    Action,
+    ActionBase,
     ActionDependency,
 )
 from .net import ActionNet
