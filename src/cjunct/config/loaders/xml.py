@@ -3,29 +3,59 @@
 from __future__ import annotations
 
 import typing as t
-from xml.etree import ElementTree
+from xml.etree.ElementTree import XML, Element
 
 from .base import BaseConfigLoader
 from ...actions.base import ActionBase, ActionDependency
+from ...actions.shell import ShellAction
 
 __all__ = [
-    "XMLConfigLoader",
+    "BaseXMLConfigLoader",
+    "DefaultXMLConfigLoader",
+    "XMLNode",
 ]
 
 
-class XMLConfigLoader(BaseConfigLoader):
-    """Loader extension for XML source files"""
+class XMLNode:
+    """Proxy object"""
 
-    def _parse_import(self, node: ElementTree.Element) -> None:
+    def __init__(self, element: Element) -> None:
+        self._element = element
+        self.recognized: bool = False
+        self._children: t.Optional[t.List[XMLNode]] = None
+
+    @property
+    def value(self) -> str:
+        """Truncated tag value"""
+        return (self._element.text or "").strip()
+
+    @staticmethod
+    def loads(data: str) -> XMLNode:
+        """Load from text"""
+        return XMLNode(XML(data))
+
+    def __iter__(self) -> t.Iterator[XMLNode]:
+        if self._children is None:
+            self._children = [XMLNode(element=sub_element) for sub_element in self._element]
+        return iter(self._children)
+
+    def __getattr__(self, item):
+        return getattr(self._element, item)
+
+
+class BaseXMLConfigLoader(BaseConfigLoader):
+    """Loader for XML source files"""
+
+    def _parse_import(self, node: XMLNode) -> None:
         if node.attrib:
             self._throw(f"Unrecognized import attributes: {node.attrib!r}")
-        if node.text is None:
+        if not node.value:
             self._throw(f"Empty import: {node!r}")
-        self._internal_load(node.text.strip())
+        self._internal_load(node.value)
 
-    def _parse_checklists(self, node: ElementTree.Element) -> None:
-        if node.text:
-            self._throw(f"Unrecognized checklists node text: {node.text!r}")
+    def _parse_checklists(self, node: XMLNode) -> None:
+        if node.value:
+            self._throw(f"Unrecognized checklists node text: {node.value!r}")
         for attr_name, attr_value in node.attrib.items():
             if attr_name == "sourceDirectory":
                 self._load_checklists_from_directory(attr_value)
@@ -35,7 +65,7 @@ class XMLConfigLoader(BaseConfigLoader):
     def _internal_loads(self, data: t.Union[str, bytes]) -> None:
         if isinstance(data, bytes):
             data = data.decode()
-        root_node = ElementTree.XML(data)
+        root_node = XMLNode.loads(data)
         if root_node.tag != "Actions":
             self._throw(f"Unknown root tag: {root_node.tag!r} (should be 'Actions')")
         if root_node.attrib:
@@ -43,6 +73,9 @@ class XMLConfigLoader(BaseConfigLoader):
         for child_node in root_node:
             if child_node.tag == "Action":
                 self._register_action(self._build_action_from_xml_node(child_node))
+                unrecognized_action_tags: t.List[str] = [tag.tag for tag in child_node if not tag.recognized]
+                if unrecognized_action_tags:
+                    self._throw(f"Unrecognized tags: {unrecognized_action_tags}")
             elif child_node.tag == "Import":
                 self._parse_import(child_node)
             elif child_node.tag == "Checklists":
@@ -50,9 +83,9 @@ class XMLConfigLoader(BaseConfigLoader):
             else:
                 self._throw(f"Unknown child tag: {child_node.tag}")
 
-    def _build_action_from_xml_node(self, node: ElementTree.Element) -> ActionBase:
-        if (node.text or "").strip():
-            self._throw(f"Non-degenerate action node text: {node.text!r}")
+    def _build_action_from_xml_node(self, node: XMLNode) -> ActionBase:
+        if node.value:
+            self._throw(f"Non-degenerate action node text: {node.value!r}")
         bad_attribs: t.Set[str] = set(node.attrib) - {"name", "onFail", "visible"}
         if bad_attribs:
             self._throw(f"Unrecognized action node attributes: {sorted(bad_attribs)}")
@@ -74,27 +107,19 @@ class XMLConfigLoader(BaseConfigLoader):
         description: t.Optional[str] = None
         dependencies: t.Dict[str, ActionDependency] = {}
         action_type: str = ""
-        action_command: t.Optional[str] = None
-        for xml_property in node:
-            if xml_property.tag not in (
-                "type",
-                "description",
-                "dependency",
-                "command",
-            ):
-                self._throw(f"Unrecognized tag: {xml_property.tag!r}")
-            tag_value: str = (xml_property.text or "").strip()
-            if xml_property.tag == "type":
+        for sub_node in node:  # type: XMLNode
+            if sub_node.tag == "type":
                 if action_type:
                     self._throw(f"'type' is double-declared for action {name}")
-                if xml_property.attrib:
-                    self._throw(f"'type' tag can't have given attributes: {sorted(xml_property.attrib)}")
-                action_type = tag_value
-            elif xml_property.tag == "dependency":
-                if tag_value in dependencies:
-                    self._throw(f"Dependency {tag_value!r} is double-declared for action {name}")
+                if sub_node.attrib:
+                    self._throw(f"'type' tag can't have given attributes: {sorted(sub_node.attrib)}")
+                action_type = sub_node.value
+                sub_node.recognized = True
+            elif sub_node.tag == "dependency":
+                if sub_node.value in dependencies:
+                    self._throw(f"Dependency {sub_node.value!r} is double-declared for action {name}")
                 dependency: ActionDependency = ActionDependency()
-                for attr_name, attr_value in xml_property.attrib.items():
+                for attr_name, attr_value in sub_node.attrib.items():
                     if attr_name != "type":
                         self._throw(f"'dependency' tag can't have given attribute: {attr_name!r}")
                     for dependency_type_marker in attr_value.split():
@@ -104,24 +129,15 @@ class XMLConfigLoader(BaseConfigLoader):
                             dependency.external = True
                         else:
                             self._throw(f"Unknown dependency type marker: {dependency_type_marker!r}")
-                dependencies[tag_value] = dependency
-            elif xml_property.tag == "description":
+                dependencies[sub_node.value] = dependency
+                sub_node.recognized = True
+            elif sub_node.tag == "description":
                 if description is not None:
                     self._throw(f"'description' is double-declared for action {name}")
-                if xml_property.attrib:
-                    self._throw(f"'description' tag can't have given attributes: {sorted(xml_property.attrib)}")
-                description = tag_value
-            elif xml_property.tag == "command":
-                if action_command is not None:
-                    self._throw(f"Command is defined twice for action {name!r}")
-                if not tag_value:
-                    self._throw(f"Command might not be empty for action {name!r}")
-                if xml_property.attrib:
-                    self._throw(f"'command' tag can't have given attributes: {sorted(xml_property.attrib)}")
-                action_command = tag_value
-
-        if action_command is None:
-            self._throw(f"Action {name!r} command is not specified")
+                if sub_node.attrib:
+                    self._throw(f"'description' tag can't have given attributes: {sorted(sub_node.attrib)}")
+                description = sub_node.value
+                sub_node.recognized = True
 
         if action_type not in self.ACTION_FACTORIES:
             self._throw(f"Unknown dispatched type: {action_type}")
@@ -129,9 +145,37 @@ class XMLConfigLoader(BaseConfigLoader):
         return action_class(
             name=name,
             type=action_type,
-            command=action_command,
             on_fail=on_fail,
             visible=visible,
             description=description,
             ancestors=dependencies,
         )
+
+
+class DefaultXMLConfigLoader(BaseXMLConfigLoader):
+    """Default extension for shell"""
+
+    def _load_eponymous_tag(self, node: XMLNode, action: ActionBase) -> None:
+        """Simple mandatory tag with no attrs"""
+        action_attrib_name: str = node.tag
+        if getattr(action, action_attrib_name):
+            self._throw(f"{action_attrib_name.capitalize()} is defined twice for action {action.name!r}")
+        if not node.value:
+            self._throw(f"{action_attrib_name.capitalize()} might not be empty for action {action.name!r}")
+        if node.attrib:
+            self._throw(f"'{action_attrib_name}' tag can't have given attributes: {sorted(node.attrib)}")
+        setattr(action, node.tag, node.value)
+        node.recognized = True
+
+    def _build_action_from_xml_node(self, node: XMLNode) -> ActionBase:
+        action: ActionBase = super()._build_action_from_xml_node(node)
+        # Varying args for shell
+        if isinstance(action, ShellAction):
+            for sub_node in node:
+                if sub_node.tag in ("command", "script"):
+                    self._load_eponymous_tag(node=sub_node, action=action)
+            if not action.command and not action.script:
+                self._throw(f"Action {action.name!r}: neither command nor script specified")
+            if action.command and action.script:
+                self._throw(f"Action {action.name!r}: both command and script specified")
+        return action

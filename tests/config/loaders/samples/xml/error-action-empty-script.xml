@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- exception: LoadError -->
-<!-- match: command is not specified -->
+<!-- match: Script might not be empty for action -->
 <Actions>
 
     <Action name="Foo">
         <description>Simple printer</description>
         <type>shell</type>
+        <script/>
     </Action>
 
 </Actions>

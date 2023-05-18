@@ -29,11 +29,11 @@ def runner_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         b"""<?xml version="1.0" encoding="UTF-8"?>
 <Actions>
     <Action name="Foo">
-        <command>echo "foo"</command>
+        <command>echo &quot;foo&quot;</command>
         <type>shell</type>
     </Action>
     <Action name="Bar">
-        <command>echo "bar"</command>
+        <command>echo &quot;bar&quot; &gt;&amp;2</command>
         <type>shell</type>
         <dependency>Foo</dependency>
     </Action>

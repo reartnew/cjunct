@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- exception: LoadError -->
-<!-- match: Unrecognized tags -->
+<!-- match: neither command nor script specified -->
 <Actions>
 
     <Action name="Foo">
         <description>Simple printer</description>
         <type>shell</type>
-        <command>echo foo</command>
-        <UNEXPECTED/>
     </Action>
 
 </Actions>
