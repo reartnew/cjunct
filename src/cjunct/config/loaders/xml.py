@@ -72,10 +72,11 @@ class BaseXMLConfigLoader(BaseConfigLoader):
             self._throw(f"Unrecognized root attributes: {root_node.attrib!r}")
         for child_node in root_node:
             if child_node.tag == "Action":
-                self._register_action(self._build_action_from_xml_node(child_node))
+                action: ActionBase = self._build_action_from_xml_node(child_node)
                 unrecognized_action_tags: t.List[str] = [tag.tag for tag in child_node if not tag.recognized]
                 if unrecognized_action_tags:
-                    self._throw(f"Unrecognized tags: {unrecognized_action_tags}")
+                    self._throw(f"Unrecognized tags for action {action.name!r}: {unrecognized_action_tags}")
+                self._register_action(action)
             elif child_node.tag == "Import":
                 self._parse_import(child_node)
             elif child_node.tag == "Checklists":
