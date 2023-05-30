@@ -18,7 +18,7 @@ class TestAction(ActionBase):
     ]
 
     def __init__(self) -> None:
-        super().__init__(name="test", type="test")
+        super().__init__(name="test")
 
     async def run(self):
         for message in self.MESSAGES:

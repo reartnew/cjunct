@@ -145,7 +145,7 @@ class BaseXMLConfigLoader(BaseConfigLoader):
         action_class: t.Type[ActionBase] = self.ACTION_FACTORIES[action_type]
         return action_class(
             name=name,
-            type=action_type,
+            # type=action_type,
             on_fail=on_fail,
             visible=visible,
             description=description,

@@ -30,7 +30,7 @@ class ActionBase:
     """Base class for all actions"""
 
     name: str
-    type: str
+    # Maybe add: type: str
     on_fail: t.Optional[str] = field(default=None, repr=False)
     visible: bool = field(default=True, repr=False)
     ancestors: t.Dict[str, ActionDependency] = field(default_factory=dict, repr=False)
