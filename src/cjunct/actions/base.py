@@ -69,7 +69,6 @@ class ActionBase:
         finally:
             if not fut.done():
                 fut.set_result(None)
-                # self._event_queue.put_nowait(_sentinel)
 
     def emit(self, message: EventType) -> None:
         """Issue a message"""
@@ -78,11 +77,16 @@ class ActionBase:
     async def read_events(self) -> t.AsyncGenerator[EventType, None]:
         """Obtain all emitted events sequentially"""
         while True:
+            # Wait for either an event or action finish
             queue_getter = asyncio.create_task(self._event_queue.get())
-            await asyncio.wait([self.get_future(), queue_getter])
+            await asyncio.wait(
+                [self.get_future(), queue_getter],
+                return_when=asyncio.FIRST_COMPLETED,
+            )
             if queue_getter.done():
                 yield await queue_getter
             if self.done():
+                # The action is done, so we should drain the queue
                 while True:
                     try:
                         yield self._event_queue.get_nowait()

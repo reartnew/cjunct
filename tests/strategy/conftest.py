@@ -6,11 +6,11 @@ from cjunct.actions import ActionNet, ActionBase, ActionDependency
 
 
 @pytest.fixture
-def sample_net() -> ActionNet:
-    """Minimalistic action net"""
+def strict_net() -> ActionNet:
+    """Minimalistic strict action net"""
     return ActionNet(
         {
             "foo": ActionBase(name="foo"),
-            "bar": ActionBase(name="bar", ancestors={"foo": ActionDependency()}),
+            "bar": ActionBase(name="bar", ancestors={"foo": ActionDependency(strict=True)}),
         }
     )
