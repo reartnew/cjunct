@@ -67,7 +67,3 @@ class ActionNet(t.Dict[str, ActionBase], LoggerMixin):
         unreachable_action_names: t.Set[str] = {action.name for action in self.values() if action.tier is None}
         if unreachable_action_names:
             raise IntegrityError(f"Unreachable actions found: {sorted(unreachable_action_names)}")
-
-    def __str__(self) -> str:
-        """Return tree representation of the action graph"""
-        return str(self)

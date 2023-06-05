@@ -24,6 +24,10 @@ class ActionStatus(enum.Enum):
     RUNNING = "RUNNING"
     SUCCESS = "SUCCESS"
     FAILURE = "FAILURE"
+    SKIPPED = "SKIPPED"
+
+    def __repr__(self) -> str:
+        return self.name
 
 
 @dataclass

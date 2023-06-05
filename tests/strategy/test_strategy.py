@@ -4,29 +4,30 @@ import typing as t
 
 import pytest
 
-from cjunct.actions import ActionNet, ActionBase
+from cjunct.actions import ActionNet, ActionBase, ActionStatus
 from cjunct.strategy import LooseStrategy
 
 
 @pytest.mark.asyncio
-async def test_success(strict_net: ActionNet) -> None:
-    """Check successful execution"""
-    result: t.List[str] = []
-    strategy: t.AsyncIterable[ActionBase] = LooseStrategy(strict_net)
+async def test_chain_success(strict_successful_net: ActionNet) -> None:
+    """Chain successful execution"""
+    result: t.List[ActionBase] = []
+    strategy: t.AsyncIterable[ActionBase] = LooseStrategy(strict_successful_net)
     async for action in strategy:  # type: ActionBase
-        # Simulate success
-        action.get_future().set_result(None)
-        result.append(action.name)
-    assert result == ["foo", "bar"]
+        await action
+        result.append(action)
+    assert len(result) == 6  # Should emit all actions
+    assert all(action.status == ActionStatus.SUCCESS for action in result)
 
 
 @pytest.mark.asyncio
-async def test_total_failure(strict_net: ActionNet) -> None:
-    """Check failing execution"""
-    result: t.List[str] = []
-    strategy: t.AsyncIterable[ActionBase] = LooseStrategy(strict_net)
+async def test_chain_failure(strict_failing_net: ActionNet) -> None:
+    """Chain failing execution"""
+    result: t.List[ActionBase] = []
+    strategy: t.AsyncIterable[ActionBase] = LooseStrategy(strict_failing_net)
     async for action in strategy:  # type: ActionBase
-        # Simulate failure
-        action.get_future().set_exception(Exception)
-        result.append(action.name)
-    assert result == ["foo"]
+        with pytest.raises(RuntimeError):
+            await action
+        result.append(action)
+    assert len(result) == 1  # Should not emit more than one action
+    assert result[0].status == ActionStatus.FAILURE
