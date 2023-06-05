@@ -47,7 +47,11 @@ addopts = """
 --cov-report=html:.coverage_report
 """
 filterwarnings = [
-    "ignore",
+    "error",
+    "ignore:.*:pytest.PytestRemovedIn8Warning",
+    "ignore:.*:pytest.PytestDeprecationWarning",
+    "ignore:.*:pytest.PytestWarning",
+    "ignore:.*:builtins.DeprecationWarning",
 ]
 
 [tool.coverage.run]
