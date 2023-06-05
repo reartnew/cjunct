@@ -8,7 +8,7 @@ import pytest
 from cjunct.actions import ActionBase
 
 
-class TestAction(ActionBase):
+class StubAction(ActionBase):
     """A stub."""
 
     MESSAGES = [
@@ -18,7 +18,7 @@ class TestAction(ActionBase):
     ]
 
     def __init__(self) -> None:
-        super().__init__(name="test")
+        super().__init__(name="stub")
 
     async def run(self):
         for message in self.MESSAGES:
@@ -29,7 +29,7 @@ class TestAction(ActionBase):
 @pytest.mark.asyncio
 async def test_action_emitter():
     """Check messages handling"""
-    action = TestAction()
+    action = StubAction()
     events: t.List[str] = []
 
     async def reader():
@@ -39,12 +39,12 @@ async def test_action_emitter():
     reader_task = asyncio.create_task(reader())
     await action
     await reader_task
-    assert events == TestAction.MESSAGES
+    assert events == StubAction.MESSAGES
 
 
 @pytest.mark.asyncio
 async def test_action_await_twice():
     """Check multiple awaiting"""
-    action = TestAction()
+    action = StubAction()
     await action
     await action
