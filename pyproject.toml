@@ -60,11 +60,11 @@ omit = ["**/*fulcrum*"]
 
 [tool.coverage.report]
 exclude_lines = [
-  "pragma: no cover",
-  "def __repr__",
-  "def __str__",
-  "raise NotImplementedError",
-  "if __name__ == .__main__.:",
+    "pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
 ]
 
 [build-system]

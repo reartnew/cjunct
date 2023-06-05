@@ -17,7 +17,7 @@ __all__ = [
 class ActionNet(t.Dict[str, ActionBase], LoggerMixin):
     """Action relations map"""
 
-    def __init__(self, net: dict[str, ActionBase], checklists: t.Dict[str, t.List[str]] | None = None) -> None:
+    def __init__(self, net: t.Dict[str, ActionBase], checklists: t.Dict[str, t.List[str]] | None = None) -> None:
         super().__init__(net)
         self.entrypoints: t.Set[str] = set()
         self.checklists: t.Dict[str, t.List[str]] = checklists or {}
