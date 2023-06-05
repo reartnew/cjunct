@@ -5,13 +5,25 @@ from __future__ import annotations
 import asyncio
 import typing as t
 from dataclasses import dataclass, field
+import enum
 
 __all__ = [
     "ActionDependency",
     "ActionBase",
+    "ActionStatus",
 ]
 
 AT = t.TypeVar("AT", bound="ActionBase")
+RT = t.TypeVar("RT")
+
+
+class ActionStatus(enum.Enum):
+    """Action valid states"""
+
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    SUCCESS = "SUCCESS"
+    FAILURE = "FAILURE"
 
 
 @dataclass
@@ -26,7 +38,7 @@ EventType = str
 
 
 @dataclass
-class ActionBase:
+class ActionBase(t.Generic[RT]):
     """Base class for all actions"""
 
     name: str
@@ -37,6 +49,7 @@ class ActionBase:
     description: t.Optional[str] = None
     descendants: t.Dict[str, ActionDependency] = field(init=False, default_factory=dict, repr=False)
     tier: t.Optional[int] = field(init=False, default=None, repr=False)
+    status: ActionStatus = field(init=False, default=ActionStatus.PENDING)
     # Do not create Future and Queue on constructing object to decouple from the event loop
     _maybe_finish_flag: t.Optional[asyncio.Future] = field(init=False, default=None, repr=False)
     _maybe_event_queue: t.Optional[asyncio.Queue[EventType]] = field(init=False, default=None, repr=False)
@@ -54,21 +67,29 @@ class ActionBase:
             self._maybe_event_queue = asyncio.Queue()
         return self._maybe_event_queue
 
-    async def run(self) -> None:
+    async def run(self) -> RT:
         """Main entry to be implemented in subclasses"""
         raise NotImplementedError
 
-    async def _await(self) -> None:
+    async def _await(self) -> RT:
         fut = self.get_future()
         if fut.done():
-            return
+            return fut.result()
+        # Allocate asyncio task
+        if self._running_task is None:
+            self._running_task = asyncio.create_task(self.run())
+            self.status = ActionStatus.RUNNING
         try:
-            if self._running_task is None:
-                self._running_task = asyncio.create_task(self.run())
-            await self._running_task
-        finally:
+            run_result: RT = await self._running_task
+        except Exception as e:
+            self.status = ActionStatus.FAILURE
             if not fut.done():
-                fut.set_result(None)
+                fut.set_exception(e)
+            raise
+        self.status = ActionStatus.SUCCESS
+        if not fut.done():
+            fut.set_result(run_result)
+        return run_result
 
     def emit(self, message: EventType) -> None:
         """Issue a message"""
@@ -94,7 +115,7 @@ class ActionBase:
                         break
                 return
 
-    def __await__(self) -> t.Generator:
+    def __await__(self) -> t.Generator[t.Any, None, RT]:
         return self._await().__await__()  # pylint: disable=no-member
 
     def done(self) -> bool:
