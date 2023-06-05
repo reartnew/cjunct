@@ -105,9 +105,11 @@ class ActionBase(t.Generic[RT]):
                 return_when=asyncio.FIRST_COMPLETED,
             )
             if queue_getter.done():
-                yield await queue_getter
+                yield queue_getter.result()
             if self.done():
-                # The action is done, so we should drain the queue
+                # The action is done, so we should drain the queue.
+                # Prevent queue from async get since then.
+                queue_getter.cancel()
                 while True:
                     try:
                         yield self._event_queue.get_nowait()
