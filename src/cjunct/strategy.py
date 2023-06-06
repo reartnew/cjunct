@@ -8,7 +8,7 @@ import typing as t
 
 import classlogging
 
-from .actions import ActionNet, ActionBase, ActionDependency
+from .actions import ActionNet, ActionBase
 
 ST = t.TypeVar("ST", bound="BaseStrategy")
 
@@ -68,17 +68,14 @@ class LooseStrategy(BaseStrategy):
         # Actions that have been emitted by the strategy and not finished yet
         self._active_actions_map: t.Dict[str, ActionBase] = {}
         # Just a structured mutable copy of the dependency map
-        self._action_blockers: t.Dict[str, t.Dict[str, ActionDependency]] = {
-            name: action.ancestors.copy() for name, action in net.items()
-        }
+        self._action_blockers: t.Dict[str, t.Set[str]] = {name: set(net[name].ancestors) for name in net}
 
     def _get_maybe_next_action(self) -> t.Optional[ActionBase]:
         """Completely non-optimal (always scan all actions), but readable yet"""
         done_action_names: t.Set[str] = {action.name for action in self._actions.values() if action.done()}
         # Copy into a list for further possible pop
         for maybe_next_action_name, maybe_next_action_blockers in list(self._action_blockers.items()):
-            for name in done_action_names:
-                maybe_next_action_blockers.pop(name, None)
+            maybe_next_action_blockers -= done_action_names
             if not maybe_next_action_blockers:
                 self.logger.debug(f"Action {maybe_next_action_name!r} is ready for scheduling")
                 self._action_blockers.pop(maybe_next_action_name)
