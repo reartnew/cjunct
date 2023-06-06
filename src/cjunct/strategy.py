@@ -8,7 +8,11 @@ import typing as t
 
 import classlogging
 
-from .actions import ActionNet, ActionBase
+from .actions import (
+    ActionNet,
+    ActionBase,
+    ActionStatus,
+)
 
 ST = t.TypeVar("ST", bound="BaseStrategy")
 
@@ -85,6 +89,17 @@ class LooseStrategy(BaseStrategy):
         return None
 
     async def __anext__(self) -> ActionBase:
+        while True:
+            next_action: ActionBase = await self._emit_action()
+            for ancestor_name, ancestor_dependency in next_action.ancestors.items():
+                ancestor: ActionBase = self._actions[ancestor_name]
+                if ancestor.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED) and ancestor_dependency.strict:
+                    next_action.skip()
+                    break
+            else:
+                return next_action
+
+    async def _emit_action(self) -> ActionBase:
         # Do we have anything pending already?
         if maybe_next_action := self._get_maybe_next_action():
             return maybe_next_action

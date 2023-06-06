@@ -53,7 +53,7 @@ class ActionBase(t.Generic[RT]):
     description: t.Optional[str] = None
     descendants: t.Dict[str, ActionDependency] = field(init=False, default_factory=dict, repr=False)
     tier: t.Optional[int] = field(init=False, default=None, repr=False)
-    status: ActionStatus = field(init=False, default=ActionStatus.PENDING)
+    _status: ActionStatus = field(init=False, repr=False, default=ActionStatus.PENDING)
     # Do not create Future and Queue on constructing object to decouple from the event loop
     _maybe_finish_flag: t.Optional[asyncio.Future] = field(init=False, default=None, repr=False)
     _maybe_event_queue: t.Optional[asyncio.Queue[EventType]] = field(init=False, default=None, repr=False)
@@ -71,6 +71,11 @@ class ActionBase(t.Generic[RT]):
             self._maybe_event_queue = asyncio.Queue()
         return self._maybe_event_queue
 
+    @property
+    def status(self) -> ActionStatus:
+        """Public getter"""
+        return self._status
+
     async def run(self) -> RT:
         """Main entry to be implemented in subclasses"""
         raise NotImplementedError
@@ -82,15 +87,15 @@ class ActionBase(t.Generic[RT]):
         # Allocate asyncio task
         if self._running_task is None:
             self._running_task = asyncio.create_task(self.run())
-            self.status = ActionStatus.RUNNING
+            self._status = ActionStatus.RUNNING
         try:
             run_result: RT = await self._running_task
         except Exception as e:
-            self.status = ActionStatus.FAILURE
+            self._status = ActionStatus.FAILURE
             if not fut.done():
                 fut.set_exception(e)
             raise
-        self.status = ActionStatus.SUCCESS
+        self._status = ActionStatus.SUCCESS
         if not fut.done():
             fut.set_result(run_result)
         return run_result
@@ -98,6 +103,10 @@ class ActionBase(t.Generic[RT]):
     def emit(self, message: EventType) -> None:
         """Issue a message"""
         self._event_queue.put_nowait(message)
+
+    def skip(self) -> None:
+        """Set status to SKIPPED"""
+        self._status = ActionStatus.SKIPPED
 
     async def read_events(self) -> t.AsyncGenerator[EventType, None]:
         """Obtain all emitted events sequentially"""
