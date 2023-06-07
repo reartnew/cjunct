@@ -65,7 +65,7 @@ class SequentialStrategy(FreeStrategy):
 
 
 class LooseStrategy(BaseStrategy):
-    """Simply keep tracking dependencies, but neither dependency `strict` flag nor ancestor status"""
+    """Keep tracking dependencies states"""
 
     def __init__(self, net: ActionNet) -> None:
         super().__init__(net)
@@ -90,7 +90,8 @@ class LooseStrategy(BaseStrategy):
 
     async def __anext__(self) -> ActionBase:
         while True:
-            next_action: ActionBase = await self._emit_action()
+            # Get an action and check whether to emit or to skip it
+            next_action: ActionBase = await self._next_action()
             for ancestor_name, ancestor_dependency in next_action.ancestors.items():
                 ancestor: ActionBase = self._actions[ancestor_name]
                 if ancestor.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED) and ancestor_dependency.strict:
@@ -99,7 +100,7 @@ class LooseStrategy(BaseStrategy):
             else:
                 return next_action
 
-    async def _emit_action(self) -> ActionBase:
+    async def _next_action(self) -> ActionBase:
         # Do we have anything pending already?
         if maybe_next_action := self._get_maybe_next_action():
             return maybe_next_action
