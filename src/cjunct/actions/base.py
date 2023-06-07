@@ -135,4 +135,4 @@ class ActionBase(t.Generic[RT]):
 
     def done(self) -> bool:
         """Indicate whether the action is over"""
-        return self.get_future().done()
+        return self.get_future().done() or self._status == ActionStatus.SKIPPED
