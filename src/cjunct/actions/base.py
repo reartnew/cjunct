@@ -52,17 +52,17 @@ class ActionBase(t.Generic[RT]):
 
     name: str
     # Maybe add: type: str
-    on_fail: t.Optional[str] = field(default=None, repr=False)
-    visible: bool = field(default=True, repr=False)
-    ancestors: t.Dict[str, ActionDependency] = field(default_factory=dict, repr=False)
+    on_fail: t.Optional[str] = field(default=None)
+    visible: bool = field(default=True)
+    ancestors: t.Dict[str, ActionDependency] = field(default_factory=dict)
     description: t.Optional[str] = None
-    descendants: t.Dict[str, ActionDependency] = field(init=False, default_factory=dict, repr=False)
-    tier: t.Optional[int] = field(init=False, default=None, repr=False)
-    _status: ActionStatus = field(init=False, repr=False, default=ActionStatus.PENDING)
+    descendants: t.Dict[str, ActionDependency] = field(init=False, default_factory=dict)
+    tier: t.Optional[int] = field(init=False, default=None)
+    _status: ActionStatus = field(init=False, default=ActionStatus.PENDING)
     # Do not create Future and Queue on constructing object to decouple from the event loop
-    _maybe_finish_flag: t.Optional[asyncio.Future] = field(init=False, default=None, repr=False)
-    _maybe_event_queue: t.Optional[asyncio.Queue[EventType]] = field(init=False, default=None, repr=False)
-    _running_task: t.Optional[asyncio.Task] = field(init=False, default=None, repr=False)
+    _maybe_finish_flag: t.Optional[asyncio.Future] = field(init=False, default=None)
+    _maybe_event_queue: t.Optional[asyncio.Queue[EventType]] = field(init=False, default=None)
+    _running_task: t.Optional[asyncio.Task] = field(init=False, default=None)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r}, status={self._status.value})"
