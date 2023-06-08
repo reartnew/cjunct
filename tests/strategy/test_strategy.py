@@ -37,3 +37,17 @@ async def test_chain_failure(strict_failing_net: ActionNet) -> None:
         ActionStatus.FAILURE: 1,
         ActionStatus.SKIPPED: 5,
     }
+
+
+@pytest.mark.asyncio
+async def test_chain_skip(strict_skipping_net: ActionNet) -> None:
+    """Chain skipping execution"""
+    result: t.List[ActionBase] = []
+    strategy: t.AsyncIterable[ActionBase] = LooseStrategy(strict_skipping_net)
+    async for action in strategy:  # type: ActionBase
+        await action
+        result.append(action)
+    assert len(result) == 1  # Should not emit more than one action
+    assert result[0].status == ActionStatus.SKIPPED
+    # Check final states now
+    assert all(a.status == ActionStatus.SKIPPED for a in strict_skipping_net.values())

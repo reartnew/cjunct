@@ -11,10 +11,15 @@ __all__ = [
     "ActionDependency",
     "ActionBase",
     "ActionStatus",
+    "ActionSkip",
 ]
 
 AT = t.TypeVar("AT", bound="ActionBase")
 RT = t.TypeVar("RT")
+
+
+class ActionSkip(BaseException):
+    """Stop executing action"""
 
 
 class ActionStatus(enum.Enum):
@@ -59,6 +64,9 @@ class ActionBase(t.Generic[RT]):
     _maybe_event_queue: t.Optional[asyncio.Queue[EventType]] = field(init=False, default=None, repr=False)
     _running_task: t.Optional[asyncio.Task] = field(init=False, default=None, repr=False)
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(name={self.name!r}, status={self._status.value})"
+
     def get_future(self) -> asyncio.Future:
         """Return a Future object indicating the end of the action"""
         if self._maybe_finish_flag is None:
@@ -80,7 +88,7 @@ class ActionBase(t.Generic[RT]):
         """Main entry to be implemented in subclasses"""
         raise NotImplementedError
 
-    async def _await(self) -> RT:
+    async def _await(self) -> t.Optional[RT]:
         fut = self.get_future()
         if fut.done():
             return fut.result()
@@ -88,14 +96,18 @@ class ActionBase(t.Generic[RT]):
         if self._running_task is None:
             self._running_task = asyncio.create_task(self.run())
             self._status = ActionStatus.RUNNING
+        run_result: t.Optional[RT]
         try:
-            run_result: RT = await self._running_task
+            run_result = await self._running_task
+        except ActionSkip:
+            run_result = None
         except Exception as e:
             self._status = ActionStatus.FAILURE
             if not fut.done():
                 fut.set_exception(e)
             raise
-        self._status = ActionStatus.SUCCESS
+        else:
+            self._status = ActionStatus.SUCCESS
         if not fut.done():
             fut.set_result(run_result)
         return run_result
@@ -104,9 +116,10 @@ class ActionBase(t.Generic[RT]):
         """Issue a message"""
         self._event_queue.put_nowait(message)
 
-    def skip(self) -> None:
+    def skip(self) -> t.NoReturn:
         """Set status to SKIPPED"""
         self._status = ActionStatus.SKIPPED
+        raise ActionSkip
 
     async def read_events(self) -> t.AsyncGenerator[EventType, None]:
         """Obtain all emitted events sequentially"""
@@ -130,7 +143,7 @@ class ActionBase(t.Generic[RT]):
                         break
                 return
 
-    def __await__(self) -> t.Generator[t.Any, None, RT]:
+    def __await__(self) -> t.Generator[t.Any, None, t.Optional[RT]]:
         return self._await().__await__()  # pylint: disable=no-member
 
     def done(self) -> bool:

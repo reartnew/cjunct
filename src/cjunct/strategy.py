@@ -13,6 +13,7 @@ from .actions import (
     ActionBase,
     ActionStatus,
 )
+from .actions.base import ActionSkip
 
 ST = t.TypeVar("ST", bound="BaseStrategy")
 
@@ -92,10 +93,15 @@ class LooseStrategy(BaseStrategy):
         while True:
             # Get an action and check whether to emit or to skip it
             next_action: ActionBase = await self._next_action()
+            self.logger.debug(f"The next action is: {next_action}")
             for ancestor_name, ancestor_dependency in next_action.ancestors.items():
                 ancestor: ActionBase = self._actions[ancestor_name]
                 if ancestor.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED) and ancestor_dependency.strict:
-                    next_action.skip()
+                    self.logger.debug(f"Action {next_action} is qualified as skipped due to strict failure: {ancestor}")
+                    try:
+                        next_action.skip()
+                    except ActionSkip:
+                        pass
                     break
             else:
                 return next_action

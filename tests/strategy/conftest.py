@@ -43,7 +43,7 @@ def strict_successful_net() -> ActionNet:
 
 @pytest.fixture
 def strict_failing_net() -> ActionNet:
-    """Minimalistic strict chained action net"""
+    """Minimalistic strict chained action net with failures"""
 
     class FailingAction(ActionBase[None]):
         """Raises RuntimeError"""
@@ -52,3 +52,16 @@ def strict_failing_net() -> ActionNet:
             raise RuntimeError
 
     return _make_chained_net(action_class=FailingAction)
+
+
+@pytest.fixture
+def strict_skipping_net() -> ActionNet:
+    """Minimalistic strict chained action net with explicit skipping"""
+
+    class SkippingAction(ActionBase[None]):
+        """Raises RuntimeError"""
+
+        async def run(self) -> None:
+            self.skip()
+
+    return _make_chained_net(action_class=SkippingAction)
