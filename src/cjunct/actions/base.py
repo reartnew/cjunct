@@ -34,6 +34,8 @@ class ActionStatus(enum.Enum):
     def __repr__(self) -> str:
         return self.name
 
+    __str__ = __repr__
+
 
 @dataclass
 class ActionDependency:
@@ -57,9 +59,8 @@ class ActionBase(t.Generic[RT]):
     ancestors: t.Dict[str, ActionDependency] = field(default_factory=dict)
     description: t.Optional[str] = None
     descendants: t.Dict[str, ActionDependency] = field(init=False, default_factory=dict)
-    tier: t.Optional[int] = field(init=False, default=None)
     _status: ActionStatus = field(init=False, default=ActionStatus.PENDING)
-    # Do not create Future and Queue on constructing object to decouple from the event loop
+    # Do not create asyncio-related objects on constructing object to decouple from the event loop
     _maybe_finish_flag: t.Optional[asyncio.Future] = field(init=False, default=None)
     _maybe_event_queue: t.Optional[asyncio.Queue[EventType]] = field(init=False, default=None)
     _running_task: t.Optional[asyncio.Task] = field(init=False, default=None)

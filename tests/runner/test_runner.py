@@ -17,6 +17,22 @@ def test_simple_runner_call(runner_context: None) -> None:
     cjunct.Runner().run_sync()
 
 
+def test_runner_multiple_run(runner_context: None) -> None:
+    """Check default call"""
+    runner = cjunct.Runner()
+    runner.run_sync()
+    with pytest.raises(RuntimeError):
+        runner.run_sync()
+
+
+def test_status_banners(runner_context: None) -> None:
+    """Check status banners"""
+    runner = cjunct.Runner()
+    assert runner.get_status_banner() == ""
+    runner.run_sync()
+    assert runner.get_status_banner() == "SUCCESS: Foo\nSUCCESS: Bar"
+
+
 def test_not_found_config(tmp_path: Path) -> None:
     """Empty source directory"""
     os.chdir(tmp_path)

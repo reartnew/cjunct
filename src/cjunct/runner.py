@@ -38,6 +38,7 @@ class Runner(classlogging.LoggerMixin):
         self.logger.debug(f"Using config loader class: {self._loader_class}")
         self._strategy_class: StrategyClassType = strategy_class
         self.logger.debug(f"Using strategy class: {self._strategy_class}")
+        self._actions: t.Optional[ActionNet] = None
 
     @classmethod
     def _detect_config_source(cls) -> Path:
@@ -50,9 +51,11 @@ class Runner(classlogging.LoggerMixin):
 
     async def run_async(self) -> None:
         """Primary coroutine for all further processing"""
-        actions: ActionNet = self._loader_class().load(self._config_path)
-        display: BaseDisplay = NetPrefixDisplay(net=actions)
-        strategy: BaseStrategy = self._strategy_class(net=actions)
+        if self._actions is not None:
+            raise RuntimeError("Runner has been started more than one time")
+        self._actions = self._loader_class().load(self._config_path)
+        display: BaseDisplay = NetPrefixDisplay(net=self._actions)
+        strategy: BaseStrategy = self._strategy_class(net=self._actions)
         action_tasks: t.List[asyncio.Task] = []
         async for action in strategy:  # type: ActionBase
             self.logger.trace(f"Allocating action iterator for {action.name!r}")
@@ -73,3 +76,12 @@ class Runner(classlogging.LoggerMixin):
     def run_sync(self):
         """Wrap async run into an event loop"""
         asyncio.run(self.run_async())
+
+    def get_status_banner(self) -> str:
+        """Make a text banner with the status info"""
+        if self._actions is None:
+            return ""
+        banner_accumulator: t.List[str] = []
+        for action in self._actions.iter_actions_by_partial_order():
+            banner_accumulator.append(f"{action.status}: {action.name}")
+        return "\n".join(banner_accumulator)
