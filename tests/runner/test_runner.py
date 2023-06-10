@@ -25,14 +25,6 @@ def test_runner_multiple_run(runner_context: None) -> None:
         runner.run_sync()
 
 
-def test_status_banners(runner_context: None) -> None:
-    """Check status banners"""
-    runner = cjunct.Runner()
-    assert runner.get_status_banner() == ""
-    runner.run_sync()
-    assert runner.get_status_banner() == "SUCCESS: Foo\nSUCCESS: Bar"
-
-
 def test_not_found_config(tmp_path: Path) -> None:
     """Empty source directory"""
     os.chdir(tmp_path)
@@ -62,7 +54,11 @@ def test_strategy_runner_call(
 ) -> None:
     """Check all strategies"""
     cjunct.Runner(strategy_class=strategy_class).run_sync()
-    assert set(display_collector) == {
+    assert display_collector == [
         "[Foo] | foo",
         "[Bar] | bar",
-    }
+        "============",
+        "SUCCESS: Foo",
+        "SUCCESS: Bar",
+        "============",
+    ]

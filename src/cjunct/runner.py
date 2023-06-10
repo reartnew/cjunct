@@ -4,6 +4,7 @@ thus placed to a separate module.
 """
 
 import asyncio
+import functools
 import typing as t
 from pathlib import Path
 
@@ -18,6 +19,7 @@ from .strategy import BaseStrategy, LooseStrategy
 
 LoaderClassType = t.Type[BaseConfigLoader]
 StrategyClassType = t.Type[BaseStrategy]
+DisplayClassType = t.Type[BaseDisplay]
 
 __all__ = [
     "Runner",
@@ -32,17 +34,30 @@ class Runner(classlogging.LoggerMixin):
         config: t.Union[str, Path, None] = None,
         loader_class: t.Optional[LoaderClassType] = None,
         strategy_class: StrategyClassType = LooseStrategy,
+        display_class: DisplayClassType = NetPrefixDisplay,
     ) -> None:
         self._config_path: Path = self._detect_config_source() if config is None else Path(config)
         self._loader_class: LoaderClassType = loader_class or get_default_loader_class_for_file(self._config_path)
         self.logger.debug(f"Using config loader class: {self._loader_class}")
         self._strategy_class: StrategyClassType = strategy_class
         self.logger.debug(f"Using strategy class: {self._strategy_class}")
-        self._actions: t.Optional[ActionNet] = None
+        self._display_class: DisplayClassType = display_class
+        self.logger.debug(f"Using display class: {self._display_class}")
+        self._started: bool = False
+
+    @functools.cached_property
+    def actions(self) -> ActionNet:
+        """Calculated actions net"""
+        return self._loader_class().load(self._config_path)
+
+    @functools.cached_property
+    def display(self) -> BaseDisplay:
+        """Attached display"""
+        return self._display_class(net=self.actions)
 
     @classmethod
     def _detect_config_source(cls) -> Path:
-        scan_path: Path = Path().absolute()
+        scan_path: Path = Path().resolve()
         cls.logger.debug(f"Looking for config files at {scan_path}")
         if (maybe_xml := scan_path / "network.xml").exists():
             cls.logger.info(f"Detected config source: {maybe_xml}")
@@ -51,23 +66,27 @@ class Runner(classlogging.LoggerMixin):
 
     async def run_async(self) -> None:
         """Primary coroutine for all further processing"""
-        if self._actions is not None:
+        if self._started:
             raise RuntimeError("Runner has been started more than one time")
-        self._actions = self._loader_class().load(self._config_path)
-        display: BaseDisplay = NetPrefixDisplay(net=self._actions)
-        strategy: BaseStrategy = self._strategy_class(net=self._actions)
+        self._started = True
+        strategy: BaseStrategy = self._strategy_class(net=self.actions)
         action_tasks: t.List[asyncio.Task] = []
         async for action in strategy:  # type: ActionBase
             self.logger.trace(f"Allocating action iterator for {action.name!r}")
-            action_tasks.append(asyncio.create_task(self._run_action(action=action)))
-            action_tasks.append(asyncio.create_task(self._dispatch_events(action=action, display=display)))
+            for coro in (
+                self._run_action(action=action),
+                self._dispatch_action_events_to_display(action=action, display=self.display),
+            ):
+                action_tasks.append(asyncio.create_task(coro))
+
         for task in action_tasks:
             await task
+        self.display.on_finish()
 
     @staticmethod
-    async def _dispatch_events(action: ActionBase, display: BaseDisplay) -> None:
+    async def _dispatch_action_events_to_display(action: ActionBase, display: BaseDisplay) -> None:
         async for message in action.read_events():
-            display.emit(source=action, message=message)
+            display.emit_action_message(source=action, message=message)
 
     @staticmethod
     async def _run_action(action: ActionBase) -> None:
@@ -76,12 +95,3 @@ class Runner(classlogging.LoggerMixin):
     def run_sync(self):
         """Wrap async run into an event loop"""
         asyncio.run(self.run_async())
-
-    def get_status_banner(self) -> str:
-        """Make a text banner with the status info"""
-        if self._actions is None:
-            return ""
-        banner_accumulator: t.List[str] = []
-        for action in self._actions.iter_actions_by_partial_order():
-            banner_accumulator.append(f"{action.status}: {action.name}")
-        return "\n".join(banner_accumulator)

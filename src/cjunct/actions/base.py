@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import enum
 import typing as t
 from dataclasses import dataclass, field
-import enum
+
+import classlogging
 
 __all__ = [
     "ActionDependency",
@@ -49,7 +51,7 @@ EventType = str
 
 
 @dataclass
-class ActionBase(t.Generic[RT]):
+class ActionBase(t.Generic[RT], classlogging.LoggerMixin):
     """Base class for all actions"""
 
     name: str
@@ -95,6 +97,7 @@ class ActionBase(t.Generic[RT]):
             return fut.result()
         # Allocate asyncio task
         if self._running_task is None:
+            self.logger.info(f"Running action: {self.name!r}")
             self._running_task = asyncio.create_task(self.run())
             self._status = ActionStatus.RUNNING
         run_result: t.Optional[RT]

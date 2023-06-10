@@ -81,8 +81,8 @@ class ActionNet(t.Dict[str, ActionBase], LoggerMixin):
         for action_name, action_tier in action_name_to_tier_mapping.items():
             self._tiers_sequence[action_tier].append(self[action_name])
 
-    def iter_actions_by_partial_order(self) -> t.Generator[ActionBase, None, None]:
+    def iter_actions_by_tier(self) -> t.Generator[t.Tuple[int, ActionBase], None, None]:
         """Yield actions tier by tier"""
-        for tier_actions in self._tiers_sequence:
+        for tier_num, tier_actions in enumerate(self._tiers_sequence):
             for action in tier_actions:
-                yield action
+                yield tier_num, action
