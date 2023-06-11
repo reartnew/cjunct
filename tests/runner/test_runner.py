@@ -60,5 +60,4 @@ def test_strategy_runner_call(
         "============",
         "SUCCESS: Foo",
         "SUCCESS: Bar",
-        "============",
     ]
