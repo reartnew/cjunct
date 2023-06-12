@@ -5,20 +5,25 @@ from pathlib import Path
 
 import pytest
 
-from cjunct.config.loaders import DefaultXMLConfigLoader
+from cjunct.config.loaders import (
+    get_default_loader_class_for_file,
+    DefaultXMLConfigLoader,
+)
+from cjunct.config.loaders.base import BaseConfigLoader
 from cjunct.exceptions import LoadError
 
 
-def test_config_load_over_sample(xml_config: t.Tuple[Path, t.Optional[t.Type[Exception]], t.Optional[str]]) -> None:
+def test_config_load_over_sample(sample_config: t.Tuple[Path, t.Optional[t.Type[Exception]], t.Optional[str]]) -> None:
     """Check different variations of good/bad configurations"""
-    config_path, maybe_exception, maybe_match = xml_config
+    config_path, maybe_exception, maybe_match = sample_config
+    loader_class: t.Type[BaseConfigLoader] = get_default_loader_class_for_file(config_path)
     # Check good configuration
     if maybe_exception is None:
-        DefaultXMLConfigLoader().load(config_path)
+        loader_class().load(config_path)
         return
     # Check bad configuration
     with pytest.raises(maybe_exception, match=maybe_match):
-        DefaultXMLConfigLoader().load(config_path)
+        loader_class().load(config_path)
 
 
 def test_loads() -> None:
