@@ -1,0 +1,4 @@
+# exception: LoadError
+# match: Unknown config structure
+---
+- test

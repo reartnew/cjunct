@@ -1,0 +1,6 @@
+# exception: LoadError
+# match: Invalid 'on_fail' value
+---
+actions:
+  - name: foo
+    on_fail: bar

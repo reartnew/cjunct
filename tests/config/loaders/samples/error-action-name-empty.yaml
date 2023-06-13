@@ -1,0 +1,5 @@
+# exception: LoadError
+# match: Action node name is empty
+---
+actions:
+  - name: ""

@@ -1,0 +1,9 @@
+# exception: LoadError
+# match: Unrecognized 'external' attribute type
+---
+actions:
+  - name: foo
+    type: shell
+    depends_on:
+      - name: foo
+        external: bar

@@ -1,0 +1,22 @@
+---
+actions:
+
+  - name: RunAnsible
+    description: Run ansible
+    type: shell
+    command: playbooks/Dummy.yml
+
+  - name: RunGroovy
+    description: Run groovy
+    type: shell
+    command: groovy/Dummy.groovy
+    depends_on:
+      - RunAnsible
+
+  - name: RunShell
+    description: Run shell
+    type: shell
+    command: echo foo
+    depends_on:
+      - RunAnsible
+      - RunGroovy

@@ -1,0 +1,8 @@
+# exception: LoadError
+# match: (expected optional string)
+---
+actions:
+  - name: foo
+    type: shell
+    script: {}
+    command: {}

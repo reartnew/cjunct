@@ -1,0 +1,6 @@
+# exception: LoadError
+# match: neither command nor script specified
+---
+actions:
+  - name: foo
+    type: shell
