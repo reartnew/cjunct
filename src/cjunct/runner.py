@@ -59,10 +59,20 @@ class Runner(classlogging.LoggerMixin):
     def _detect_config_source(cls) -> Path:
         scan_path: Path = Path().resolve()
         cls.logger.debug(f"Looking for config files at {scan_path}")
-        if (maybe_xml := scan_path / "network.xml").exists():
-            cls.logger.info(f"Detected config source: {maybe_xml}")
-            return maybe_xml
-        raise SourceError(f"No config source detected in {scan_path}")
+        located_config_file: t.Optional[Path] = None
+        for candidate_file_name in (
+            "network.xml",
+            "network.yml",
+            "network.yaml",
+        ):  # type: str
+            if (maybe_config_file := scan_path / candidate_file_name).exists():
+                cls.logger.info(f"Detected config source: {maybe_config_file}")
+                if located_config_file is not None:
+                    raise SourceError(f"Multiple config sources detected in {scan_path}")
+                located_config_file = maybe_config_file
+        if located_config_file is None:
+            raise SourceError(f"No config source detected in {scan_path}")
+        return located_config_file
 
     async def run_async(self) -> None:
         """Primary coroutine for all further processing"""

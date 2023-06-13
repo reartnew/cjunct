@@ -32,6 +32,15 @@ def test_not_found_config(tmp_path: Path) -> None:
         cjunct.Runner().run_sync()
 
 
+def test_multiple_found_configs(tmp_path: Path) -> None:
+    """Ambiguous source directory"""
+    os.chdir(tmp_path)
+    (tmp_path / "network.xml").touch()
+    (tmp_path / "network.yaml").touch()
+    with pytest.raises(exceptions.SourceError, match="Multiple config sources detected in"):
+        cjunct.Runner().run_sync()
+
+
 def test_non_existent_config(tmp_path: Path) -> None:
     """No config file with given name"""
     os.chdir(tmp_path)
