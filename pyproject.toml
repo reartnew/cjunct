@@ -20,6 +20,7 @@ classlogging = "^1.0.1"
 python-dotenv = "^1.0.0"
 async-lru = "^2.0.2"
 async-shell = "^1.0.3"
+pyyaml = "^6.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.0"
@@ -33,6 +34,7 @@ pytest-aiohttp = "^1.0.4"
 pytest-bandit = "^0.6.1"
 tox = "^3.28.0"
 pytest-cov = "^4.0.0"
+types-pyyaml = "^6.0.12.10"
 
 [tool.pytest.ini_options]
 testpaths = [
