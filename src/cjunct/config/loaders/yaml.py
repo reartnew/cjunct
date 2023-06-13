@@ -14,16 +14,35 @@ __all__ = [
 ]
 
 
+class ImportTag(yaml.YAMLObject):
+    """Imports processing entity"""
+
+    def __init__(self, path: str) -> None:
+        self.path = path
+
+    @classmethod
+    def from_yaml(cls, loader, node):
+        return ImportTag(node.value)
+
+
+class CJunctLoader(yaml.SafeLoader):
+    """Extension loader"""
+
+
+CJunctLoader.add_constructor("!import", ImportTag.from_yaml)
+
+
 class BaseYAMLConfigLoader(BaseConfigLoader):
     """Loader for YAML source files"""
 
-    # def _parse_import(self, node: XMLNode) -> None:
-    #     if node.attrib:
-    #         self._throw(f"Unrecognized import attributes: {node.attrib!r}")
-    #     if not node.value:
-    #         self._throw(f"Empty import: {node!r}")
-    #     self._internal_load(node.value)
-    #
+    def _parse_import(self, tag: ImportTag) -> None:
+        path: str = tag.path
+        if not isinstance(path, str):
+            self._throw(f"Unrecognized import contents type: {type(path)!r} (expected a string)")
+        if not path:
+            self._throw(f"Empty import: {path!r}")
+        self._internal_load(path)
+
     # def _parse_checklists(self, node: XMLNode) -> None:
     #     if node.value:
     #         self._throw(f"Unrecognized checklists node text: {node.value!r}")
@@ -36,7 +55,7 @@ class BaseYAMLConfigLoader(BaseConfigLoader):
     def _internal_loads(self, data: t.Union[str, bytes]) -> None:
         if isinstance(data, bytes):
             data = data.decode()
-        root_node: dict = yaml.safe_load(data)
+        root_node: dict = yaml.load(data, CJunctLoader)
         if not isinstance(root_node, dict):
             self._throw(f"Unknown config structure: {type(root_node)!r} (should be a dict)")
         root_keys: t.Set[str] = set(root_node)
@@ -44,7 +63,7 @@ class BaseYAMLConfigLoader(BaseConfigLoader):
             self._throw("Empty root dictionary (expecting 'actions')")
         if unrecognized_keys := root_keys - {"actions"}:
             self._throw(f"Unrecognized root keys: {sorted(unrecognized_keys)} (expecting 'actions' only)")
-        actions: list = root_node["actions"]
+        actions: t.List[t.Union[dict, ImportTag]] = root_node["actions"]
         if not isinstance(actions, list):
             self._throw(f"'actions' contents should be a list (get {type(actions)!r})")
         for child_node in actions:
@@ -54,8 +73,8 @@ class BaseYAMLConfigLoader(BaseConfigLoader):
                 if unrecognized_action_tags:
                     self._throw(f"Unrecognized keys for action {action.name!r}: {unrecognized_action_tags}")
                 self._register_action(action)
-            # elif child_node.tag == "Import":
-            #     self._parse_import(child_node)
+            elif isinstance(child_node, ImportTag):
+                self._parse_import(child_node)
             # elif child_node.tag == "Checklists":
             #     self._parse_checklists(child_node)
             else:
@@ -92,9 +111,6 @@ class BaseYAMLConfigLoader(BaseConfigLoader):
         self._throw(f"Unrecognized dependency node structure: {type(dep_node)!r} (expected a string or a dict)")
 
     def _build_action_from_dict(self, node: dict) -> ActionBase:
-        # unexpected_keys: t.Set[str] = set(node) - {"name", "type", "description", "on_fail", "visible", "depends_on"}
-        # if unexpected_keys:
-        #     self._throw(f"Unrecognized action node keys: {sorted(unexpected_keys)}")
         # Action name
         if "name" not in node:
             self._throw("Missing action node required key: 'name'")

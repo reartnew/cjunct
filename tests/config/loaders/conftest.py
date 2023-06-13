@@ -20,7 +20,7 @@ PRAGMA_MATCHER_TEMPLATES_MAP: t.Dict[str, str] = {
 }
 
 
-@pytest.fixture(params=SAMPLES, ids=[item.stem for item in SAMPLES])
+@pytest.fixture(params=SAMPLES, ids=[f"{item.suffix.replace('.', '')}-{item.stem}" for item in SAMPLES])
 def sample_config(
     request: SubRequest,
     monkeypatch: pytest.MonkeyPatch,
