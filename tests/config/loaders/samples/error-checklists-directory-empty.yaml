@@ -1,0 +1,5 @@
+# exception: LoadError
+# match: Empty checklists-directory directive
+---
+actions:
+  - !checklists-directory ""

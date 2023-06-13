@@ -14,48 +14,60 @@ __all__ = [
 ]
 
 
-class ImportTag(yaml.YAMLObject):
-    """Imports processing entity"""
+class ExtraTag(yaml.YAMLObject):
+    """Extended processing entity"""
 
-    def __init__(self, path: str) -> None:
-        self.path = path
+    def __init__(self, data: t.Any) -> None:
+        self.data = data
 
     @classmethod
     def from_yaml(cls, loader, node):
-        return ImportTag(node.value)
+        return cls(node.value)
 
 
-class CJunctLoader(yaml.SafeLoader):
+class ImportTag(ExtraTag):
+    """Imports processing entity"""
+
+    yaml_tag: str = "!import"
+
+
+class ChecklistsDirectoryTag(ExtraTag):
+    """Checklists processing entity"""
+
+    yaml_tag: str = "!checklists-directory"
+
+
+class YAMLLoader(yaml.SafeLoader):
     """Extension loader"""
 
 
-CJunctLoader.add_constructor("!import", ImportTag.from_yaml)
+for extra_tag_class in (ImportTag, ChecklistsDirectoryTag):
+    YAMLLoader.add_constructor(extra_tag_class.yaml_tag, extra_tag_class.from_yaml)
 
 
 class BaseYAMLConfigLoader(BaseConfigLoader):
     """Loader for YAML source files"""
 
     def _parse_import(self, tag: ImportTag) -> None:
-        path: str = tag.path
+        path: str = tag.data
         if not isinstance(path, str):
-            self._throw(f"Unrecognized import contents type: {type(path)!r} (expected a string)")
+            self._throw(f"Unrecognized '!import' contents type: {type(path)!r} (expected a string)")
         if not path:
             self._throw(f"Empty import: {path!r}")
         self._internal_load(path)
 
-    # def _parse_checklists(self, node: XMLNode) -> None:
-    #     if node.value:
-    #         self._throw(f"Unrecognized checklists node text: {node.value!r}")
-    #     for attr_name, attr_value in node.attrib.items():
-    #         if attr_name == "sourceDirectory":
-    #             self._load_checklists_from_directory(attr_value)
-    #         else:
-    #             self._throw(f"Unrecognized checklists node attribute: {attr_name!r}")
+    def _parse_checklists(self, tag: ChecklistsDirectoryTag) -> None:
+        path: str = tag.data
+        if not isinstance(path, str):
+            self._throw(f"Unrecognized '!checklists-directory' contents type: {type(path)!r} (expected a string)")
+        if not path:
+            self._throw(f"Empty checklists-directory directive: {path!r}")
+        self._load_checklists_from_directory(path)
 
     def _internal_loads(self, data: t.Union[str, bytes]) -> None:
         if isinstance(data, bytes):
             data = data.decode()
-        root_node: dict = yaml.load(data, CJunctLoader)
+        root_node: dict = yaml.load(data, YAMLLoader)
         if not isinstance(root_node, dict):
             self._throw(f"Unknown config structure: {type(root_node)!r} (should be a dict)")
         root_keys: t.Set[str] = set(root_node)
@@ -75,8 +87,8 @@ class BaseYAMLConfigLoader(BaseConfigLoader):
                 self._register_action(action)
             elif isinstance(child_node, ImportTag):
                 self._parse_import(child_node)
-            # elif child_node.tag == "Checklists":
-            #     self._parse_checklists(child_node)
+            elif isinstance(child_node, ChecklistsDirectoryTag):
+                self._parse_checklists(child_node)
             else:
                 self._throw(f"Unrecognized node type: {type(child_node)!r}")
 

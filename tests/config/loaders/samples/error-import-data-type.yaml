@@ -1,5 +1,5 @@
 # exception: LoadError
-# match: Unrecognized import contents type
+# match: Unrecognized '!import' contents type
 ---
 actions:
   - !import {}
