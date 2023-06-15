@@ -24,19 +24,17 @@ def display_collector(monkeypatch: pytest.MonkeyPatch) -> t.List[str]:
 @pytest.fixture
 def runner_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Prepare a directory with sample config files"""
-    (tmp_path / "network.xml").write_bytes(
-        b"""<?xml version="1.0" encoding="UTF-8"?>
-<Actions>
-    <Action name="Foo">
-        <command>echo &quot;foo&quot;</command>
-        <type>shell</type>
-    </Action>
-    <Action name="Bar">
-        <command>echo &quot;bar&quot; &gt;&amp;2</command>
-        <type>shell</type>
-        <dependency>Foo</dependency>
-    </Action>
-</Actions>
+    (tmp_path / "network.yaml").write_bytes(
+        b"""---
+actions:
+  - name: Foo
+    type: shell
+    command: echo "foo"
+  - name: Bar
+    type: shell
+    command: echo "bar" >&2
+    depends_on:
+      - Foo
 """
     )
     monkeypatch.chdir(tmp_path)
