@@ -1,11 +1,20 @@
 """Runner call fixtures"""
+# pylint: disable=redefined-outer-name
 
 import typing as t
 from pathlib import Path
 
 import pytest
+from _pytest.fixtures import SubRequest
 
 from cjunct.display import BaseDisplay
+from cjunct.config.environment import Env
+
+
+@pytest.fixture(scope="session", autouse=True)
+def disable_env_cache() -> None:
+    """Do not cache environment variables values for varying tests"""
+    Env.cache_values = False
 
 
 @pytest.fixture
@@ -21,10 +30,11 @@ def display_collector(monkeypatch: pytest.MonkeyPatch) -> t.List[str]:
     return results
 
 
-@pytest.fixture
-def runner_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.fixture(params=["chdir", "env_context_dir", "env_actions_source"])
+def runner_context(request: SubRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Prepare a directory with sample config files"""
-    (tmp_path / "network.yaml").write_bytes(
+    actions_source_path: Path = tmp_path / "network.yaml"
+    actions_source_path.write_bytes(
         b"""---
 actions:
   - name: Foo
@@ -37,4 +47,11 @@ actions:
       - Foo
 """
     )
-    monkeypatch.chdir(tmp_path)
+    if request.param == "chdir":
+        monkeypatch.chdir(tmp_path)
+    elif request.param == "env_context_dir":
+        monkeypatch.setenv("CJUNCT_CONTEXT_DIRECTORY", str(tmp_path))
+    elif request.param == "env_actions_source":
+        monkeypatch.setenv("CJUNCT_ACTIONS_SOURCE_FILE", str(actions_source_path))
+    else:
+        raise ValueError(request.param)

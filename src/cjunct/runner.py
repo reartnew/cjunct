@@ -11,6 +11,7 @@ from pathlib import Path
 import classlogging
 
 from .actions import ActionNet, ActionBase
+from .config.constants import C
 from .config.loaders import get_default_loader_class_for_file
 from .config.loaders.base import BaseConfigLoader
 from .display import NetPrefixDisplay, BaseDisplay
@@ -57,7 +58,10 @@ class Runner(classlogging.LoggerMixin):
 
     @classmethod
     def _detect_config_source(cls) -> Path:
-        scan_path: Path = Path().resolve()
+        if C.ACTIONS_SOURCE_FILE is not None:
+            cls.logger.info(f"Using pre-configured actions source file: {C.ACTIONS_SOURCE_FILE}")
+            return C.ACTIONS_SOURCE_FILE
+        scan_path: Path = C.CONTEXT_DIRECTORY
         cls.logger.debug(f"Looking for config files at {scan_path}")
         located_config_file: t.Optional[Path] = None
         for candidate_file_name in (

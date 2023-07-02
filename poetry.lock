@@ -517,14 +517,14 @@ files = [
 
 [[package]]
 name = "named-env"
-version = "2.1.0"
+version = "2.3.0"
 description = "Class-based environment variables typed specification"
 category = "main"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "named-env-2.1.0.tar.gz", hash = "sha256:804b1e6272015584f20dd8bc055f6383a195427ea59be7f28d43331cd6edbbac"},
-    {file = "named_env-2.1.0-py3-none-any.whl", hash = "sha256:d51b5809a63d6a9763da541dbfb1a4998802a481707a91485b572fabed494d2a"},
+    {file = "named_env-2.3.0-py3-none-any.whl", hash = "sha256:ea76d5af561dbcec24fb9196f53c2ad7d20fb319cf2ad9a542140409d6f75edc"},
+    {file = "named_env-2.3.0.tar.gz", hash = "sha256:5db6a3eee2270c218c4492350f57e34d58d627cfae50be98a3e224be74334eb5"},
 ]
 
 [[package]]
@@ -1018,14 +1018,14 @@ files = [
 
 [[package]]
 name = "typing-extensions"
-version = "4.6.3"
+version = "4.7.1"
 description = "Backported and Experimental Type Hints for Python 3.7+"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "typing_extensions-4.6.3-py3-none-any.whl", hash = "sha256:88a4153d8505aabbb4e13aacb7c486c2b4a33ca3b3f807914a9b4c844c471c26"},
-    {file = "typing_extensions-4.6.3.tar.gz", hash = "sha256:d91d5919357fe7f681a9f2b5b4cb2a5f1ef0a1e9f59c4d8ff0d3491e05c0ffd5"},
+    {file = "typing_extensions-4.7.1-py3-none-any.whl", hash = "sha256:440d5dd3af93b060174bf433bccd69b0babc3b15b1a8dca43789fd7f61514b36"},
+    {file = "typing_extensions-4.7.1.tar.gz", hash = "sha256:b75ddc264f0ba5615db7ba217daeb99701ad295353c45f9e95963337ceeeffb2"},
 ]
 
 [[package]]
@@ -1137,4 +1137,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "18a0d267983ba66c46747460078c057d9c908227563907e9dd14b7588bfd8423"
+content-hash = "3ff17e0739bbea5a9ee950b65143be88d476503acb02528d91b3552ba6f456fc"

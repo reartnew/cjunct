@@ -14,7 +14,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-named-env = "^2.1.0"
+named-env = "^2.3.0"
 classlogging = "^1.0.1"
 python-dotenv = "^1.0.0"
 async-shell = "^1.0.3"
@@ -45,10 +45,9 @@ addopts = """
 --cov
 --cov-report=html:.coverage_report
 """
+bandit_targets = ["src"]
 filterwarnings = [
     "error",
-    "ignore:.*:pytest.PytestRemovedIn8Warning",
-    "ignore:.*:pytest.PytestDeprecationWarning",
     "ignore:.*:pytest.PytestWarning",
     "ignore:.*:builtins.DeprecationWarning",
 ]
