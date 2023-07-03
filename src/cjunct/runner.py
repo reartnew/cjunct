@@ -59,8 +59,11 @@ class Runner(classlogging.LoggerMixin):
     @classmethod
     def _detect_config_source(cls) -> Path:
         if C.ACTIONS_SOURCE_FILE is not None:
-            cls.logger.info(f"Using pre-configured actions source file: {C.ACTIONS_SOURCE_FILE}")
-            return C.ACTIONS_SOURCE_FILE
+            source_file: Path = C.ACTIONS_SOURCE_FILE
+            cls.logger.info(f"Using pre-configured actions source file: {source_file}")
+            if not source_file.exists():
+                raise SourceError(f"Pre-configured actions source file does not exist: {source_file}")
+            return source_file
         scan_path: Path = C.CONTEXT_DIRECTORY
         cls.logger.debug(f"Looking for config files at {scan_path}")
         located_config_file: t.Optional[Path] = None

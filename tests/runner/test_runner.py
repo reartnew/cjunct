@@ -69,3 +69,10 @@ def test_strategy_runner_call(
         "SUCCESS: Foo",
         "SUCCESS: Bar",
     ]
+
+
+def test_invalid_action_source_file_via_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check raising SourceError for absent file via CJUNCT_ACTIONS_SOURCE_FILE"""
+    monkeypatch.setenv("CJUNCT_ACTIONS_SOURCE_FILE", str(tmp_path / "missing.yaml"))
+    with pytest.raises(exceptions.SourceError, match="Pre-configured actions source file does not exist"):
+        cjunct.Runner().run_sync()
