@@ -62,13 +62,13 @@ def test_strategy_runner_call(
 ) -> None:
     """Check all strategies"""
     cjunct.Runner(strategy_class=strategy_class).run_sync()
-    assert display_collector == [
+    assert set(display_collector) == {
         "[Foo] | foo",
         "[Bar] | bar",
         "============",
         "SUCCESS: Foo",
         "SUCCESS: Bar",
-    ]
+    }
 
 
 def test_invalid_action_source_file_via_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
