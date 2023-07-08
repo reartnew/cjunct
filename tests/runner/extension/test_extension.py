@@ -1,63 +1,44 @@
 """Check extension possibilities"""
+# pylint: disable=unused-argument
 
 import typing as t
-from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 
-from cjunct import Runner
-from cjunct.actions import ActionBase
-from cjunct.config.loaders import DefaultYAMLConfigLoader
+import cjunct
+from cjunct.exceptions import SourceError
+
+MODULES_DIR: Path = Path(__file__).parent / "modules"
 
 
-@dataclass
-class EchoAction(ActionBase[None]):
-    """Simple printer"""
-
-    message: str = ""
-
-    async def run(self) -> None:
-        """Show message via display"""
-        self.emit(self.message)
-
-
-class ExtensionYAMLConfigLoader(DefaultYAMLConfigLoader):
-    """Able to build echoes"""
-
-    ACTION_FACTORIES = {**DefaultYAMLConfigLoader.ACTION_FACTORIES, "echo": EchoAction}
-
-    def _build_action_from_dict(self, node: dict) -> ActionBase:
-        action: ActionBase = super()._build_action_from_dict(node)
-        # Varying args for echo
-        if isinstance(action, EchoAction):
-            action.message = self._parse_string_attr(attrib_name="message", node=node)
-            if not action.message:
-                self._throw(f"Action {action.name!r} message not specified")
-        return action
-
-
-class ExtensionRunner(Runner):
-    """Use custom loader"""
-
-    def __init__(self) -> None:
-        super().__init__(loader_class=ExtensionYAMLConfigLoader)
-
-
-def test_extended_runner(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, display_collector: t.List[str]) -> None:
-    """Validate custom loader"""
-    (tmp_path / "network.yaml").write_bytes(
-        b"""---
-actions:
-  - name: Foo
-    type: echo
-    message: foo
-""",
-    )
-    monkeypatch.chdir(tmp_path)
-    ExtensionRunner().run_sync()
+def test_good_ext_loader(echo_context: None, monkeypatch: pytest.MonkeyPatch, display_collector: t.List[str]) -> None:
+    """Validate external loader"""
+    monkeypatch.setenv("CJUNCT_CONFIG_LOADER_SOURCE_FILE", str(MODULES_DIR / "good_loader.py"))
+    cjunct.Runner().run_sync()
     assert display_collector == [
         "[Foo] | foo",
         "============",
         "SUCCESS: Foo",
     ]
+
+
+def test_ext_loader_missing_attr(echo_context: None, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check incomplete module"""
+    monkeypatch.setenv("CJUNCT_CONFIG_LOADER_SOURCE_FILE", str(MODULES_DIR / "bad_loader.py"))
+    with pytest.raises(AttributeError, match="External module contains no class 'ConfigLoader'"):
+        cjunct.Runner().run_sync()
+
+
+def test_ext_loader_invalid_source(echo_context: None, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check non-module"""
+    monkeypatch.setenv("CJUNCT_CONFIG_LOADER_SOURCE_FILE", str(MODULES_DIR / "non_loader.txt"))
+    with pytest.raises(SourceError, match="Can't read module spec from source"):
+        cjunct.Runner().run_sync()
+
+
+def test_ext_loader_missing_source(echo_context: None, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check missing module"""
+    monkeypatch.setenv("CJUNCT_CONFIG_LOADER_SOURCE_FILE", str(MODULES_DIR / "missing_loader.py"))
+    with pytest.raises(SourceError, match="Missing source module"):
+        cjunct.Runner().run_sync()

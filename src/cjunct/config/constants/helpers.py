@@ -1,13 +1,16 @@
 """Lazy-loaded constants helpers"""
 
 import typing as t
+import types
 
 from pathlib import Path
+from ..loaders.helpers import load_external_module
 
 __all__ = [
     "Optional",
     "Mandatory",
     "maybe_path",
+    "maybe_class_from_module",
 ]
 
 VT = t.TypeVar("VT")
@@ -45,3 +48,13 @@ class Mandatory(Optional, t.Generic[VT]):
 def maybe_path(path_str: str) -> t.Optional[Path]:
     """Transform a string into an optional path"""
     return Path(path_str) if path_str else None
+
+
+def maybe_class_from_module(path_str: str, class_name: str) -> t.Optional[type]:
+    """Get a class from an external module, if given"""
+    if (source_path := maybe_path(path_str)) is None:
+        return None
+    module: types.ModuleType = load_external_module(source_path)
+    if not hasattr(module, class_name):
+        raise AttributeError(f"External module contains no class {class_name!r} in {path_str!r}")
+    return getattr(module, class_name)

@@ -10,17 +10,13 @@ from pathlib import Path
 
 import classlogging
 
+from . import types
 from .actions import ActionNet, ActionBase
 from .config.constants import C
 from .config.loaders import get_default_loader_class_for_file
-from .config.loaders.base import BaseConfigLoader
 from .display import NetPrefixDisplay, BaseDisplay
 from .exceptions import SourceError
 from .strategy import BaseStrategy, LooseStrategy
-
-LoaderClassType = t.Type[BaseConfigLoader]
-StrategyClassType = t.Type[BaseStrategy]
-DisplayClassType = t.Type[BaseDisplay]
 
 __all__ = [
     "Runner",
@@ -33,16 +29,18 @@ class Runner(classlogging.LoggerMixin):
     def __init__(
         self,
         config: t.Union[str, Path, None] = None,
-        loader_class: t.Optional[LoaderClassType] = None,
-        strategy_class: StrategyClassType = LooseStrategy,
-        display_class: DisplayClassType = NetPrefixDisplay,
+        loader_class: t.Optional[types.LoaderClassType] = None,
+        strategy_class: types.StrategyClassType = LooseStrategy,
+        display_class: types.DisplayClassType = NetPrefixDisplay,
     ) -> None:
         self._config_path: Path = self._detect_config_source() if config is None else Path(config)
-        self._loader_class: LoaderClassType = loader_class or get_default_loader_class_for_file(self._config_path)
+        self._loader_class: types.LoaderClassType = (
+            loader_class or C.CONFIG_LOADER_SOURCE_FILE or get_default_loader_class_for_file(self._config_path)
+        )
         self.logger.debug(f"Using config loader class: {self._loader_class}")
-        self._strategy_class: StrategyClassType = strategy_class
+        self._strategy_class: types.StrategyClassType = strategy_class
         self.logger.debug(f"Using strategy class: {self._strategy_class}")
-        self._display_class: DisplayClassType = display_class
+        self._display_class: types.DisplayClassType = display_class
         self.logger.debug(f"Using display class: {self._display_class}")
         self._started: bool = False
 
