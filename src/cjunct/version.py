@@ -6,7 +6,7 @@ import importlib.metadata
 __version__: str = "0.0.0"
 try:
     __version__ = importlib.metadata.version(__package__)
-except importlib.metadata.PackageNotFoundError:
+except importlib.metadata.PackageNotFoundError:  # pragma: no cover
     pass
 
 __all__ = [

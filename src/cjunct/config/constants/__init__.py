@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+from classlogging import LogLevel
+
 from .helpers import (
     Optional,
     Mandatory,
@@ -19,6 +21,10 @@ __all__ = [
 class C:
     """Runtime constants"""
 
+    LOG_LEVEL: Mandatory[str] = Mandatory(
+        lambda: Env.CJUNCT_LOG_LEVEL or None,
+        lambda: LogLevel.ERROR,
+    )
     CONTEXT_DIRECTORY: Mandatory[Path] = Mandatory(
         lambda: maybe_path(Env.CJUNCT_CONTEXT_DIRECTORY),
         lambda: Path().resolve(),

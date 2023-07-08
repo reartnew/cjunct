@@ -3,14 +3,23 @@
 import typing as t
 
 __all__ = [
+    "BaseError",
     "LoadError",
     "IntegrityError",
     "SourceError",
 ]
 
 
-class LoadError(Exception):
+class BaseError(Exception):
+    """Common base to catch in CLI"""
+
+    CODE: int = 1
+
+
+class LoadError(BaseError):
     """Loader regular exception during load process"""
+
+    CODE: int = 2
 
     def __init__(self, message: str, stack: t.List[str]) -> None:
         self.message: str = message
@@ -21,9 +30,13 @@ class LoadError(Exception):
         super().__init__(text)
 
 
-class IntegrityError(Exception):
+class IntegrityError(BaseError):
     """Action net structure error"""
 
+    CODE: int = 3
 
-class SourceError(Exception):
+
+class SourceError(BaseError):
     """Source file not recognized"""
+
+    CODE: int = 4
