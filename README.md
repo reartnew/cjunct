@@ -29,10 +29,10 @@ The root directory for the source code is `src`,
 thus one may add it to the project's python path
 for better IDE integration.
 
-#### Running tests on current environment
+#### Running tests with coverage on current environment
 
 ```shell
-poetry run pytest
+poetry run pytest --cov --cov-report=html:.coverage_report
 ```
 
 #### Running tests on all available environments

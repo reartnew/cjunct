@@ -46,8 +46,6 @@ addopts = """
 --pylint
 --mypy
 --black
---cov
---cov-report=html:.coverage_report
 """
 bandit_targets = ["src"]
 filterwarnings = [
