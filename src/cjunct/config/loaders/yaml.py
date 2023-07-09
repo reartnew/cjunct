@@ -67,7 +67,7 @@ class BaseYAMLConfigLoader(BaseConfigLoader):
     def _internal_loads(self, data: t.Union[str, bytes]) -> None:
         if isinstance(data, bytes):
             data = data.decode()
-        root_node: dict = yaml.load(data, YAMLLoader)
+        root_node: dict = yaml.load(data, YAMLLoader)  # nosec
         if not isinstance(root_node, dict):
             self._throw(f"Unknown config structure: {type(root_node)!r} (should be a dict)")
         root_keys: t.Set[str] = set(root_node)

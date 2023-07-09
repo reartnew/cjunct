@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import typing as t
-from xml.etree.ElementTree import XML, Element
+from xml.etree.ElementTree import Element  # nosec
+
+from defusedxml.ElementTree import XML  # type: ignore
 
 from .base import BaseConfigLoader
 from ...actions.base import ActionBase, ActionDependency
