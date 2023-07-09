@@ -10,12 +10,9 @@ pip install cjunct
 
 ## Usage example
 
-```python
-# Put config files into the same directory as this script
-import cjunct
-
-if __name__ == "__main__":
-    cjunct.Runner().run_sync()
+```shell
+# Put config files into the working directory
+cjunct run
 ```
 
 ## Development environment setup
