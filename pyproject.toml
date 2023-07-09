@@ -47,6 +47,7 @@ addopts = """
 --pylint
 --mypy
 --black
+--bandit
 """
 bandit_targets = ["src"]
 filterwarnings = [
