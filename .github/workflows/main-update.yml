@@ -5,5 +5,5 @@ on:
     branches:
       - main
 jobs:
-  PR-tox:
+  tox:
     uses: ./.github/workflows/tox.yml

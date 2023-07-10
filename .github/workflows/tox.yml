@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   workflow_call:
 jobs:
-  tox:
+  run-tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
