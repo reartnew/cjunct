@@ -11,8 +11,5 @@ jobs:
   Run PR tests:
     steps:
 
-      - name: Checkout source
-        uses: actions/checkout@v3
-
       - name: Import WF
-        uses: .github/workflows/main-check-tox.yml
+        uses: reartnew/cjunct.github/workflows/main-check-tox.yml
