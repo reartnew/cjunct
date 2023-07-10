@@ -1,6 +1,9 @@
 # cjunct
 
 Declarative parallel process runner.
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cjunct)
+[![PyPI version](https://badge.fury.io/py/cjunct.svg)](https://badge.fury.io/py/cjunct)
+![Tests](https://github.com/reartnew/cjunct/workflows/main-check-tox/badge.svg)
 
 ## Installation
 
