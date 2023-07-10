@@ -9,7 +9,4 @@ on:
       - main
 jobs:
   Run PR tests:
-    steps:
-
-      - name: Import WF
-        uses: reartnew/cjunct.github/workflows/main-check-tox.yml
+    uses: ./.github/workflows/main-check-tox.yml
