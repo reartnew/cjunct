@@ -1,5 +1,5 @@
 ---
-name: main-update
+name: main
 on:
   push:
     branches:
