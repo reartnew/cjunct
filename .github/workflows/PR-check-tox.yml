@@ -1,9 +1,11 @@
-name: tox
+---
+name: PR-check-tox
 on:
-  push:
+  pull_request:
+    types:
+      - opened
     branches:
-      - feature/1-add-ci-validations
-#  workflow_dispatch:
+      - main
 jobs:
   build:
     runs-on: ubuntu-latest
