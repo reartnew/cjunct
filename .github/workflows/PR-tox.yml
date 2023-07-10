@@ -9,4 +9,4 @@ on:
       - main
 jobs:
   PR-tox:
-    uses: ./.github/workflows/main-check-tox.yml
+    uses: ./.github/workflows/tox.yml
