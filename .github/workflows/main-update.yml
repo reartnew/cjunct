@@ -1,5 +1,5 @@
 ---
-name: main-tox
+name: main-update
 on:
   push:
     branches:

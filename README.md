@@ -3,7 +3,7 @@
 Declarative parallel process runner.
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cjunct)
 [![PyPI version](https://badge.fury.io/py/cjunct.svg)](https://badge.fury.io/py/cjunct)
-![Tests](https://github.com/reartnew/cjunct/workflows/main-tox/badge.svg)
+![Tests](https://github.com/reartnew/cjunct/workflows/main-update/badge.svg)
 
 ## Installation
 
