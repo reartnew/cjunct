@@ -1,10 +1,7 @@
 ---
-name: PR-check-tox
+name: main-tox
 on:
-  pull_request:
-    types:
-      - opened
-      - synchronize
+  push:
     branches:
       - main
 jobs:
