@@ -1,0 +1,9 @@
+---
+name: main-update
+on:
+  push:
+    branches:
+      - main
+jobs:
+  tox:
+    uses: ./.github/workflows/tox.yml
