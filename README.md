@@ -1,22 +1,25 @@
 # cjunct
 
 Declarative parallel process runner.
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cjunct)
-[![PyPI version](https://badge.fury.io/py/cjunct.svg)](https://badge.fury.io/py/cjunct)
+
+## Status: alpha
+
+[//]: # (![PyPI - Python Version]&#40;https://img.shields.io/pypi/pyversions/cjunct&#41;)
+[//]: # ([![PyPI version]&#40;https://badge.fury.io/py/cjunct.svg&#41;]&#40;https://badge.fury.io/py/cjunct&#41;)
 ![Tests](https://github.com/reartnew/cjunct/workflows/main/badge.svg)
 
-## Installation
-
-```shell
-pip install cjunct
-```
-
-## Usage example
-
-```shell
-# Put config files into the working directory
-cjunct run
-```
+[//]: # (## Installation)
+[//]: # ()
+[//]: # (```shell)
+[//]: # (pip install cjunct)
+[//]: # (```)
+[//]: # ()
+[//]: # (## Usage example)
+[//]: # ()
+[//]: # (```shell)
+[//]: # (# Put config files into the working directory)
+[//]: # (cjunct run)
+[//]: # (```)
 
 ## Development environment setup
 Requires system-wide poetry>=1.3.2, see [official documentation](https://python-poetry.org).
