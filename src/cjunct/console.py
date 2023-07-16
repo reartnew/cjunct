@@ -5,10 +5,12 @@ import typing as t
 
 import classlogging
 import click
+import dotenv
 
 import cjunct
 from cjunct.config.constants import C
 from cjunct.exceptions import BaseError
+from pathlib import Path
 
 
 class CLIReporter(classlogging.LoggerMixin):
@@ -35,7 +37,11 @@ def main() -> None:
 @main.command
 def run() -> None:
     """Run pipeline immediately"""
+    dotenv_path: Path = Path().resolve().parent / ".env"
+    dotenv_loaded: bool = dotenv.load_dotenv(dotenv_path=dotenv_path)
     classlogging.configure_logging(level=C.LOG_LEVEL)
+    if dotenv_loaded:
+        CLIReporter.logger.info(f"Loaded environment variables from {dotenv_path!r}")
     try:
         cjunct.Runner().run_sync()
     except Exception as e:
