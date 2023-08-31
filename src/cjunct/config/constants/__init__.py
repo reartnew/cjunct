@@ -1,5 +1,6 @@
 """Lazy-loaded constants"""
 
+import typing as t
 from pathlib import Path
 
 from classlogging import LogLevel
@@ -15,17 +16,22 @@ from ...types import LoaderClassType
 
 __all__ = [
     "C",
+    "CLI_PARAMS",
 ]
+
+CLI_PARAMS: t.Dict[str, t.Any] = {}
 
 
 class C:
     """Runtime constants"""
 
     LOG_LEVEL: Mandatory[str] = Mandatory(
+        lambda: CLI_PARAMS.get("log_level") or None,
         lambda: Env.CJUNCT_LOG_LEVEL or None,
         lambda: LogLevel.ERROR,
     )
     CONTEXT_DIRECTORY: Mandatory[Path] = Mandatory(
+        lambda: CLI_PARAMS.get("directory") or None,
         lambda: maybe_path(Env.CJUNCT_CONTEXT_DIRECTORY),
         lambda: Path().resolve(),
     )
