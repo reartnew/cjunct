@@ -1,5 +1,4 @@
 """Command-line interface entry"""
-# pylint: disable=unused-argument
 
 import sys
 from pathlib import Path
@@ -9,33 +8,21 @@ import click
 import dotenv
 
 import cjunct
-from cjunct.config.constants import C, CLI_PARAMS
+from cjunct.config.constants import C, cliargs_receiver
 from cjunct.exceptions import BaseError
 
 logger = classlogging.get_module_logger()
 
 
 @click.group
-@click.option(
-    "-d",
-    "--directory",
-    type=str,
-    default="",
-    help="Context directory. Defaults to current working directory.",
-)
-@click.option(
-    "-l",
-    "--log-level",
-    type=str,
-    default="",
-    help="Logging level. Defaults to ERROR.",
-)
-@click.pass_context
-def main(ctx: click.Context, **kwargs) -> None:
+@click.option("-d", "--directory", help="Context directory. Defaults to current working directory.")
+@click.option("-l", "--log-level", help="Logging level. Defaults to ERROR.")
+@cliargs_receiver
+def main() -> None:
     """Entry group"""
-    CLI_PARAMS.update(ctx.params)
 
 
+@cliargs_receiver
 @main.command
 def run() -> None:
     """Run pipeline immediately"""
