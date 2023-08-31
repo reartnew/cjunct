@@ -2,6 +2,7 @@
 
 import sys
 import typing as t
+from pathlib import Path
 
 import classlogging
 import click
@@ -10,7 +11,6 @@ import dotenv
 import cjunct
 from cjunct.config.constants import C
 from cjunct.exceptions import BaseError
-from pathlib import Path
 
 
 class CLIReporter(classlogging.LoggerMixin):
