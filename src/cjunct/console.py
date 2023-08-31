@@ -8,7 +8,8 @@ import click
 import dotenv
 
 import cjunct
-from cjunct.config.constants import C, cliargs_receiver
+from cjunct.config.constants import C
+from cjunct.config.constants.cli import cliargs_receiver
 from cjunct.exceptions import BaseError
 
 logger = classlogging.get_module_logger()
