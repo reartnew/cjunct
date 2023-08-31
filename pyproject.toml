@@ -15,7 +15,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.8"
 named-env = "^2.3.0"
-classlogging = "^1.0.1"
+classlogging = "^1.1.1"
 python-dotenv = "^1.0.0"
 async-shell = "^1.0.3"
 pyyaml = "^6.0.1"
