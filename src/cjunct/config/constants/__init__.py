@@ -4,7 +4,7 @@ from pathlib import Path
 
 from classlogging import LogLevel
 
-from .cli import get_cli_arg
+from .cli import cli_arg_getter
 from .helpers import (
     Optional,
     Mandatory,
@@ -23,12 +23,12 @@ class C:
     """Runtime constants"""
 
     LOG_LEVEL: Mandatory[str] = Mandatory(
-        lambda: get_cli_arg("log_level"),
+        cli_arg_getter("log_level"),
         lambda: Env.CJUNCT_LOG_LEVEL or None,
         lambda: LogLevel.ERROR,
     )
     CONTEXT_DIRECTORY: Mandatory[Path] = Mandatory(
-        lambda: get_cli_arg("directory"),
+        cli_arg_getter("directory"),
         lambda: maybe_path(Env.CJUNCT_CONTEXT_DIRECTORY),
         lambda: Path().resolve(),
     )

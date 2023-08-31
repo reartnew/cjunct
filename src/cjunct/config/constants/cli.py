@@ -5,7 +5,7 @@ import click
 
 __all__ = [
     "cliargs_receiver",
-    "get_cli_arg",
+    "cli_arg_getter",
 ]
 
 _CLI_PARAMS: t.Dict[str, t.Any] = {}
@@ -27,6 +27,10 @@ def cliargs_receiver(func):
     return click.pass_context(wrapped)
 
 
-def get_cli_arg(name: str) -> t.Any:
+def cli_arg_getter(name: str) -> t.Callable[[], t.Any]:
     """Obtain previously registered CLI argument"""
-    return _CLI_PARAMS.get(name)
+
+    def get():
+        return _CLI_PARAMS.get(name)
+
+    return get
