@@ -1,4 +1,5 @@
 """Command-line interface entry"""
+# pylint: disable=unused-argument
 
 import sys
 from pathlib import Path
@@ -15,30 +16,29 @@ logger = classlogging.get_module_logger()
 
 
 @click.group
-def main() -> None:
-    """Entry group"""
-
-
-@main.command
 @click.option(
     "-d",
     "--directory",
     type=str,
     default="",
-    help="Context directory. Defaults to current working directory",
+    help="Context directory. Defaults to current working directory.",
 )
 @click.option(
     "-l",
     "--log-level",
     type=str,
     default="",
-    help="Log level",
+    help="Logging level. Defaults to ERROR.",
 )
 @click.pass_context
-# pylint: disable=unused-argument
-def run(ctx: click.Context, **kwargs) -> None:
-    """Run pipeline immediately"""
+def main(ctx: click.Context, **kwargs) -> None:
+    """Entry group"""
     CLI_PARAMS.update(ctx.params)
+
+
+@main.command
+def run() -> None:
+    """Run pipeline immediately"""
     dotenv_path: Path = Path().resolve().parent / ".env"
     dotenv_loaded: bool = dotenv.load_dotenv(dotenv_path=dotenv_path)
     classlogging.configure_logging(level=C.LOG_LEVEL)
