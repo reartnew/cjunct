@@ -90,6 +90,7 @@ disable = [
     "too-few-public-methods",
     "broad-except",
     "fixme",
+    "logging-fstring-interpolation",
 ]
 enable = ["unused-wildcard-import"]
 
