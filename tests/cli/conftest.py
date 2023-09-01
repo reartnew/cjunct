@@ -5,19 +5,19 @@ from contextlib import contextmanager
 
 import pytest
 
-from cjunct.config.constants.cli import CLI_PARAMS
+from cjunct.config.constants.cli import _CLI_PARAMS
 
 
 @contextmanager
 def _cli_arg(name: str, value: str) -> t.Generator[None, None, None]:
     """Temporarily set CLI argument"""
     sentinel = object()
-    old_val = CLI_PARAMS.get(name, sentinel)
-    CLI_PARAMS[name] = value
+    old_val = _CLI_PARAMS.get(name, sentinel)
+    _CLI_PARAMS[name] = value
     yield
-    del CLI_PARAMS[name]
+    del _CLI_PARAMS[name]
     if old_val is not sentinel:
-        CLI_PARAMS[name] = old_val
+        _CLI_PARAMS[name] = old_val
 
 
 @pytest.fixture
