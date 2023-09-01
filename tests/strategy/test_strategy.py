@@ -51,3 +51,11 @@ async def test_chain_skip(strict_skipping_net: ActionNet) -> None:
     assert result[0].status == ActionStatus.SKIPPED
     # Check final states now
     assert all(a.status == ActionStatus.SKIPPED for a in strict_skipping_net.values())
+
+
+def test_non_redefined_name() -> None:
+    """Check strategy name collision"""
+    with pytest.raises(NameError, match="Strategy named 'loose' already exists"):
+        # pylint: disable=unused-variable
+        class NewLooseStrategy(LooseStrategy):
+            """Do not define new name"""

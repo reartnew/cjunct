@@ -46,7 +46,7 @@ class BaseStrategy(classlogging.LoggerMixin, t.AsyncIterable[ActionBase]):
 
     def __init_subclass__(cls, **kwargs):
         if KNOWN_STRATEGIES.setdefault(cls.NAME, cls) is not cls:
-            raise ValueError(
+            raise NameError(
                 f"Strategy named {cls.NAME!r} already exists. "
                 f"Please specify another name for the {cls.__module__}.{cls.__name__}."
             )
