@@ -30,7 +30,11 @@ def cliargs_receiver(func):
     return click.pass_context(wrapped)
 
 
-def get_cli_arg(name: str) -> t.Any:
+def get_cli_arg(name: str, *, valid_options: t.Optional[t.Iterable[str]] = None) -> t.Any:
     """Obtain previously registered CLI argument"""
 
-    return _CLI_PARAMS.get(name)
+    value: t.Any = _CLI_PARAMS.get(name)
+    if valid_options is not None and value is not None and value not in valid_options:
+        raise ValueError(
+            f"Unrecognized value for the {name!r} argument: {value!r}. " f"Expected one of: {sorted(valid_options)}"
+        )

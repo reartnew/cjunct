@@ -45,7 +45,11 @@ class BaseStrategy(classlogging.LoggerMixin, t.AsyncIterable[ActionBase]):
         raise NotImplementedError
 
     def __init_subclass__(cls, **kwargs):
-        KNOWN_STRATEGIES[cls.NAME] = cls
+        if KNOWN_STRATEGIES.setdefault(cls.NAME, cls) is not cls:
+            raise ValueError(
+                f"Strategy named {cls.NAME!r} already exists. "
+                f"Please specify another name for the {cls.__module__}.{cls.__name__}."
+            )
 
 
 class FreeStrategy(BaseStrategy):

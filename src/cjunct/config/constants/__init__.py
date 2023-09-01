@@ -1,6 +1,5 @@
 """Lazy-loaded constants"""
 
-import typing as t
 from pathlib import Path
 
 from classlogging import LogLevel
@@ -20,14 +19,6 @@ from ...types import StrategyClassType
 __all__ = [
     "C",
 ]
-
-
-def _get_strategy_from_cli_arg() -> t.Optional[StrategyClassType]:
-    if (strategy_name := get_cli_arg("strategy")) is None:
-        return None
-    if strategy_name not in KNOWN_STRATEGIES:
-        raise ValueError(f"Unrecognized strategy name: {strategy_name!r}. Expected one of: {sorted(KNOWN_STRATEGIES)}")
-    return KNOWN_STRATEGIES[strategy_name]
 
 
 class C:
@@ -53,7 +44,7 @@ class C:
         )
     )
     STRATEGY_CLASS: Mandatory[StrategyClassType] = Mandatory(
-        _get_strategy_from_cli_arg,
-        lambda: Env.CJUNCT_STRATEGY_NAME or None,
+        lambda: get_cli_arg("strategy", valid_options=KNOWN_STRATEGIES),
+        lambda: KNOWN_STRATEGIES[Env.CJUNCT_STRATEGY_NAME] if Env.CJUNCT_STRATEGY_NAME else None,
         lambda: LooseStrategy,
     )
