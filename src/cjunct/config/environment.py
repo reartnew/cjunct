@@ -17,3 +17,4 @@ class Env(EnvironmentNamespace):
     CJUNCT_CONTEXT_DIRECTORY = OptionalString("")
     CJUNCT_ACTIONS_SOURCE_FILE = OptionalString("")
     CJUNCT_CONFIG_LOADER_SOURCE_FILE = OptionalString("")
+    CJUNCT_STRATEGY_NAME = OptionalString("")

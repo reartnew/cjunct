@@ -1,11 +1,13 @@
 """CLI arguments"""
 
+import functools
 import typing as t
+
 import click
 
 __all__ = [
     "cliargs_receiver",
-    "cli_arg_getter",
+    "get_cli_arg",
 ]
 
 _CLI_PARAMS: t.Dict[str, t.Any] = {}
@@ -14,6 +16,7 @@ _CLI_PARAMS: t.Dict[str, t.Any] = {}
 def cliargs_receiver(func):
     """Store CLI args in the _CLI_PARAMS container for further processing"""
 
+    @functools.wraps(func)
     # pylint: disable=unused-argument
     def wrapped(ctx: click.Context, **kwargs):
         current_ctx: t.Optional[click.Context] = ctx
@@ -27,10 +30,7 @@ def cliargs_receiver(func):
     return click.pass_context(wrapped)
 
 
-def cli_arg_getter(name: str) -> t.Callable[[], t.Any]:
+def get_cli_arg(name: str) -> t.Any:
     """Obtain previously registered CLI argument"""
 
-    def get():
-        return _CLI_PARAMS.get(name)
-
-    return get
+    return _CLI_PARAMS.get(name)
