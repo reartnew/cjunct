@@ -38,3 +38,4 @@ def get_cli_arg(name: str, *, valid_options: t.Optional[t.Iterable[str]] = None)
         raise ValueError(
             f"Unrecognized value for the {name!r} argument: {value!r}. " f"Expected one of: {sorted(valid_options)}"
         )
+    return value
