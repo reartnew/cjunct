@@ -1,5 +1,7 @@
 """Lazy-loaded constants"""
 
+import os
+import sys
 from pathlib import Path
 
 from classlogging import LogLevel
@@ -10,11 +12,11 @@ from .helpers import (
     Mandatory,
     maybe_path,
     maybe_class_from_module,
+    maybe_strategy,
 )
 from ..environment import Env
 from ...strategy import LooseStrategy, KNOWN_STRATEGIES
-from ...types import LoaderClassType
-from ...types import StrategyClassType
+from ...types import LoaderClassType, StrategyClassType
 
 __all__ = [
     "C",
@@ -45,7 +47,7 @@ class C:
         )
     )
     STRATEGY_CLASS: Mandatory[StrategyClassType] = Mandatory(
-        lambda: get_cli_arg("strategy", valid_options=KNOWN_STRATEGIES),
-        lambda: KNOWN_STRATEGIES[Env.CJUNCT_STRATEGY_NAME] if Env.CJUNCT_STRATEGY_NAME else None,
+        lambda: maybe_strategy(get_cli_arg("strategy", valid_options=KNOWN_STRATEGIES)),
+        lambda: maybe_strategy(Env.CJUNCT_STRATEGY_NAME),
         lambda: LooseStrategy,
     )
