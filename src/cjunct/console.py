@@ -1,6 +1,8 @@
 """Command-line interface entry"""
 
+import logging
 import sys
+import typing as t
 from pathlib import Path
 
 import classlogging
@@ -13,11 +15,13 @@ from cjunct.config.constants.cli import cliargs_receiver
 from cjunct.exceptions import BaseError
 
 logger = classlogging.get_module_logger()
+_log_levels: t.Sequence[str] = list(logging._nameToLevel)  # pylint: disable=protected-access
 
 
 @click.group
 @click.option("-d", "--directory", help="Context directory. Defaults to current working directory.")
-@click.option("-l", "--log-level", help="Logging level. Defaults to 'ERROR.'")
+@click.option("-l", "--log-level", help="Logging level. Defaults to ERROR.", type=click.Choice(_log_levels))
+@click.option("-f", "--file", help="Action file to execute.")
 @cliargs_receiver
 def main() -> None:
     """Entry group"""
