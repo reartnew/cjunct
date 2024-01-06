@@ -71,6 +71,12 @@ def test_strategy_runner_call(
     }
 
 
+def test_failing_actions(runner_bad_context: None) -> None:
+    """Check failing action in the runner"""
+    with pytest.raises(exceptions.ExecutionFailed):
+        cjunct.Runner().run_sync()
+
+
 def test_invalid_action_source_file_via_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Check raising SourceError for absent file via CJUNCT_ACTIONS_SOURCE_FILE"""
     monkeypatch.setenv("CJUNCT_ACTIONS_SOURCE_FILE", str(tmp_path / "missing.yaml"))
