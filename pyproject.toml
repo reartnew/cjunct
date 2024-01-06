@@ -60,7 +60,6 @@ filterwarnings = [
 [tool.coverage.run]
 source = ["src"]
 omit = [
-    "**/*fulcrum*",
     "src/cjunct/console.py",
 ]
 
