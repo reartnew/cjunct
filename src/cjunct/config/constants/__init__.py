@@ -31,7 +31,10 @@ def _maybe_strategy(name: t.Optional[str]) -> t.Optional[StrategyClassType]:
     """Transform an optional strategy name into an optional strategy class"""
     from ...strategy import KNOWN_STRATEGIES
 
-    return KNOWN_STRATEGIES[name] if name else None
+    try:
+        return KNOWN_STRATEGIES[name] if name else None
+    except KeyError:
+        raise ValueError(f"Invalid strategy name: {name!r} (allowed: {sorted(KNOWN_STRATEGIES)})") from None
 
 
 def _get_default_display_class() -> DisplayClassType:
