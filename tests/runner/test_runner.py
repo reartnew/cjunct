@@ -11,12 +11,12 @@ from cjunct import exceptions
 from cjunct.strategy import BaseStrategy
 
 
-def test_simple_runner_call(runner_context: None) -> None:
+def test_simple_runner_call(runner_good_context: None) -> None:
     """Check default call"""
     cjunct.Runner().run_sync()
 
 
-def test_runner_multiple_run(runner_context: None) -> None:
+def test_runner_multiple_run(runner_good_context: None) -> None:
     """Check default call"""
     runner = cjunct.Runner()
     runner.run_sync()
@@ -56,7 +56,7 @@ def test_unrecognized_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
 
 @pytest.mark.parametrize("strategy_class", [cjunct.FreeStrategy, cjunct.SequentialStrategy, cjunct.LooseStrategy])
 def test_strategy_runner_call(
-    runner_context: None,
+    runner_good_context: None,
     strategy_class: t.Type[BaseStrategy],
     display_collector: t.List[str],
 ) -> None:

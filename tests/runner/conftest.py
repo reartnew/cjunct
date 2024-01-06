@@ -31,7 +31,7 @@ def display_collector(monkeypatch: pytest.MonkeyPatch) -> t.List[str]:
 
 
 @pytest.fixture(params=["chdir", "env_context_dir", "env_actions_source"])
-def runner_context(request: SubRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def runner_good_context(request: SubRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Prepare a directory with sample config files"""
     actions_source_path: Path = tmp_path / "network.yaml"
     actions_source_path.write_bytes(
