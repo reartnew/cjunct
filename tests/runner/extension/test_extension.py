@@ -42,3 +42,17 @@ def test_ext_loader_missing_source(echo_context: None, monkeypatch: pytest.Monke
     monkeypatch.setenv("CJUNCT_CONFIG_LOADER_SOURCE_FILE", str(MODULES_DIR / "missing_loader.py"))
     with pytest.raises(SourceError, match="Missing source module"):
         cjunct.Runner().run_sync()
+
+
+def test_ext_loader_return_string(
+    string_returning_context: None,
+    monkeypatch: pytest.MonkeyPatch,
+    display_collector: t.List[str],
+) -> None:
+    """Check exotic returns from actions"""
+    monkeypatch.setenv("CJUNCT_CONFIG_LOADER_SOURCE_FILE", str(MODULES_DIR / "good_loader.py"))
+    cjunct.Runner().run_sync()
+    assert display_collector == [
+        "============",
+        "SUCCESS: Foo",
+    ]

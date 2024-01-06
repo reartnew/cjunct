@@ -17,12 +17,21 @@ class EchoAction(ActionBase[None]):
         self.emit(self.message)
 
 
+class StringReturningAction(ActionBase[str]):
+    """Returns not none"""
+
+    async def run(self) -> str:
+        """Just check return"""
+        return "I am a string!"
+
+
 class ConfigLoader(DefaultYAMLConfigLoader):
     """Able to build echoes"""
 
     ACTION_FACTORIES = {
         **DefaultYAMLConfigLoader.ACTION_FACTORIES,
         "echo": EchoAction,
+        "return-string": StringReturningAction,
     }
 
     def _build_action_from_dict(self, node: dict) -> ActionBase:

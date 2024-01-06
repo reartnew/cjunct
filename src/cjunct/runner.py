@@ -125,8 +125,8 @@ class Runner(classlogging.LoggerMixin):
             display.emit_action_message(source=action, message=message)
 
     @staticmethod
-    async def _run_action(action: ActionBase) -> None:
-        await action
+    async def _run_action(action: ActionBase) -> t.Any:
+        return await action
 
     def run_sync(self):
         """Wrap async run into an event loop"""
