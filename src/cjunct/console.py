@@ -32,11 +32,13 @@ def main() -> None:
 @cliargs_receiver
 def run() -> None:
     """Run pipeline immediately."""
-    dotenv_path: Path = Path().resolve().parent / ".env"
+    dotenv_path: Path = Path().resolve() / ".env"
     dotenv_loaded: bool = dotenv.load_dotenv(dotenv_path=dotenv_path)
     classlogging.configure_logging(level=C.LOG_LEVEL)
     if dotenv_loaded:
         logger.info(f"Loaded environment variables from {dotenv_path!r}")
+    else:
+        logger.debug(f"Dotenv not found: {dotenv_path!r}")
     try:
         cjunct.Runner(strategy_class=C.STRATEGY_CLASS).run_sync()
     except BaseError as e:
