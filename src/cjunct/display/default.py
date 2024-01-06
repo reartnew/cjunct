@@ -1,11 +1,10 @@
 """Runner output processor default"""
 
-import textwrap
 import typing as t
 
 from .base import BaseDisplay
 from .color import Color
-from ..actions import ActionBase, ActionNet, ActionStatus
+from ..actions import ActionBase, ActionNet, ActionStatus, Stderr
 
 __all__ = [
     "NetPrefixDisplay",
@@ -36,11 +35,15 @@ class NetPrefixDisplay(BaseDisplay):
             if self._last_displayed_name != source.name
             else " " * justification_len
         )
+        is_stderr: bool = isinstance(message, Stderr)
+        stderr_mark = "*" if is_stderr else " "
+        line_prefix: str = Color.gray(f"{formatted_name} {stderr_mark}| ")
         self._last_displayed_name = source.name
-        super().emit_action_message(
-            source=source,
-            message=textwrap.indent(message, Color.gray(f"{formatted_name} | ")),
-        )
+        for line in message.splitlines(True):
+            super().emit_action_message(
+                source=source,
+                message=f"{line_prefix}{Color.red(line) if is_stderr else line}",
+            )
 
     def _display_status_banner(self) -> None:
         """Show a text banner with the status info"""

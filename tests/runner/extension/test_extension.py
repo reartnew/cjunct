@@ -17,7 +17,7 @@ def test_good_ext_loader(echo_context: None, monkeypatch: pytest.MonkeyPatch, di
     monkeypatch.setenv("CJUNCT_CONFIG_LOADER_SOURCE_FILE", str(MODULES_DIR / "good_loader.py"))
     cjunct.Runner().run_sync()
     assert display_collector == [
-        "[Foo] | foo",
+        "[Foo]  | foo",
         "============",
         "SUCCESS: Foo",
     ]

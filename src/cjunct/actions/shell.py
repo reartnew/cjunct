@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from async_shell import Shell
 
-from .base import ActionBase
+from .base import ActionBase, Stderr
 
 
 @dataclass
@@ -22,7 +22,7 @@ class ShellAction(ActionBase):
 
     async def _read_stderr(self, shell_process: Shell):
         async for line in shell_process.read_stderr():
-            self.emit(line)
+            self.emit(Stderr(line))
 
     async def run(self) -> None:
         async with Shell(command=self.command) as shell_process:

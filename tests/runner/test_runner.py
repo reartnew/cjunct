@@ -63,8 +63,8 @@ def test_strategy_runner_call(
     """Check all strategies"""
     cjunct.Runner(strategy_class=strategy_class).run_sync()
     assert set(display_collector) == {
-        "[Foo] | foo",
-        "[Bar] | bar",
+        "[Foo]  | foo",
+        "[Bar] *| bar",
         "============",
         "SUCCESS: Foo",
         "SUCCESS: Bar",
