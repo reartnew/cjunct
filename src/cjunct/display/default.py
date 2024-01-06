@@ -4,7 +4,12 @@ import typing as t
 
 from .base import BaseDisplay
 from .color import Color
-from ..actions import ActionBase, ActionNet, ActionStatus, Stderr
+from ..actions import (
+    ActionBase,
+    ActionNet,
+    ActionStatus,
+    Stderr,
+)
 
 __all__ = [
     "NetPrefixDisplay",
@@ -14,11 +19,11 @@ __all__ = [
 class NetPrefixDisplay(BaseDisplay):
     """Prefix-based display for action nets"""
 
-    _STATUS_TO_COLOR: t.Dict[ActionStatus, t.Callable] = {
+    _STATUS_TO_COLOR: t.Dict[ActionStatus, t.Callable[[str], str]] = {
         ActionStatus.SKIPPED: Color.gray,
         ActionStatus.PENDING: Color.gray,
         ActionStatus.FAILURE: Color.red,
-        ActionStatus.RUNNING: Color.blue,
+        ActionStatus.RUNNING: lambda x: x,
         ActionStatus.SUCCESS: Color.green,
     }
 
@@ -50,8 +55,8 @@ class NetPrefixDisplay(BaseDisplay):
         justification_len: int = self._action_names_max_len + 9  # "9" here stands for (e.g.) "SUCCESS: "
         self.display(Color.gray("=" * justification_len))
         for _, action in self._actions.iter_actions_by_tier():
-            color_wrapper: t.Callable = self._STATUS_TO_COLOR[action.status]
-            self.display(f"{color_wrapper(action.status)}: {action.name}")
+            color_wrapper: t.Callable[[str], str] = self._STATUS_TO_COLOR[action.status]
+            self.display(f"{color_wrapper(action.status.value)}: {action.name}")
 
     def on_finish(self) -> None:
         self._display_status_banner()

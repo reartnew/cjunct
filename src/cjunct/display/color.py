@@ -26,15 +26,5 @@ class Color:
         return cls._add_formatting(message, 32)
 
     @classmethod
-    def yellow(cls, message: str) -> str:
-        """Make a string yellow"""
-        return cls._add_formatting(message, 33)
-
-    @classmethod
-    def blue(cls, message: str) -> str:
-        """Make a string blue"""
-        return cls._add_formatting(message, 34)
-
-    @classmethod
     def _add_formatting(cls, message: str, code: int) -> str:
         return message if not C.USE_COLOR else f"\u001b[{code}m{message}\u001b[0m"
