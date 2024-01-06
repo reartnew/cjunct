@@ -24,7 +24,7 @@ _log_levels: t.Sequence[str] = list(logging._nameToLevel)  # pylint: disable=pro
 @click.option("-f", "--file", help="Action file to execute.")
 @cliargs_receiver
 def main() -> None:
-    """Entry group"""
+    """Declarative parallel process runner"""
 
 
 @main.command
