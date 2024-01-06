@@ -35,7 +35,7 @@ class Runner(classlogging.LoggerMixin):
     ) -> None:
         self._config_path: Path = self._detect_config_source() if config is None else Path(config)
         self._loader_class: types.LoaderClassType = (
-            loader_class or C.CONFIG_LOADER_SOURCE_FILE or get_default_loader_class_for_file(self._config_path)
+            loader_class or C.CONFIG_LOADER_CLASS or get_default_loader_class_for_file(self._config_path)
         )
         self.logger.debug(f"Using config loader class: {self._loader_class}")
         self._strategy_class: types.StrategyClassType = strategy_class

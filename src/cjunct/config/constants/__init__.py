@@ -40,7 +40,7 @@ class C:
         lambda: maybe_path(get_cli_arg("file")),
         lambda: maybe_path(Env.CJUNCT_ACTIONS_SOURCE_FILE),
     )
-    CONFIG_LOADER_SOURCE_FILE: Optional[LoaderClassType] = Optional(
+    CONFIG_LOADER_CLASS: Optional[LoaderClassType] = Optional(
         lambda: maybe_class_from_module(
             path_str=Env.CJUNCT_CONFIG_LOADER_SOURCE_FILE,
             class_name="ConfigLoader",
