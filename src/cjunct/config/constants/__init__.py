@@ -1,3 +1,4 @@
+# pylint: disable=import-outside-toplevel,cyclic-import
 """Lazy-loaded constants"""
 
 import os
@@ -26,7 +27,6 @@ __all__ = [
 ]
 
 
-# pylint: disable=import-outside-toplevel
 def _maybe_strategy(name: t.Optional[str]) -> t.Optional[StrategyClassType]:
     """Transform an optional strategy name into an optional strategy class"""
     from ...strategy import KNOWN_STRATEGIES
@@ -34,21 +34,18 @@ def _maybe_strategy(name: t.Optional[str]) -> t.Optional[StrategyClassType]:
     return KNOWN_STRATEGIES[name] if name else None
 
 
-# pylint: disable=import-outside-toplevel
 def _get_default_display_class() -> DisplayClassType:
     from ...display.default import NetPrefixDisplay
 
     return NetPrefixDisplay
 
 
-# pylint: disable=import-outside-toplevel
 def _get_strategy_class_from_cli_arg() -> t.Optional[StrategyClassType]:
     from ...strategy import KNOWN_STRATEGIES
 
     return _maybe_strategy(get_cli_arg("strategy", valid_options=KNOWN_STRATEGIES))
 
 
-# pylint: disable=import-outside-toplevel
 def _get_default_strategy_class() -> StrategyClassType:
     from ...strategy import LooseStrategy
 
