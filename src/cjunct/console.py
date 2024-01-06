@@ -40,7 +40,10 @@ def run() -> None:
     else:
         logger.debug(f"Dotenv not found: {dotenv_path!r}")
     try:
-        cjunct.Runner(strategy_class=C.STRATEGY_CLASS).run_sync()
+        cjunct.Runner(
+            strategy_class=C.STRATEGY_CLASS,
+            display_class=C.DISPLAY_CLASS,
+        ).run_sync()
     except BaseError as e:
         logger.debug("", exc_info=True)
         sys.stderr.write(f"! {e}\n")

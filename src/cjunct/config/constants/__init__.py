@@ -16,7 +16,12 @@ from .helpers import (
 )
 from ..environment import Env
 from ...strategy import LooseStrategy, KNOWN_STRATEGIES
-from ...types import LoaderClassType, StrategyClassType
+from ...display import NetPrefixDisplay
+from ...types import (
+    LoaderClassType,
+    StrategyClassType,
+    DisplayClassType,
+)
 
 __all__ = [
     "C",
@@ -45,6 +50,13 @@ class C:
             path_str=Env.CJUNCT_CONFIG_LOADER_SOURCE_FILE,
             class_name="ConfigLoader",
         )
+    )
+    DISPLAY_CLASS: Mandatory[DisplayClassType] = Mandatory(
+        lambda: maybe_class_from_module(
+            path_str=Env.CJUNCT_DISPLAY_SOURCE_FILE,
+            class_name="Display",
+        ),
+        lambda: NetPrefixDisplay,
     )
     STRATEGY_CLASS: Mandatory[StrategyClassType] = Mandatory(
         lambda: maybe_strategy(get_cli_arg("strategy", valid_options=KNOWN_STRATEGIES)),

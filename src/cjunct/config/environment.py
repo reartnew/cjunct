@@ -13,8 +13,9 @@ __all__ = [
 class Env(EnvironmentNamespace):
     """Environment variables"""
 
-    CJUNCT_LOG_LEVEL = OptionalString("")
-    CJUNCT_CONTEXT_DIRECTORY = OptionalString("")
-    CJUNCT_ACTIONS_SOURCE_FILE = OptionalString("")
-    CJUNCT_CONFIG_LOADER_SOURCE_FILE = OptionalString("")
-    CJUNCT_STRATEGY_NAME = OptionalString("")
+    CJUNCT_LOG_LEVEL: str = OptionalString("")
+    CJUNCT_CONTEXT_DIRECTORY: str = OptionalString("")
+    CJUNCT_ACTIONS_SOURCE_FILE: str = OptionalString("")
+    CJUNCT_CONFIG_LOADER_SOURCE_FILE: str = OptionalString("")
+    CJUNCT_DISPLAY_SOURCE_FILE: str = OptionalString("")
+    CJUNCT_STRATEGY_NAME: str = OptionalString("")
