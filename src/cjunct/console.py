@@ -12,7 +12,7 @@ import dotenv
 import cjunct
 from cjunct.config.constants import C
 from cjunct.config.constants.cli import cliargs_receiver
-from cjunct.exceptions import BaseError
+from cjunct.exceptions import BaseError, ExecutionFailed
 
 logger = classlogging.get_module_logger()
 _log_levels: t.Sequence[str] = list(logging._nameToLevel)  # pylint: disable=protected-access
@@ -34,7 +34,7 @@ def run() -> None:
     """Run pipeline immediately."""
     dotenv_path: Path = Path().resolve() / ".env"
     dotenv_loaded: bool = dotenv.load_dotenv(dotenv_path=dotenv_path)
-    classlogging.configure_logging(level=C.LOG_LEVEL)
+    classlogging.configure_logging(level=C.LOG_LEVEL, colorize=C.USE_COLOR)
     if dotenv_loaded:
         logger.info(f"Loaded environment variables from {dotenv_path!r}")
     else:
@@ -48,7 +48,10 @@ def run() -> None:
         logger.debug("", exc_info=True)
         sys.stderr.write(f"! {e}\n")
         sys.exit(e.CODE)
+    except ExecutionFailed:
+        logger.debug("Some steps failed")
+        sys.exit(1)
     except Exception as e:
         logger.debug("", exc_info=True)
         sys.stderr.write(f"! UNHANDLED EXCEPTION: {e}\n")
-        sys.exit(1)
+        sys.exit(2)
