@@ -67,9 +67,9 @@ class Runner(classlogging.LoggerMixin):
         cls.logger.debug(f"Looking for config files at {scan_path}")
         located_config_file: t.Optional[Path] = None
         for candidate_file_name in (
-            "network.xml",
-            "network.yml",
-            "network.yaml",
+            "cjunct.xml",
+            "cjunct.yml",
+            "cjunct.yaml",
         ):  # type: str
             if (maybe_config_file := scan_path / candidate_file_name).exists():
                 cls.logger.info(f"Detected config source: {maybe_config_file}")
