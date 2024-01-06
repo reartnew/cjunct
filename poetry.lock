@@ -15,8 +15,8 @@ files = [
 lazy-object-proxy = ">=1.4.0"
 typing-extensions = {version = ">=4.0.0", markers = "python_version < \"3.11\""}
 wrapt = [
-    {version = ">=1.11,<2", markers = "python_version < \"3.11\""},
     {version = ">=1.14,<2", markers = "python_version >= \"3.11\""},
+    {version = ">=1.11,<2", markers = "python_version < \"3.11\""},
 ]
 
 [[package]]
@@ -497,13 +497,13 @@ files = [
 
 [[package]]
 name = "named-env"
-version = "2.3.0"
+version = "2.3.2"
 description = "Class-based environment variables typed specification"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "named_env-2.3.0-py3-none-any.whl", hash = "sha256:ea76d5af561dbcec24fb9196f53c2ad7d20fb319cf2ad9a542140409d6f75edc"},
-    {file = "named_env-2.3.0.tar.gz", hash = "sha256:5db6a3eee2270c218c4492350f57e34d58d627cfae50be98a3e224be74334eb5"},
+    {file = "named_env-2.3.2-py3-none-any.whl", hash = "sha256:8e38a5c81ac12f606b841a6be1a240d9f27f53e64744a1cc27cc9358a611be68"},
+    {file = "named_env-2.3.2.tar.gz", hash = "sha256:0d8aac75ff88e0f8b2bdcd7c4f80aa7a6e23f6a9a2de493894d295c511f8cdc9"},
 ]
 
 [[package]]
@@ -609,8 +609,8 @@ files = [
 astroid = ">=2.15.6,<=2.17.0-dev0"
 colorama = {version = ">=0.4.5", markers = "sys_platform == \"win32\""}
 dill = [
-    {version = ">=0.2", markers = "python_version < \"3.11\""},
     {version = ">=0.3.6", markers = "python_version >= \"3.11\""},
+    {version = ">=0.2", markers = "python_version < \"3.11\""},
 ]
 isort = ">=4.2.5,<6"
 mccabe = ">=0.6,<0.8"
@@ -755,9 +755,9 @@ files = [
 attrs = ">=19.0"
 filelock = ">=3.0"
 mypy = [
+    {version = ">=0.900", markers = "python_version >= \"3.11\""},
     {version = ">=0.780", markers = "python_version >= \"3.9\" and python_version < \"3.11\""},
     {version = ">=0.700", markers = "python_version >= \"3.8\" and python_version < \"3.9\""},
-    {version = ">=0.900", markers = "python_version >= \"3.11\""},
 ]
 pytest = [
     {version = ">=6.2", markers = "python_version >= \"3.10\""},
@@ -1095,4 +1095,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "05c9980b0d7e7d451d1b06a2c7b0ebe027908ea1c08219e96a79a888df6940d5"
+content-hash = "59aea9f78389984f9092447bf31fecec9c579405f3144f97859a214eaca5c9dc"
