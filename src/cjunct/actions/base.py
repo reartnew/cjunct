@@ -14,6 +14,7 @@ __all__ = [
     "ActionBase",
     "ActionStatus",
     "ActionSkip",
+    "Stderr",
 ]
 
 AT = t.TypeVar("AT", bound="ActionBase")
@@ -48,6 +49,10 @@ class ActionDependency:
 
 
 EventType = str
+
+
+class Stderr(str):
+    """Strings related to standard error stream"""
 
 
 @dataclass

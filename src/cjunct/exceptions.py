@@ -1,13 +1,18 @@
-"""All non-intercepted errors"""
+"""All intercepted errors"""
 
 import typing as t
 
 __all__ = [
+    "ExecutionFailed",
     "BaseError",
     "LoadError",
     "IntegrityError",
     "SourceError",
 ]
+
+
+class ExecutionFailed(Exception):
+    """Some steps failed"""
 
 
 class BaseError(Exception):

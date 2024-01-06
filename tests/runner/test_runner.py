@@ -11,12 +11,12 @@ from cjunct import exceptions
 from cjunct.strategy import BaseStrategy
 
 
-def test_simple_runner_call(runner_context: None) -> None:
+def test_simple_runner_call(runner_good_context: None) -> None:
     """Check default call"""
     cjunct.Runner().run_sync()
 
 
-def test_runner_multiple_run(runner_context: None) -> None:
+def test_runner_multiple_run(runner_good_context: None) -> None:
     """Check default call"""
     runner = cjunct.Runner()
     runner.run_sync()
@@ -34,8 +34,8 @@ def test_not_found_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
 def test_multiple_found_configs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Ambiguous source directory"""
     monkeypatch.chdir(tmp_path)
-    (tmp_path / "network.xml").touch()
-    (tmp_path / "network.yaml").touch()
+    (tmp_path / "cjunct.xml").touch()
+    (tmp_path / "cjunct.yaml").touch()
     with pytest.raises(exceptions.SourceError, match="Multiple config sources detected in"):
         cjunct.Runner().run_sync()
 
@@ -44,7 +44,7 @@ def test_non_existent_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
     """No config file with given name"""
     monkeypatch.chdir(tmp_path)
     with pytest.raises(exceptions.LoadError, match="Config file not found"):
-        cjunct.Runner(config=tmp_path / "network.xml").run_sync()
+        cjunct.Runner(config=tmp_path / "cjunct.xml").run_sync()
 
 
 def test_unrecognized_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -56,19 +56,25 @@ def test_unrecognized_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
 
 @pytest.mark.parametrize("strategy_class", [cjunct.FreeStrategy, cjunct.SequentialStrategy, cjunct.LooseStrategy])
 def test_strategy_runner_call(
-    runner_context: None,
+    runner_good_context: None,
     strategy_class: t.Type[BaseStrategy],
     display_collector: t.List[str],
 ) -> None:
     """Check all strategies"""
     cjunct.Runner(strategy_class=strategy_class).run_sync()
     assert set(display_collector) == {
-        "[Foo] | foo",
-        "[Bar] | bar",
+        "[Foo]  | foo",
+        "[Bar] *| bar",
         "============",
         "SUCCESS: Foo",
         "SUCCESS: Bar",
     }
+
+
+def test_failing_actions(runner_bad_context: None) -> None:
+    """Check failing action in the runner"""
+    with pytest.raises(exceptions.ExecutionFailed):
+        cjunct.Runner().run_sync()
 
 
 def test_invalid_action_source_file_via_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

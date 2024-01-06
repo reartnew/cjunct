@@ -1,9 +1,9 @@
 """Lazy-loaded constants helpers"""
 
-import typing as t
 import types
-
+import typing as t
 from pathlib import Path
+
 from ..loaders.helpers import load_external_module
 
 __all__ = [

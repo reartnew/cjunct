@@ -3,6 +3,8 @@ A strategy is an async-iterable object,
 emitting actions one by one for further scheduling.
 """
 
+from __future__ import annotations
+
 import asyncio
 import typing as t
 
@@ -22,11 +24,16 @@ __all__ = [
     "FreeStrategy",
     "SequentialStrategy",
     "LooseStrategy",
+    "KNOWN_STRATEGIES",
 ]
+
+KNOWN_STRATEGIES: t.Dict[str, t.Type[BaseStrategy]] = {}
 
 
 class BaseStrategy(classlogging.LoggerMixin, t.AsyncIterable[ActionBase]):
     """Strategy abstract base"""
+
+    NAME: str = ""
 
     def __init__(self, net: ActionNet) -> None:
         self._actions = net
@@ -37,9 +44,18 @@ class BaseStrategy(classlogging.LoggerMixin, t.AsyncIterable[ActionBase]):
     async def __anext__(self) -> ActionBase:
         raise NotImplementedError
 
+    def __init_subclass__(cls, **kwargs):
+        if KNOWN_STRATEGIES.setdefault(cls.NAME, cls) is not cls:
+            raise NameError(
+                f"Strategy named {cls.NAME!r} already exists. "
+                f"Please specify another name for the {cls.__module__}.{cls.__name__}."
+            )
+
 
 class FreeStrategy(BaseStrategy):
     """Free execution (fully parallel)"""
+
+    NAME = "free"
 
     def __init__(self, net: ActionNet) -> None:
         super().__init__(net)
@@ -54,6 +70,8 @@ class FreeStrategy(BaseStrategy):
 class SequentialStrategy(FreeStrategy):
     """Sequential execution"""
 
+    NAME = "sequential"
+
     def __init__(self, net: ActionNet) -> None:
         super().__init__(net)
         self._current: t.Optional[ActionBase] = None
@@ -67,6 +85,8 @@ class SequentialStrategy(FreeStrategy):
 
 class LooseStrategy(BaseStrategy):
     """Keep tracking dependencies states"""
+
+    NAME = "loose"
 
     def __init__(self, net: ActionNet) -> None:
         super().__init__(net)

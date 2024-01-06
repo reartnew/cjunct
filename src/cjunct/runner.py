@@ -14,8 +14,9 @@ from . import types
 from .actions import ActionNet, ActionBase
 from .config.constants import C
 from .config.loaders import get_default_loader_class_for_file
-from .display import NetPrefixDisplay, BaseDisplay
-from .exceptions import SourceError
+from .display.base import BaseDisplay
+from .display.default import NetPrefixDisplay
+from .exceptions import SourceError, ExecutionFailed
 from .strategy import BaseStrategy, LooseStrategy
 
 __all__ = [
@@ -35,7 +36,7 @@ class Runner(classlogging.LoggerMixin):
     ) -> None:
         self._config_path: Path = self._detect_config_source() if config is None else Path(config)
         self._loader_class: types.LoaderClassType = (
-            loader_class or C.CONFIG_LOADER_SOURCE_FILE or get_default_loader_class_for_file(self._config_path)
+            loader_class or C.CONFIG_LOADER_CLASS or get_default_loader_class_for_file(self._config_path)
         )
         self.logger.debug(f"Using config loader class: {self._loader_class}")
         self._strategy_class: types.StrategyClassType = strategy_class
@@ -66,9 +67,9 @@ class Runner(classlogging.LoggerMixin):
         cls.logger.debug(f"Looking for config files at {scan_path}")
         located_config_file: t.Optional[Path] = None
         for candidate_file_name in (
-            "network.xml",
-            "network.yml",
-            "network.yaml",
+            "cjunct.xml",
+            "cjunct.yml",
+            "cjunct.yaml",
         ):  # type: str
             if (maybe_config_file := scan_path / candidate_file_name).exists():
                 cls.logger.info(f"Detected config source: {maybe_config_file}")
@@ -85,18 +86,38 @@ class Runner(classlogging.LoggerMixin):
             raise RuntimeError("Runner has been started more than one time")
         self._started = True
         strategy: BaseStrategy = self._strategy_class(net=self.actions)
-        action_tasks: t.List[asyncio.Task] = []
+        action_runners: t.Dict[str, asyncio.Task] = {}
+        action_dispatchers: t.List[asyncio.Task] = []
         async for action in strategy:  # type: ActionBase
-            self.logger.trace(f"Allocating action iterator for {action.name!r}")
-            for coro in (
-                self._run_action(action=action),
-                self._dispatch_action_events_to_display(action=action, display=self.display),
-            ):
-                action_tasks.append(asyncio.create_task(coro))
+            self.logger.trace(f"Allocating action runner for {action.name!r}")
+            action_runners[action.name] = asyncio.create_task(self._run_action(action=action))
+            self.logger.trace(f"Allocating action dispatcher for {action.name!r}")
+            action_dispatchers.append(
+                asyncio.create_task(
+                    self._dispatch_action_events_to_display(
+                        action=action,
+                        display=self.display,
+                    )
+                )
+            )
 
-        for task in action_tasks:
-            await task
+        had_failed_tasks: bool = False
+        for action_name, action_task in action_runners.items():
+            try:
+                action_result = await action_task
+            except Exception as e:
+                had_failed_tasks = True
+                self.logger.info(f"Action {action_name!r} failed: {repr(e)}")
+            else:
+                if action_result is not None:
+                    self.logger.warning(f"Action {action_name!r} returned something different from None")
+        # Finalize dispatchers
+        for dispatcher_task in action_dispatchers:
+            await dispatcher_task
+
         self.display.on_finish()
+        if had_failed_tasks:
+            raise ExecutionFailed
 
     @staticmethod
     async def _dispatch_action_events_to_display(action: ActionBase, display: BaseDisplay) -> None:
@@ -104,8 +125,8 @@ class Runner(classlogging.LoggerMixin):
             display.emit_action_message(source=action, message=message)
 
     @staticmethod
-    async def _run_action(action: ActionBase) -> None:
-        await action
+    async def _run_action(action: ActionBase) -> t.Any:
+        return await action
 
     def run_sync(self):
         """Wrap async run into an event loop"""

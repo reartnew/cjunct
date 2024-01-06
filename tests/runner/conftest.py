@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 from _pytest.fixtures import SubRequest
 
-from cjunct.display import BaseDisplay
 from cjunct.config.environment import Env
+from cjunct.display.base import BaseDisplay
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -31,9 +31,9 @@ def display_collector(monkeypatch: pytest.MonkeyPatch) -> t.List[str]:
 
 
 @pytest.fixture(params=["chdir", "env_context_dir", "env_actions_source"])
-def runner_context(request: SubRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Prepare a directory with sample config files"""
-    actions_source_path: Path = tmp_path / "network.yaml"
+def runner_good_context(request: SubRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Prepare a directory with good sample config files"""
+    actions_source_path: Path = tmp_path / "cjunct.yaml"
     actions_source_path.write_bytes(
         b"""---
 actions:
@@ -55,3 +55,18 @@ actions:
         monkeypatch.setenv("CJUNCT_ACTIONS_SOURCE_FILE", str(actions_source_path))
     else:
         raise ValueError(request.param)
+
+
+@pytest.fixture
+def runner_bad_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Prepare a directory with bad sample config files"""
+    actions_source_path: Path = tmp_path / "cjunct.yaml"
+    actions_source_path.write_bytes(
+        b"""---
+actions:
+  - name: Qux
+    type: shell
+    command: echo "qux" && exit 1
+"""
+    )
+    monkeypatch.chdir(tmp_path)
