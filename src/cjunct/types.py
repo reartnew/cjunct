@@ -5,7 +5,7 @@ Common types.
 import typing as t
 
 from .config.loaders.base import BaseConfigLoader
-from .display import BaseDisplay
+from .display.base import BaseDisplay
 from .strategy import BaseStrategy
 
 LoaderClassType = t.Type[BaseConfigLoader]

@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 from _pytest.fixtures import SubRequest
 
-from cjunct.display import BaseDisplay
 from cjunct.config.environment import Env
+from cjunct.display.base import BaseDisplay
 
 
 @pytest.fixture(scope="session", autouse=True)

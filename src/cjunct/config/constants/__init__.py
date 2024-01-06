@@ -2,6 +2,7 @@
 
 import os
 import sys
+import typing as t
 from pathlib import Path
 
 from classlogging import LogLevel
@@ -12,11 +13,8 @@ from .helpers import (
     Mandatory,
     maybe_path,
     maybe_class_from_module,
-    maybe_strategy,
 )
 from ..environment import Env
-from ...strategy import LooseStrategy, KNOWN_STRATEGIES
-from ...display import NetPrefixDisplay
 from ...types import (
     LoaderClassType,
     StrategyClassType,
@@ -26,6 +24,35 @@ from ...types import (
 __all__ = [
     "C",
 ]
+
+
+# pylint: disable=import-outside-toplevel
+def _maybe_strategy(name: t.Optional[str]) -> t.Optional[StrategyClassType]:
+    """Transform an optional strategy name into an optional strategy class"""
+    from ...strategy import KNOWN_STRATEGIES
+
+    return KNOWN_STRATEGIES[name] if name else None
+
+
+# pylint: disable=import-outside-toplevel
+def _get_default_display_class() -> DisplayClassType:
+    from ...display.default import NetPrefixDisplay
+
+    return NetPrefixDisplay
+
+
+# pylint: disable=import-outside-toplevel
+def _get_strategy_class_from_cli_arg() -> t.Optional[StrategyClassType]:
+    from ...strategy import KNOWN_STRATEGIES
+
+    return _maybe_strategy(get_cli_arg("strategy", valid_options=KNOWN_STRATEGIES))
+
+
+# pylint: disable=import-outside-toplevel
+def _get_default_strategy_class() -> StrategyClassType:
+    from ...strategy import LooseStrategy
+
+    return LooseStrategy
 
 
 class C:
@@ -56,10 +83,14 @@ class C:
             path_str=Env.CJUNCT_DISPLAY_SOURCE_FILE,
             class_name="Display",
         ),
-        lambda: NetPrefixDisplay,
+        _get_default_display_class,
     )
     STRATEGY_CLASS: Mandatory[StrategyClassType] = Mandatory(
-        lambda: maybe_strategy(get_cli_arg("strategy", valid_options=KNOWN_STRATEGIES)),
-        lambda: maybe_strategy(Env.CJUNCT_STRATEGY_NAME),
-        lambda: LooseStrategy,
+        _get_strategy_class_from_cli_arg,
+        lambda: _maybe_strategy(Env.CJUNCT_STRATEGY_NAME),
+        _get_default_strategy_class,
+    )
+    USE_COLOR: Mandatory[bool] = Mandatory(
+        lambda: Env.CJUNCT_FORCE_COLOR,
+        lambda: os.isatty(sys.stdout.fileno()),
     )

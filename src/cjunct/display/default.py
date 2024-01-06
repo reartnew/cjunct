@@ -1,36 +1,27 @@
-"""Runner output processors"""
+"""Runner output processor default"""
 
 import textwrap
+import typing as t
 
-from .actions import ActionBase, ActionNet
+from .base import BaseDisplay
+from .color import Color
+from ..actions import ActionBase, ActionNet, ActionStatus
 
 __all__ = [
-    "BaseDisplay",
     "NetPrefixDisplay",
 ]
 
 
-class BaseDisplay:
-    """Base class for possible customizations"""
-
-    def __init__(self, net: ActionNet) -> None:
-        self._actions: ActionNet = net
-
-    # pylint: disable=unused-argument
-    def emit_action_message(self, source: ActionBase, message: str) -> None:
-        """Process a message from some source"""
-        self.display(message)
-
-    def on_finish(self) -> None:
-        """Runner finish handler"""
-
-    def display(self, message: str) -> None:
-        """Send text to the end user"""
-        print(message)
-
-
 class NetPrefixDisplay(BaseDisplay):
     """Prefix-based display for action nets"""
+
+    _STATUS_TO_COLOR: t.Dict[ActionStatus, t.Callable] = {
+        ActionStatus.SKIPPED: Color.gray,
+        ActionStatus.PENDING: Color.gray,
+        ActionStatus.FAILURE: Color.red,
+        ActionStatus.RUNNING: Color.blue,
+        ActionStatus.SUCCESS: Color.green,
+    }
 
     def __init__(self, net: ActionNet) -> None:
         super().__init__(net)
@@ -48,15 +39,16 @@ class NetPrefixDisplay(BaseDisplay):
         self._last_displayed_name = source.name
         super().emit_action_message(
             source=source,
-            message=textwrap.indent(message.rstrip("\n"), f"{formatted_name} | "),
+            message=textwrap.indent(message, Color.gray(f"{formatted_name} | ")),
         )
 
     def _display_status_banner(self) -> None:
         """Show a text banner with the status info"""
         justification_len: int = self._action_names_max_len + 9  # "9" here stands for (e.g.) "SUCCESS: "
-        self.display("=" * justification_len)
+        self.display(Color.gray("=" * justification_len))
         for _, action in self._actions.iter_actions_by_tier():
-            self.display(f"{action.status}: {action.name}")
+            color_wrapper: t.Callable = self._STATUS_TO_COLOR[action.status]
+            self.display(f"{color_wrapper(action.status)}: {action.name}")
 
     def on_finish(self) -> None:
         self._display_status_banner()

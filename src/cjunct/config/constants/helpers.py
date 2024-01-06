@@ -5,15 +5,12 @@ import typing as t
 from pathlib import Path
 
 from ..loaders.helpers import load_external_module
-from ...strategy import KNOWN_STRATEGIES
-from ...types import StrategyClassType
 
 __all__ = [
     "Optional",
     "Mandatory",
     "maybe_path",
     "maybe_class_from_module",
-    "maybe_strategy",
 ]
 
 VT = t.TypeVar("VT")
@@ -51,11 +48,6 @@ class Mandatory(Optional, t.Generic[VT]):
 def maybe_path(path_str: str) -> t.Optional[Path]:
     """Transform a string into an optional path"""
     return Path(path_str) if path_str else None
-
-
-def maybe_strategy(name: t.Optional[str]) -> t.Optional[StrategyClassType]:
-    """Transform an optional strategy name into an optional strategy class"""
-    return KNOWN_STRATEGIES[name] if name else None
 
 
 def maybe_class_from_module(path_str: str, class_name: str) -> t.Optional[type]:

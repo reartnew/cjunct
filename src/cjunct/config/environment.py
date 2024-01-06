@@ -1,8 +1,11 @@
 """Separate environment-centric module"""
 
+import typing as t
+
 from named_env import (
     EnvironmentNamespace,
     OptionalString,
+    OptionalTernary,
 )
 
 __all__ = [
@@ -19,3 +22,4 @@ class Env(EnvironmentNamespace):
     CJUNCT_CONFIG_LOADER_SOURCE_FILE: str = OptionalString("")
     CJUNCT_DISPLAY_SOURCE_FILE: str = OptionalString("")
     CJUNCT_STRATEGY_NAME: str = OptionalString("")
+    CJUNCT_FORCE_COLOR: t.Optional[bool] = OptionalTernary(None)  # type: ignore
