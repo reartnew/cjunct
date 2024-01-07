@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from cjunct.actions import ActionBase
-from cjunct.config.loaders import DefaultYAMLConfigLoader
+from cjunct.config.loaders.default.yaml import DefaultYAMLConfigLoader
 
 
 @dataclass

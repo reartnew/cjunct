@@ -2,9 +2,15 @@
 
 import types
 import typing as t
+from importlib.machinery import ModuleSpec
+from importlib.util import (
+    spec_from_file_location,
+    module_from_spec,
+)
 from pathlib import Path
+from types import ModuleType
 
-from ..loaders.helpers import load_external_module
+from ...exceptions import SourceError
 
 __all__ = [
     "Optional",
@@ -15,6 +21,23 @@ __all__ = [
 
 VT = t.TypeVar("VT")
 GetterType = t.Callable[[], t.Optional[VT]]
+
+EXTERNALS_MODULE_NAME: str = "cjunct.external"
+
+
+def load_external_module(source: Path) -> ModuleType:
+    """Load an external module"""
+    if not source.is_file():
+        raise SourceError(f"Missing source module: {source}")
+    module_spec: t.Optional[ModuleSpec] = spec_from_file_location(
+        name=EXTERNALS_MODULE_NAME,
+        location=source,
+    )
+    if module_spec is None:
+        raise SourceError(f"Can't read module spec from source: {source}")
+    module: ModuleType = module_from_spec(module_spec)
+    module_spec.loader.exec_module(module)  # type: ignore
+    return module
 
 
 class Optional(t.Generic[VT]):

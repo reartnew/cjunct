@@ -13,7 +13,7 @@ import classlogging
 from . import types
 from .actions import ActionNet, ActionBase
 from .config.constants import C
-from .config.loaders import get_default_loader_class_for_file
+from .config.loaders.helpers import get_default_loader_class_for_file
 from .display.base import BaseDisplay
 from .display.default import NetPrefixDisplay
 from .exceptions import SourceError, ExecutionFailed
