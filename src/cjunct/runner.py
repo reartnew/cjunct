@@ -120,7 +120,7 @@ class Runner(classlogging.LoggerMixin):
         try:
             await action.warmup(results=self._results_proxy)
         except Exception as e:
-            self.logger.error(f"Action {action.name!r} warmup failed")
+            self.logger.error(f"Action {action.name!r} warmup failed: {e}")
             action.fail(e)
             return
         try:
