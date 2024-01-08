@@ -1,6 +1,7 @@
 """Action results manipulation proxies"""
 
 import re
+import shlex
 import typing as t
 
 ActionResultDataType = t.Dict[str, t.Any]
@@ -47,12 +48,22 @@ class ResultsProxy:
     def __getitem__(self, item: str) -> ActionResultReadOnlyProxy:
         return ActionResultReadOnlyProxy(self._data.get(item, {}))
 
+    @classmethod
+    def _expression_split(cls, string: str) -> t.List[str]:
+        """Use shell-style lexer, but split by dots instead of whitespaces"""
+        dot_lexer = shlex.shlex(instream=string, punctuation_chars=True)
+        dot_lexer.whitespace = "."
+        # Extra split to unquote quoted values
+        return ["".join(shlex.split(token)) for token in dot_lexer]
+
     def _replace(self, match: t.Match) -> str:
         prior: str = match.groupdict()["prior"]
         expression: str = match.groupdict()["expression"]
-        parts: t.List[str] = expression.split(".", maxsplit=1)
+        parts: t.List[str] = self._expression_split(expression)
+        if len(parts) != 2:
+            raise ValueError(f"Expression has {len(parts)} parts: {expression!r} (2 expected)")
         action_name, key = parts
-        value = self[action_name][key]
+        value: t.Any = self[action_name][key]
         return f"{prior}{value}"
 
     def substitute(self, data: str) -> str:
