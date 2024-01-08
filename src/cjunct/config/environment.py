@@ -24,4 +24,4 @@ class Env(EnvironmentNamespace):
     CJUNCT_DISPLAY_SOURCE_FILE: str = OptionalString("")
     CJUNCT_STRATEGY_NAME: str = OptionalString("")
     CJUNCT_FORCE_COLOR: t.Optional[bool] = OptionalTernary(None)  # type: ignore
-    CJUNCT_SHELL_INJECT_YIELD_FUNCTION: bool = OptionalBoolean(False)  # type: ignore
+    CJUNCT_SHELL_INJECT_YIELD_FUNCTION: bool = OptionalBoolean(True)  # type: ignore
