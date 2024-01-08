@@ -11,6 +11,7 @@ from async_shell import Shell
 
 from .base import ActionBase, Stderr
 from ..config.constants import C
+from ..results import ResultsProxy
 
 
 @dataclass
@@ -76,3 +77,7 @@ class ShellAction(ActionBase):
             await asyncio.gather(*tasks)
             await shell_process.validate()
         return self.result
+
+    async def warmup(self, results: ResultsProxy) -> None:
+        self.command = results.substitute(data=self.command)
+        await super().warmup(results)

@@ -9,6 +9,8 @@ from dataclasses import dataclass, field
 
 import classlogging
 
+from ..results import ResultsProxy, ActionResultDataType
+
 __all__ = [
     "ActionDependency",
     "ActionBase",
@@ -96,7 +98,7 @@ class ActionBase(t.Generic[RT], classlogging.LoggerMixin):
         """Main entry to be implemented in subclasses"""
         raise NotImplementedError
 
-    async def _await(self) -> t.Optional[RT]:
+    async def _await(self) -> ActionResultDataType:
         fut = self.get_future()
         if fut.done():
             return fut.result()
@@ -105,21 +107,26 @@ class ActionBase(t.Generic[RT], classlogging.LoggerMixin):
             self.logger.info(f"Running action: {self.name!r}")
             self._running_task = asyncio.create_task(self.run())
             self._status = ActionStatus.RUNNING
-        run_result: t.Optional[RT]
+        result: ActionResultDataType = {}
         try:
-            run_result = await self._running_task
+            running_task_result = await self._running_task
+            if isinstance(running_task_result, t.Mapping):
+                result.update(running_task_result)
+            elif running_task_result is not None:
+                self.logger.warning(
+                    f"Action {self.name!r} returned something different from None "
+                    f"or a mapping: {type(running_task_result)}"
+                )
         except ActionSkip:
-            run_result = None
+            pass
         except Exception as e:
-            self._status = ActionStatus.FAILURE
-            if not fut.done():
-                fut.set_exception(e)
+            self.fail(e)
             raise
         else:
             self._status = ActionStatus.SUCCESS
         if not fut.done():
-            fut.set_result(run_result)
-        return run_result
+            fut.set_result(result)
+        return result
 
     def emit(self, message: EventType) -> None:
         """Issue a message"""
@@ -128,7 +135,15 @@ class ActionBase(t.Generic[RT], classlogging.LoggerMixin):
     def skip(self) -> t.NoReturn:
         """Set status to SKIPPED"""
         self._status = ActionStatus.SKIPPED
+        self.logger.info(f"Action {self.name!r} skipped")
         raise ActionSkip
+
+    def fail(self, exception: Exception) -> None:
+        """Set corresponding error"""
+        self._status = ActionStatus.FAILURE
+        self.logger.info(f"Action {self.name!r} failed: {repr(exception)}")
+        if not self.get_future().done():
+            self.get_future().set_exception(exception)
 
     async def read_events(self) -> t.AsyncGenerator[EventType, None]:
         """Obtain all emitted events sequentially"""
@@ -152,9 +167,12 @@ class ActionBase(t.Generic[RT], classlogging.LoggerMixin):
                         break
                 return
 
-    def __await__(self) -> t.Generator[t.Any, None, t.Optional[RT]]:
+    def __await__(self) -> t.Generator[t.Any, None, ActionResultDataType]:
         return self._await().__await__()  # pylint: disable=no-member
 
     def done(self) -> bool:
         """Indicate whether the action is over"""
         return self.get_future().done() or self._status == ActionStatus.SKIPPED
+
+    async def warmup(self, results: ResultsProxy) -> None:
+        """May adopt any result of completed tasks"""
