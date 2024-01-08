@@ -6,7 +6,7 @@ import typing as t
 
 from classlogging import LoggerMixin
 
-from ..actions.base import ActionBase
+from .base import ActionBase
 from ..exceptions import IntegrityError
 
 __all__ = [
