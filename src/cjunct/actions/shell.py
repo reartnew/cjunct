@@ -21,14 +21,14 @@ class ShellAction(ActionBase):
     script: str = ""
     result: t.Dict[str, str] = field(default_factory=dict, init=False, repr=False)
 
-    YIELD_SCANNER_PATTERN: t.ClassVar[t.Pattern] = re.compile(r"^(.*?)##cjunct\[yield\s*(\S+)\s+(\S*)\s*]##$")
+    YIELD_SCANNER_PATTERN: t.ClassVar[t.Pattern] = re.compile(r"^(.*?)##cjunct\[yield-b64\s*(\S+)\s+(\S*)\s*]##$")
     YIELD_FUNCTION_BOILERPLATE: t.ClassVar[str] = textwrap.dedent(
         """
             yield(){
               [ "$1" = "" ] && echo "Missing key (first argument)" && return 1
               command -v base64 >/dev/null || ( echo "Missing command: base64" && return 2 )
               [ "$2" = "" ] && value="$(cat /dev/stdin)" || value="$2"
-              echo "##cjunct[yield $(printf "$1" | base64) $(printf "$value" | base64)]##"
+              echo "##cjunct[yield-b64 $(printf "$1" | base64) $(printf "$value" | base64)]##"
               return 0
             }
             export -f yield"""
