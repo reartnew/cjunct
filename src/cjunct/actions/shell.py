@@ -32,7 +32,7 @@ class ShellAction(ActionBase):
               echo "##cjunct[yield-b64 $(printf "$1" | base64) $(printf "$value" | base64)]##"
               return 0
             }
-            export -f yield"""
+        """
     ).lstrip()
 
     async def _read_stdout(self, shell_process: Shell):
