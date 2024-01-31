@@ -7,9 +7,9 @@ from xml.etree.ElementTree import Element  # nosec
 
 from defusedxml.ElementTree import XML  # type: ignore
 
-from .base import BaseConfigLoader
-from ...actions.base import ActionBase, ActionDependency
-from ...actions.shell import ShellAction
+from .root import DefaultRootConfigLoader
+from ....actions.base import ActionBase, ActionDependency
+from ....actions.shell import ShellAction
 
 __all__ = [
     "BaseXMLConfigLoader",
@@ -45,7 +45,7 @@ class XMLNode:
         return getattr(self._element, item)
 
 
-class BaseXMLConfigLoader(BaseConfigLoader):
+class BaseXMLConfigLoader(DefaultRootConfigLoader):
     """Loader for XML source files"""
 
     def _parse_import(self, node: XMLNode) -> None:

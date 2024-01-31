@@ -13,10 +13,11 @@ import classlogging
 from . import types
 from .actions import ActionNet, ActionBase
 from .config.constants import C
-from .config.loaders import get_default_loader_class_for_file
+from .config.loaders.helpers import get_default_loader_class_for_file
 from .display.base import BaseDisplay
 from .display.default import NetPrefixDisplay
 from .exceptions import SourceError, ExecutionFailed
+from .results import ResultsProxy, ActionsResultsContainerDataType, ActionResultDataType
 from .strategy import BaseStrategy, LooseStrategy
 
 __all__ = [
@@ -44,6 +45,9 @@ class Runner(classlogging.LoggerMixin):
         self._display_class: types.DisplayClassType = display_class
         self.logger.debug(f"Using display class: {self._display_class}")
         self._started: bool = False
+        self._actual_results: ActionsResultsContainerDataType = {}
+        self._results_proxy: ResultsProxy = ResultsProxy(self._actual_results)
+        self._had_failed_actions: bool = False
 
     @functools.cached_property
     def actions(self) -> ActionNet:
@@ -86,13 +90,12 @@ class Runner(classlogging.LoggerMixin):
             raise RuntimeError("Runner has been started more than one time")
         self._started = True
         strategy: BaseStrategy = self._strategy_class(net=self.actions)
-        action_runners: t.Dict[str, asyncio.Task] = {}
-        action_dispatchers: t.List[asyncio.Task] = []
+        background_tasks: t.List[asyncio.Task] = []
         async for action in strategy:  # type: ActionBase
             self.logger.trace(f"Allocating action runner for {action.name!r}")
-            action_runners[action.name] = asyncio.create_task(self._run_action(action=action))
+            background_tasks.append(asyncio.create_task(self._run_action(action=action)))
             self.logger.trace(f"Allocating action dispatcher for {action.name!r}")
-            action_dispatchers.append(
+            background_tasks.append(
                 asyncio.create_task(
                     self._dispatch_action_events_to_display(
                         action=action,
@@ -101,22 +104,11 @@ class Runner(classlogging.LoggerMixin):
                 )
             )
 
-        had_failed_tasks: bool = False
-        for action_name, action_task in action_runners.items():
-            try:
-                action_result = await action_task
-            except Exception as e:
-                had_failed_tasks = True
-                self.logger.info(f"Action {action_name!r} failed: {repr(e)}")
-            else:
-                if action_result is not None:
-                    self.logger.warning(f"Action {action_name!r} returned something different from None")
-        # Finalize dispatchers
-        for dispatcher_task in action_dispatchers:
-            await dispatcher_task
-
+        # Finalize running actions and message dispatchers
+        for task in background_tasks:
+            await task
         self.display.on_finish()
-        if had_failed_tasks:
+        if self._had_failed_actions:
             raise ExecutionFailed
 
     @staticmethod
@@ -124,9 +116,19 @@ class Runner(classlogging.LoggerMixin):
         async for message in action.read_events():
             display.emit_action_message(source=action, message=message)
 
-    @staticmethod
-    async def _run_action(action: ActionBase) -> t.Any:
-        return await action
+    async def _run_action(self, action: ActionBase) -> None:
+        try:
+            await action.warmup(results=self._results_proxy)
+        except Exception as e:
+            self.logger.error(f"Action {action.name!r} warmup failed: {e}")
+            action.fail(e)
+            return
+        try:
+            result: ActionResultDataType = await action
+        except Exception:
+            self._had_failed_actions = True
+        else:
+            self._actual_results[action.name] = result
 
     def run_sync(self):
         """Wrap async run into an event loop"""

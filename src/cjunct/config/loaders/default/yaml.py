@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import typing as t
+
 import yaml
-from .base import BaseConfigLoader
-from ...actions.base import ActionBase, ActionDependency
-from ...actions.shell import ShellAction
+
+from .root import DefaultRootConfigLoader
+from ....actions.base import ActionBase, ActionDependency
+from ....actions.shell import ShellAction
 
 __all__ = [
     "BaseYAMLConfigLoader",
@@ -45,7 +47,7 @@ for extra_tag_class in (ImportTag, ChecklistsDirectoryTag):
     YAMLLoader.add_constructor(extra_tag_class.yaml_tag, extra_tag_class.from_yaml)
 
 
-class BaseYAMLConfigLoader(BaseConfigLoader):
+class BaseYAMLConfigLoader(DefaultRootConfigLoader):
     """Loader for YAML source files"""
 
     def _parse_import(self, tag: ImportTag) -> None:

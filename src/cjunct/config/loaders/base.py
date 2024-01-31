@@ -8,19 +8,18 @@ from pathlib import Path
 from classlogging import LoggerMixin
 
 from ...actions import ActionNet, ActionBase
-from ...actions.shell import ShellAction
 from ...exceptions import LoadError
 
 __all__ = [
-    "BaseConfigLoader",
+    "AbstractBaseConfigLoader",
 ]
 
 
-class BaseConfigLoader(LoggerMixin):
+class AbstractBaseConfigLoader(LoggerMixin):
     """Loaders base class"""
 
     _RESERVED_CHECKLISTS_NAMES: t.Set[str] = {"ALL", "NONE"}
-    ACTION_FACTORIES: t.Dict[str, t.Type[ActionBase]] = {"shell": ShellAction}
+    ACTION_FACTORIES: t.Dict[str, t.Type[ActionBase]] = {}
 
     def __init__(self) -> None:
         self._actions: t.Dict[str, ActionBase] = {}

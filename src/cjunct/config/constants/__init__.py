@@ -94,3 +94,6 @@ class C:
         lambda: Env.CJUNCT_FORCE_COLOR,
         lambda: os.isatty(sys.stdout.fileno()),
     )
+    SHELL_INJECT_YIELD_FUNCTION: Mandatory[bool] = Mandatory(
+        lambda: Env.CJUNCT_SHELL_INJECT_YIELD_FUNCTION,
+    )
