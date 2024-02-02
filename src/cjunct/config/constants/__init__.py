@@ -82,6 +82,10 @@ class C:
         lambda: maybe_path(Env.CJUNCT_CONTEXT_DIRECTORY),
         lambda: Path().resolve(),
     )
+    INTERACTIVE_MODE: Mandatory[bool] = Mandatory(
+        lambda: get_cli_arg("interactive"),
+        lambda: False,
+    )
     ACTIONS_SOURCE_FILE: Optional[Path] = Optional(
         lambda: maybe_path(get_cli_arg("file")),
         lambda: maybe_path(Env.CJUNCT_ACTIONS_SOURCE_FILE),

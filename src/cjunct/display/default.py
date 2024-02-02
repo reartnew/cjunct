@@ -1,12 +1,16 @@
 """Runner output processor default"""
 
+import sys
 import typing as t
+
+import inquirer  # type: ignore
 
 from .base import BaseDisplay
 from .color import Color
 from ..actions.base import ActionBase, ActionStatus
 from ..actions.net import ActionNet
 from ..actions.types import Stderr
+from ..exceptions import InteractionError
 
 __all__ = [
     "NetPrefixDisplay",
@@ -22,6 +26,7 @@ class NetPrefixDisplay(BaseDisplay):
         ActionStatus.FAILURE: Color.red,
         ActionStatus.RUNNING: lambda x: x,
         ActionStatus.SUCCESS: Color.green,
+        ActionStatus.OMITTED: Color.gray,
     }
 
     def __init__(self, net: ActionNet) -> None:
@@ -67,3 +72,28 @@ class NetPrefixDisplay(BaseDisplay):
 
     def on_finish(self) -> None:
         self._display_status_banner()
+
+    def on_plan_interaction(self, net: ActionNet) -> None:
+        if not sys.stdin.isatty():
+            raise InteractionError
+        displayed_action_names: t.List[str] = []
+        default_selected_action_names: t.List[str] = []
+        for _, action in net.iter_actions_by_tier():
+            if action.visible:
+                displayed_action_names.append(action.name)
+                default_selected_action_names.append(action.name)
+        answers: t.Dict[str, t.List[str]] = inquirer.prompt(
+            [
+                inquirer.Checkbox(
+                    name="actions",
+                    message="Select steps (SPACE to check, RETURN to proceed)",
+                    choices=displayed_action_names,
+                    default=default_selected_action_names,
+                    carousel=True,
+                )
+            ]
+        )
+        selected_action_names: t.List[str] = answers["actions"]
+        for action_name, action in net.items():
+            if action_name not in selected_action_names:
+                action.disable()
