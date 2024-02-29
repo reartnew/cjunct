@@ -1,4 +1,5 @@
 """Check extension possibilities"""
+
 # pylint: disable=unused-argument
 
 import typing as t
@@ -15,9 +16,10 @@ MODULES_DIR: Path = Path(__file__).parent / "modules"
 def test_good_ext_loader(echo_context: None, monkeypatch: pytest.MonkeyPatch, display_collector: t.List[str]) -> None:
     """Validate external loader"""
     monkeypatch.setenv("CJUNCT_CONFIG_LOADER_SOURCE_FILE", str(MODULES_DIR / "good_loader.py"))
+    monkeypatch.setenv("CJUNCT_EXTERNAL_MODULES_PATHS", str(MODULES_DIR))
     cjunct.Runner().run_sync()
     assert display_collector == [
-        "[Foo]  | foo",
+        "[Foo]  | foo-bar",
         "============",
         "SUCCESS: Foo",
     ]
@@ -51,6 +53,7 @@ def test_ext_loader_return_string(
 ) -> None:
     """Check exotic returns from actions"""
     monkeypatch.setenv("CJUNCT_CONFIG_LOADER_SOURCE_FILE", str(MODULES_DIR / "good_loader.py"))
+    monkeypatch.setenv("CJUNCT_EXTERNAL_MODULES_PATHS", str(MODULES_DIR))
     cjunct.Runner().run_sync()
     assert display_collector == [
         "============",

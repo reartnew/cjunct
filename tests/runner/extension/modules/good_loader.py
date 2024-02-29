@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from external_test_lib.constant import TEST_SUFFIX  # type: ignore
+
 from cjunct.actions import ActionBase
 from cjunct.config.loaders.default.yaml import DefaultYAMLConfigLoader
 
@@ -14,7 +16,7 @@ class EchoAction(ActionBase[None]):
 
     async def run(self) -> None:
         """Show message via display"""
-        self.emit(self.message)
+        self.emit(f"{self.message}-{TEST_SUFFIX}")
 
 
 class StringReturningAction(ActionBase[str]):
