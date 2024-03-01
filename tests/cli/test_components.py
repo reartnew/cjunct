@@ -1,4 +1,5 @@
 """Test miscellaneous CLI components"""
+
 # pylint: disable=unused-argument
 
 import pytest

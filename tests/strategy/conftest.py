@@ -1,4 +1,5 @@
 """Loose strategy helpers"""
+
 # pylint: disable=redefined-outer-name
 
 import typing as t
