@@ -17,6 +17,11 @@ def test_simple_runner_call(runner_good_context: None) -> None:
     cjunct.Runner().run_sync()
 
 
+def test_yield_good_call(runner_shell_yield_good_context: None) -> None:
+    """Check yield integration"""
+    cjunct.Runner().run_sync()
+
+
 def test_runner_multiple_run(runner_good_context: None) -> None:
     """Check default call"""
     runner = cjunct.Runner()
@@ -72,8 +77,14 @@ def test_strategy_runner_call(
     }
 
 
-def test_failing_actions(runner_bad_context: None) -> None:
+def test_failing_actions(runner_failing_action_context: None) -> None:
     """Check failing action in the runner"""
+    with pytest.raises(exceptions.ExecutionFailed):
+        cjunct.Runner().run_sync()
+
+
+def test_failing_warmup(runner_failing_warmup_context: None) -> None:
+    """Check failing warmup in the runner"""
     with pytest.raises(exceptions.ExecutionFailed):
         cjunct.Runner().run_sync()
 

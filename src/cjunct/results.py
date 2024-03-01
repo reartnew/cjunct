@@ -46,7 +46,7 @@ class ResultsProxy:
         self._data: ActionsResultsContainerDataType = actual_actions_results_collection
 
     def __getitem__(self, item: str) -> ActionResultReadOnlyProxy:
-        return ActionResultReadOnlyProxy(self._data.get(item, {}))
+        return ActionResultReadOnlyProxy(self._data[item])
 
     @classmethod
     def _expression_split(cls, string: str) -> t.List[str]:

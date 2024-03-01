@@ -13,7 +13,7 @@ __all__ = [
 OptionalDict = t.Optional[t.Dict[str, t.Any]]
 
 
-def get_class_annotations(obj: t.Any) -> t.Dict[str, t.Any]:
+def get_class_annotations(obj: t.Any) -> t.Dict[str, t.Any]:  # pragma: no cover
     """Different pythons hold __annotations__ attribute values as strings or real types, depending on the version."""
     # Resolve class first
     class_definition: type = obj if isinstance(obj, type) else obj.__class__

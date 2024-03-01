@@ -121,6 +121,7 @@ class Runner(classlogging.LoggerMixin):
         except Exception as e:
             self.logger.error(f"Action {action.name!r} warmup failed: {e}")
             action.fail(e)
+            self._had_failed_actions = True
             return
         try:
             result: ActionResultDataType = await action

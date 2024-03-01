@@ -2,6 +2,7 @@
 
 # pylint: disable=redefined-outer-name
 
+import base64
 import typing as t
 from pathlib import Path
 
@@ -58,9 +59,45 @@ actions:
         raise ValueError(request.param)
 
 
+@pytest.fixture(params=["chdir", "env_context_dir", "env_actions_source"])
+def runner_shell_yield_good_context(request: SubRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Prepare a directory with good sample config files using shell yield feature"""
+
+    def _str_to_b64(s: str) -> str:
+        return base64.b64encode(s.encode()).decode()
+
+    actions_source_path: Path = tmp_path / "cjunct.yaml"
+    actions_source_path.write_bytes(
+        f"""---
+actions:
+  - name: Foo
+    type: shell
+    command: yield result-key "I am foo" 
+  - name: Bar
+    type: shell
+    command: |
+     echo "@{{Foo.result-key}}"
+     echo "Prefix ##cjunct[yield-b64 {_str_to_b64('result-key')} {_str_to_b64('bar')}]##"
+    depends_on: [Foo]
+  - name: Baz
+    type: shell
+    command: echo "@{{Bar.result-key}}" 
+    depends_on: [Bar]
+""".encode()
+    )
+    if request.param == "chdir":
+        monkeypatch.chdir(tmp_path)
+    elif request.param == "env_context_dir":
+        monkeypatch.setenv("CJUNCT_CONTEXT_DIRECTORY", str(tmp_path))
+    elif request.param == "env_actions_source":
+        monkeypatch.setenv("CJUNCT_ACTIONS_SOURCE_FILE", str(actions_source_path))
+    else:
+        raise ValueError(request.param)
+
+
 @pytest.fixture
-def runner_bad_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Prepare a directory with bad sample config files"""
+def runner_failing_action_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Prepare a directory with sample config files of a failing action"""
     actions_source_path: Path = tmp_path / "cjunct.yaml"
     actions_source_path.write_bytes(
         b"""---
@@ -68,6 +105,24 @@ actions:
   - name: Qux
     type: shell
     command: echo "qux" && exit 1
+"""
+    )
+    monkeypatch.chdir(tmp_path)
+
+
+@pytest.fixture
+def runner_failing_warmup_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Prepare a directory with sample config files of a failing warmup"""
+    actions_source_path: Path = tmp_path / "cjunct.yaml"
+    actions_source_path.write_bytes(
+        b"""---
+actions:
+  - name: Baz
+    type: shell
+    command: echo "##cjunct[yield-b64 * *]##"
+  - name: Qux
+    type: shell
+    command: echo "@{A.B.C}"
 """
     )
     monkeypatch.chdir(tmp_path)

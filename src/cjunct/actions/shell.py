@@ -56,8 +56,8 @@ class ShellAction(ActionBase):
                     for preceding_content, encoded_key, encoded_value in matches:
                         memorized_prefix += preceding_content
                         self.logger.debug(f"Shell action {self.name!r} reported a key: {encoded_key!r}")
-                        key: str = base64.b64decode(encoded_key).decode()
-                        value: str = base64.b64decode(encoded_value).decode()
+                        key: str = base64.b64decode(encoded_key, validate=True).decode()
+                        value: str = base64.b64decode(encoded_value, validate=True).decode()
                         self.result[key] = value
                 except Exception:
                     self.logger.warning("Failed while parsing system message", exc_info=True)
