@@ -1,0 +1,14 @@
+# exception: IntegrityError
+# match: No entrypoints for the graph
+---
+actions:
+  - name: bar
+    type: shell
+    command: whoami
+    depends_on:
+      - baz
+  - name: baz
+    type: shell
+    command: whoami
+    depends_on:
+      - bar

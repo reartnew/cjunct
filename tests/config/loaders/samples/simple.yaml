@@ -13,3 +13,5 @@ actions:
     depends_on:
       - name: RunAnsible
         strict: Yes
+      - name: MissingExternal
+        external: Yes
