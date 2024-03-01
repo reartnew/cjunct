@@ -1,5 +1,5 @@
 # exception: LoadError
-# match: might not be empty
+# match: Neither command nor script specified
 ---
 actions:
   - name: foo

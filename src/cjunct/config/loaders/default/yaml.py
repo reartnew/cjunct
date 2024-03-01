@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import typing as t
 
+import dacite
 import yaml
 
+from .inspect import get_class_annotations
 from .root import DefaultRootConfigLoader
-from ....actions.base import ActionBase, ActionDependency
-from ....actions.shell import ShellAction
+from ....actions.base import ActionBase, ActionDependency, ArgsBase
 
 __all__ = [
-    "BaseYAMLConfigLoader",
     "DefaultYAMLConfigLoader",
 ]
 
@@ -25,6 +25,9 @@ class ExtraTag(yaml.YAMLObject):
     @classmethod
     def from_yaml(cls, loader, node):
         return cls(node.value)
+
+
+DACITE_CONFIG = dacite.Config(strict=True)
 
 
 class ImportTag(ExtraTag):
@@ -47,7 +50,7 @@ for extra_tag_class in (ImportTag, ChecklistsDirectoryTag):
     YAMLLoader.add_constructor(extra_tag_class.yaml_tag, extra_tag_class.from_yaml)
 
 
-class BaseYAMLConfigLoader(DefaultRootConfigLoader):
+class DefaultYAMLConfigLoader(DefaultRootConfigLoader):
     """Loader for YAML source files"""
 
     def _parse_import(self, tag: ImportTag) -> None:
@@ -83,9 +86,6 @@ class BaseYAMLConfigLoader(DefaultRootConfigLoader):
         for child_node in actions:
             if isinstance(child_node, dict):
                 action: ActionBase = self._build_action_from_dict(child_node)
-                unrecognized_action_tags: t.List[str] = sorted(child_node)
-                if unrecognized_action_tags:
-                    self._throw(f"Unrecognized keys for action {action.name!r}: {unrecognized_action_tags}")
                 self._register_action(action)
             elif isinstance(child_node, ImportTag):
                 self._parse_import(child_node)
@@ -163,38 +163,36 @@ class BaseYAMLConfigLoader(DefaultRootConfigLoader):
         dependencies: t.Dict[str, ActionDependency] = dict(
             self._build_dependency_from_node(dep_node) for dep_node in deps_node
         )
+        args_instance: ArgsBase = self._build_args_from_the_rest_of_the_node(
+            action_name=name,
+            action_class=action_class,
+            node=node,
+        )
         return action_class(
             name=name,
-            # type=action_type,
+            args=args_instance,
             on_fail=on_fail,
             visible=visible,
             description=description,
             ancestors=dependencies,
         )
 
-
-class DefaultYAMLConfigLoader(BaseYAMLConfigLoader):
-    """Default extension for shell"""
-
-    def _parse_string_attr(self, attrib_name: str, node: dict) -> str:
-        """Simple string attribute"""
-        attrib_value: t.Optional[str] = node.pop(attrib_name, None)
-        if attrib_value is None:
-            return ""
-        if not isinstance(attrib_value, str):
-            self._throw(f"Unrecognized {attrib_name!r} type: {type(attrib_value)!r} (expected optional string)")
-        if not attrib_value:
-            self._throw(f"{attrib_name!r} might not be empty")
-        return attrib_value
-
-    def _build_action_from_dict(self, node: dict) -> ActionBase:
-        action: ActionBase = super()._build_action_from_dict(node)
-        # Varying args for shell
-        if isinstance(action, ShellAction):
-            action.command = self._parse_string_attr(attrib_name="command", node=node)
-            action.script = self._parse_string_attr(attrib_name="script", node=node)
-            if not action.command and not action.script:
-                self._throw(f"Action {action.name!r}: neither command nor script specified")
-            if action.command and action.script:
-                self._throw(f"Action {action.name!r}: both command and script specified")
-        return action
+    def _build_args_from_the_rest_of_the_node(
+        self,
+        action_name: str,
+        action_class: t.Type[ActionBase],
+        node: dict,
+    ) -> ArgsBase:
+        for mro_class in action_class.__mro__:
+            if args_class := get_class_annotations(mro_class).get("args"):
+                break
+        else:
+            self._throw(f"Couldn't find args descriptor for class {action_class.__name__}")
+        try:
+            return t.cast(ArgsBase, dacite.from_dict(args_class, node, DACITE_CONFIG))
+        except ValueError as e:
+            self._throw(f"Action {action_name!r}: {e}")
+        except dacite.UnexpectedDataError as e:
+            self._throw(f"Unrecognized keys for action {action_name!r}: {sorted(e.keys)}")
+        except dacite.WrongTypeError as e:
+            self._throw(f"Unrecognized {e.field_path!r} content type: {type(e.value)} (expected {e.field_type!r})")

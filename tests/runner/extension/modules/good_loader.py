@@ -2,21 +2,26 @@
 
 from dataclasses import dataclass
 
-from external_test_lib.constant import TEST_SUFFIX  # type: ignore
-
-from cjunct.actions import ActionBase
+from cjunct.actions import ActionBase, ArgsBase
 from cjunct.config.loaders.default.yaml import DefaultYAMLConfigLoader
+from external_test_lib.constant import TEST_SUFFIX  # type: ignore  # pylint: disable=wrong-import-order
 
 
 @dataclass
+class EchoArgs(ArgsBase):
+    """Args for EchoAction"""
+
+    message: str
+
+
 class EchoAction(ActionBase[None]):
     """Simple printer"""
 
-    message: str = ""
+    args: EchoArgs
 
     async def run(self) -> None:
         """Show message via display"""
-        self.emit(f"{self.message}-{TEST_SUFFIX}")
+        self.emit(f"{self.args.message}-{TEST_SUFFIX}")
 
 
 class StringReturningAction(ActionBase[str]):
@@ -35,12 +40,3 @@ class ConfigLoader(DefaultYAMLConfigLoader):
         "echo": EchoAction,
         "return-string": StringReturningAction,
     }
-
-    def _build_action_from_dict(self, node: dict) -> ActionBase:
-        action: ActionBase = super()._build_action_from_dict(node)
-        # Varying args for echo
-        if isinstance(action, EchoAction):
-            action.message = self._parse_string_attr(attrib_name="message", node=node)
-            if not action.message:
-                self._throw(f"Action {action.name!r} message not specified")
-        return action

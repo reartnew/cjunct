@@ -5,22 +5,33 @@ import base64
 import re
 import textwrap
 import typing as t
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from async_shell import Shell
 
-from .base import ActionBase, Stderr
+from .base import ActionBase, Stderr, ArgsBase
 from ..config.constants import C
 from ..results import ResultsProxy
 
 
 @dataclass
-class ShellAction(ActionBase):
-    """Shell commands handler"""
+class ShellArgs(ArgsBase):
+    """Args for shell-related actions"""
 
     command: str = ""
     script: str = ""
-    result: t.Dict[str, str] = field(default_factory=dict, init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        if not self.command and not self.script:
+            raise ValueError("Neither command nor script specified")
+        if self.command and self.script:
+            raise ValueError("Both command and script specified")
+
+
+class ShellAction(ActionBase):
+    """Shell commands handler"""
+
+    args: ShellArgs
 
     YIELD_SCANNER_PATTERN: t.ClassVar[t.Pattern] = re.compile(r"^(.*?)##cjunct\[yield-b64\s*(\S+)\s+(\S*)\s*]##$")
     YIELD_FUNCTION_BOILERPLATE: t.ClassVar[str] = textwrap.dedent(
@@ -63,7 +74,7 @@ class ShellAction(ActionBase):
             self.emit(Stderr(line))
 
     def _make_command(self) -> str:
-        command: str = self.command or f"source '{self.script}'"
+        command: str = self.args.command or f"source '{self.args.script}'"
         if C.SHELL_INJECT_YIELD_FUNCTION:
             command = f"{self.YIELD_FUNCTION_BOILERPLATE}\n{command}"
         return command
@@ -79,5 +90,5 @@ class ShellAction(ActionBase):
         return self.result
 
     async def warmup(self, results: ResultsProxy) -> None:
-        self.command = results.substitute(data=self.command)
+        self.args.command = results.substitute(data=self.args.command)
         await super().warmup(results)

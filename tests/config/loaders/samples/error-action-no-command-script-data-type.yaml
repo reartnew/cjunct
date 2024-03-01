@@ -1,5 +1,5 @@
 # exception: LoadError
-# match: (expected optional string)
+# match: (expected <class 'str'>)
 ---
 actions:
   - name: foo

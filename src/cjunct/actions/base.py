@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import enum
 import typing as t
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import classlogging
 
@@ -17,6 +17,7 @@ __all__ = [
     "ActionStatus",
     "ActionSkip",
     "Stderr",
+    "ArgsBase",
 ]
 
 AT = t.TypeVar("AT", bound="ActionBase")
@@ -58,21 +59,39 @@ class Stderr(str):
 
 
 @dataclass
+class ArgsBase:
+    """Default empty args holder.
+    Should be subclassed and then added to the `args` annotation of any action class."""
+
+
 class ActionBase(t.Generic[RT], classlogging.LoggerMixin):
     """Base class for all actions"""
 
-    name: str
-    # Maybe add: type: str
-    on_fail: t.Optional[str] = field(default=None)
-    visible: bool = field(default=True)
-    ancestors: t.Dict[str, ActionDependency] = field(default_factory=dict)
-    description: t.Optional[str] = None
-    descendants: t.Dict[str, ActionDependency] = field(init=False, default_factory=dict)
-    _status: ActionStatus = field(init=False, default=ActionStatus.PENDING)
-    # Do not create asyncio-related objects on constructing object to decouple from the event loop
-    _maybe_finish_flag: t.Optional[asyncio.Future] = field(init=False, default=None)
-    _maybe_event_queue: t.Optional[asyncio.Queue[EventType]] = field(init=False, default=None)
-    _running_task: t.Optional[asyncio.Task] = field(init=False, default=None)
+    args: ArgsBase
+
+    def __init__(
+        self,
+        name: str,
+        args: ArgsBase = ArgsBase(),
+        on_fail: t.Optional[str] = None,
+        visible: bool = True,
+        ancestors: t.Optional[t.Dict[str, ActionDependency]] = None,
+        description: t.Optional[str] = None,
+    ) -> None:
+        self.name: str = name
+        self.args: ArgsBase = args
+        self.on_fail: t.Optional[str] = on_fail
+        self.visible: bool = visible
+        self.description: t.Optional[str] = description
+        self.ancestors: t.Dict[str, ActionDependency] = ancestors or {}
+
+        self.descendants: t.Dict[str, ActionDependency] = {}
+        self.result: t.Dict[str, str] = {}
+        self._status: ActionStatus = ActionStatus.PENDING
+        # Do not create asyncio-related objects on constructing object to decouple from the event loop
+        self._maybe_finish_flag: t.Optional[asyncio.Future] = None
+        self._maybe_event_queue: t.Optional[asyncio.Queue[EventType]] = None
+        self._running_task: t.Optional[asyncio.Task] = None
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r}, status={self._status.value})"

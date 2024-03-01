@@ -177,8 +177,8 @@ class DefaultXMLConfigLoader(BaseXMLConfigLoader):
             for sub_node in node:
                 if sub_node.tag in ("command", "script"):
                     self._load_eponymous_tag(node=sub_node, action=action)
-            if not action.command and not action.script:
-                self._throw(f"Action {action.name!r}: neither command nor script specified")
-            if action.command and action.script:
-                self._throw(f"Action {action.name!r}: both command and script specified")
+            if not action.args.command and not action.args.script:
+                self._throw(f"Action {action.name!r}: Neither command nor script specified")
+            if action.args.command and action.args.script:
+                self._throw(f"Action {action.name!r}: Both command and script specified")
         return action
