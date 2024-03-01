@@ -35,8 +35,8 @@ class StringReturningAction(ActionBase[str]):
 class ConfigLoader(DefaultYAMLConfigLoader):
     """Able to build echoes"""
 
-    ACTION_FACTORIES = {
-        **DefaultYAMLConfigLoader.ACTION_FACTORIES,
+    STATIC_ACTION_FACTORIES = {
+        **DefaultYAMLConfigLoader.STATIC_ACTION_FACTORIES,
         "echo": EchoAction,
         "return-string": StringReturningAction,
     }

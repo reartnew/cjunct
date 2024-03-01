@@ -14,7 +14,7 @@ class BadEchoAction:
 class ConfigLoader(DefaultYAMLConfigLoader):
     """Able to build echoes"""
 
-    ACTION_FACTORIES = {
-        **DefaultYAMLConfigLoader.ACTION_FACTORIES,
+    STATIC_ACTION_FACTORIES = {
+        **DefaultYAMLConfigLoader.STATIC_ACTION_FACTORIES,
         "echo": BadEchoAction,  # type: ignore
     }

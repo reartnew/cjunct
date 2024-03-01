@@ -23,7 +23,7 @@ class AbstractBaseConfigLoader(LoggerMixin):
     """Loaders base class"""
 
     _RESERVED_CHECKLISTS_NAMES: t.Set[str] = {"ALL", "NONE"}
-    ACTION_FACTORIES: t.Dict[str, t.Type[ActionBase]] = {}
+    STATIC_ACTION_FACTORIES: t.Dict[str, t.Type[ActionBase]] = {}
 
     def __init__(self) -> None:
         self._actions: t.Dict[str, ActionBase] = {}
@@ -80,6 +80,11 @@ class AbstractBaseConfigLoader(LoggerMixin):
     def _internal_loads(self, data: t.Union[str, bytes]) -> None:
         """Load config partially from text (can be called recursively)"""
         raise NotImplementedError
+
+    def _get_action_factory_by_type(self, action_type: str) -> t.Type[ActionBase]:
+        if action_type not in self.STATIC_ACTION_FACTORIES:
+            self._throw(f"Unknown dispatched type: {action_type}")
+        return self.STATIC_ACTION_FACTORIES[action_type]
 
     def loads(self, data: t.Union[str, bytes]) -> ActionNet:
         """Load config from text"""
@@ -147,9 +152,7 @@ class AbstractBaseConfigLoader(LoggerMixin):
         if "type" not in node:
             self._throw(f"'type' not specified for action {name!r}")
         action_type: str = node.pop("type")
-        if action_type not in self.ACTION_FACTORIES:
-            self._throw(f"Unknown dispatched type: {action_type}")
-        action_class: t.Type[ActionBase] = self.ACTION_FACTORIES[action_type]
+        action_class: t.Type[ActionBase] = self._get_action_factory_by_type(action_type)
         # Description
         description: t.Optional[str] = node.pop("description", None)
         if description is not None and not isinstance(description, str):

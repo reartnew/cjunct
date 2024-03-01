@@ -78,6 +78,9 @@ class C:
             class_name="ConfigLoader",
         )
     )
+    ACTION_CLASSES_DIRECTORIES: Mandatory[t.List[str]] = Mandatory(
+        lambda: Env.CJUNCT_ACTIONS_CLASS_DEFINITIONS_DIRECTORY,
+    )
     DISPLAY_CLASS: Mandatory[DisplayClassType] = Mandatory(
         lambda: maybe_class_from_module(
             path_str=Env.CJUNCT_DISPLAY_SOURCE_FILE,
