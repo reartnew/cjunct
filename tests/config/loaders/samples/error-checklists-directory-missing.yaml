@@ -1,0 +1,5 @@
+# exception: LoadError
+# match: No such directory
+---
+actions:
+  - !checklists-directory "/missing/dir"
