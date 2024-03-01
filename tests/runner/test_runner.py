@@ -1,4 +1,5 @@
 """Runner public methods tests"""
+
 # pylint: disable=unused-argument
 
 import typing as t
@@ -34,7 +35,7 @@ def test_not_found_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
 def test_multiple_found_configs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Ambiguous source directory"""
     monkeypatch.chdir(tmp_path)
-    (tmp_path / "cjunct.xml").touch()
+    (tmp_path / "cjunct.yml").touch()
     (tmp_path / "cjunct.yaml").touch()
     with pytest.raises(exceptions.SourceError, match="Multiple config sources detected in"):
         cjunct.Runner().run_sync()
@@ -44,7 +45,7 @@ def test_non_existent_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
     """No config file with given name"""
     monkeypatch.chdir(tmp_path)
     with pytest.raises(exceptions.LoadError, match="Config file not found"):
-        cjunct.Runner(config=tmp_path / "cjunct.xml").run_sync()
+        cjunct.Runner(config=tmp_path / "cjunct.yml").run_sync()
 
 
 def test_unrecognized_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
