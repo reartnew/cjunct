@@ -20,7 +20,6 @@ python-dotenv = "^1.0.1"
 async-shell = "^1.0.3"
 pyyaml = "^6.0.1"
 click = "^8.1.4"
-defusedxml = "^0.7.1"
 dacite = "^1.8.1"
 
 [tool.poetry.group.dev.dependencies]
