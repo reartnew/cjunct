@@ -50,6 +50,6 @@ def get_class_annotations(obj: t.Any) -> t.Dict[str, t.Any]:
     # Eval finally
     return {
         # pylint: disable=eval-used
-        key: value if not isinstance(value, str) else eval(value, class_globals, class_locals)
+        key: value if not isinstance(value, str) else eval(value, class_globals, class_locals)  # nosec
         for key, value in annotations_source.items()
     }
