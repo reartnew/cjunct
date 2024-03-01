@@ -60,7 +60,7 @@ class BaseXMLConfigLoader(DefaultRootConfigLoader):
             self._throw(f"Unrecognized checklists node text: {node.value!r}")
         for attr_name, attr_value in node.attrib.items():
             if attr_name == "sourceDirectory":
-                self._load_checklists_from_directory(attr_value)
+                self.load_checklists_from_directory(attr_value)
             else:
                 self._throw(f"Unrecognized checklists node attribute: {attr_name!r}")
 
