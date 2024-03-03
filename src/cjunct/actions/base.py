@@ -85,7 +85,6 @@ class ActionBase(t.Generic[RT], classlogging.LoggerMixin):
         self.description: t.Optional[str] = description
         self.ancestors: t.Dict[str, ActionDependency] = ancestors or {}
 
-        self.descendants: t.Dict[str, ActionDependency] = {}
         self.result: t.Dict[str, str] = {}
         self._status: ActionStatus = ActionStatus.PENDING
         # Do not create asyncio-related objects on constructing object to decouple from the event loop
