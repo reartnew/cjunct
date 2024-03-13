@@ -18,13 +18,13 @@ class ShellArgs(ArgsBase):
     """Args for shell-related actions"""
 
     command: t.Optional[StringTemplate] = None
-    script: t.Optional[StringTemplate] = None
+    file: t.Optional[StringTemplate] = None
 
     def __post_init__(self) -> None:
-        if self.command is None and self.script is None:
-            raise ValueError("Neither command nor script specified")
-        if self.command is not None and self.script is not None:
-            raise ValueError("Both command and script specified")
+        if self.command is None and self.file is None:
+            raise ValueError("Neither command nor file specified")
+        if self.command is not None and self.file is not None:
+            raise ValueError("Both command and file specified")
 
 
 class ShellAction(ActionBase):
@@ -73,7 +73,7 @@ class ShellAction(ActionBase):
             self.emit(Stderr(line))
 
     def _make_command(self) -> str:
-        command: str = self.args.command or f"source '{self.args.script}'"
+        command: str = self.args.command or f"source '{self.args.file}'"
         if C.SHELL_INJECT_YIELD_FUNCTION:
             command = f"{self.YIELD_FUNCTION_BOILERPLATE}\n{command}"
         return command

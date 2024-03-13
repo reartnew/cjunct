@@ -1,7 +1,7 @@
 # exception: LoadError
-# match: Unrecognized 'script' content type: <class 'dict'>
+# match: Unrecognized 'file' content type: <class 'dict'>
 ---
 actions:
   - name: foo
     type: shell
-    script: {}
+    file: {}
