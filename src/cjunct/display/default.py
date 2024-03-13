@@ -4,12 +4,12 @@ import typing as t
 
 from .base import BaseDisplay
 from .color import Color
-from ..actions import (
+from ..actions.base import (
     ActionBase,
-    ActionNet,
     ActionStatus,
     Stderr,
 )
+from ..actions.net import ActionNet
 
 __all__ = [
     "NetPrefixDisplay",

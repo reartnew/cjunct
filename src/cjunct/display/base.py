@@ -1,6 +1,7 @@
 """Runner output processor base"""
 
-from ..actions import ActionBase, ActionNet
+from ..actions.base import ActionBase
+from ..actions.net import ActionNet
 
 __all__ = [
     "BaseDisplay",

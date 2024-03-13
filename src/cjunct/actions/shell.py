@@ -9,22 +9,21 @@ from dataclasses import dataclass
 
 from async_shell import Shell
 
-from .base import ActionBase, Stderr, ArgsBase
+from .base import ActionBase, Stderr, ArgsBase, StringTemplate
 from ..config.constants import C
-from ..results import ResultsProxy
 
 
 @dataclass
 class ShellArgs(ArgsBase):
     """Args for shell-related actions"""
 
-    command: str = ""
-    script: str = ""
+    command: t.Optional[StringTemplate] = None
+    script: t.Optional[StringTemplate] = None
 
     def __post_init__(self) -> None:
-        if not self.command and not self.script:
+        if self.command is None and self.script is None:
             raise ValueError("Neither command nor script specified")
-        if self.command and self.script:
+        if self.command is not None and self.script is not None:
             raise ValueError("Both command and script specified")
 
 
@@ -58,7 +57,7 @@ class ShellAction(ActionBase):
                         self.logger.debug(f"Shell action {self.name!r} reported a key: {encoded_key!r}")
                         key: str = base64.b64decode(encoded_key, validate=True).decode()
                         value: str = base64.b64decode(encoded_value, validate=True).decode()
-                        self.result[key] = value
+                        self.yield_outcome(key, value)
                 except Exception:
                     self.logger.warning("Failed while parsing system message", exc_info=True)
             else:
@@ -79,7 +78,7 @@ class ShellAction(ActionBase):
             command = f"{self.YIELD_FUNCTION_BOILERPLATE}\n{command}"
         return command
 
-    async def run(self) -> t.Dict[str, str]:
+    async def run(self) -> None:
         async with Shell(command=self._make_command()) as shell_process:
             tasks: t.List[asyncio.Task] = [
                 asyncio.create_task(self._read_stdout(shell_process)),
@@ -87,8 +86,3 @@ class ShellAction(ActionBase):
             ]
             await asyncio.gather(*tasks)
             await shell_process.validate()
-        return self.result
-
-    async def warmup(self, results: ResultsProxy) -> None:
-        self.args.command = results.substitute(data=self.args.command)
-        await super().warmup(results)

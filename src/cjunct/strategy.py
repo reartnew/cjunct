@@ -10,12 +10,8 @@ import typing as t
 
 import classlogging
 
-from .actions import (
-    ActionNet,
-    ActionBase,
-    ActionStatus,
-)
-from .actions.base import ActionSkip
+from .actions.base import ActionStatus, ActionBase, ActionSkip
+from .actions.net import ActionNet
 
 ST = t.TypeVar("ST", bound="BaseStrategy")
 

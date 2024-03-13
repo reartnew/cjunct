@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from cjunct.actions import ActionBase, ArgsBase
+from cjunct import ActionBase, ArgsBase
 from cjunct.config.loaders.default.yaml import DefaultYAMLConfigLoader
 from external_test_lib.constant import TEST_SUFFIX  # type: ignore  # pylint: disable=wrong-import-order
 
@@ -14,7 +14,7 @@ class EchoArgs(ArgsBase):
     message: str
 
 
-class EchoAction(ActionBase[None]):
+class EchoAction(ActionBase):
     """Simple printer"""
 
     args: EchoArgs
@@ -24,11 +24,11 @@ class EchoAction(ActionBase[None]):
         self.emit(f"{self.args.message}-{TEST_SUFFIX}")
 
 
-class StringReturningAction(ActionBase[str]):
+class StringReturningAction(ActionBase):
     """Returns not none"""
 
-    async def run(self) -> str:
-        """Just check return"""
+    async def run(self) -> str:  # type: ignore
+        """Just return something that's not None"""
         return "I am a string!"
 
 

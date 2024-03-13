@@ -9,14 +9,13 @@ import dacite
 from classlogging import LoggerMixin
 
 from .inspect import get_class_annotations
-from ...actions import ActionNet, ActionBase, ArgsBase, ActionDependency
+from ...actions.base import ActionBase, ArgsBase, ActionDependency, StringTemplate
+from ...actions.net import ActionNet
 from ...exceptions import LoadError
 
 __all__ = [
     "AbstractBaseConfigLoader",
 ]
-
-DACITE_CONFIG = dacite.Config(strict=True)
 
 
 class AbstractBaseConfigLoader(LoggerMixin):
@@ -178,6 +177,15 @@ class AbstractBaseConfigLoader(LoggerMixin):
             ancestors=dependencies,
         )
 
+    @classmethod
+    def _ensure_string_template_hook(cls, data: t.Any) -> StringTemplate:
+        if not isinstance(data, str):
+            raise dacite.WrongTypeError(
+                field_type=StringTemplate,
+                value=data,
+            )
+        return StringTemplate(data)
+
     def _build_args_from_the_rest_of_the_dict_node(
         self,
         action_name: str,
@@ -190,7 +198,17 @@ class AbstractBaseConfigLoader(LoggerMixin):
         else:
             self._throw(f"Couldn't find an `args` annotation for class {action_class.__name__}")
         try:
-            return t.cast(ArgsBase, dacite.from_dict(args_class, node, DACITE_CONFIG))
+            return t.cast(
+                ArgsBase,
+                dacite.from_dict(
+                    data_class=args_class,
+                    data=node,
+                    config=dacite.Config(
+                        strict=True,
+                        type_hooks={StringTemplate: self._ensure_string_template_hook},
+                    ),
+                ),
+            )
         except ValueError as e:
             self._throw(f"Action {action_name!r}: {e}")
         except dacite.UnexpectedDataError as e:

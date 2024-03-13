@@ -1,6 +1,6 @@
 """Check status map integrity"""
 
-from cjunct.actions import ActionStatus
+from cjunct.actions.base import ActionStatus
 
 
 def test_status_names_and_values_match() -> None:

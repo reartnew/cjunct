@@ -7,7 +7,7 @@ from pathlib import Path
 from ..base import AbstractBaseConfigLoader
 from ...constants import C
 from ...constants.helpers import maybe_class_from_module
-from ....actions import ActionBase
+from ....actions.base import ActionBase
 from ....actions.shell import ShellAction
 
 __all__ = [

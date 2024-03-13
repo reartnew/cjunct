@@ -5,28 +5,47 @@ thus placed to a separate module.
 
 import asyncio
 import functools
+import re
+import shlex
 import typing as t
+from dataclasses import asdict
 from pathlib import Path
 
 import classlogging
+import dacite
 
 from . import types
-from .actions import ActionNet, ActionBase
+from .actions.base import ActionBase, StringTemplate, RenderedStringTemplate, ArgsBase
+from .actions.net import ActionNet
 from .config.constants import C
 from .config.loaders.helpers import get_default_loader_class_for_file
 from .display.base import BaseDisplay
 from .display.default import NetPrefixDisplay
 from .exceptions import SourceError, ExecutionFailed
-from .results import ResultsProxy, ActionsResultsContainerDataType, ActionResultDataType
 from .strategy import BaseStrategy, LooseStrategy
 
 __all__ = [
     "Runner",
 ]
 
+ActionResultDataType = t.Dict[str, t.Any]
+ActionsResultsContainerDataType = t.Dict[str, t.Dict[str, t.Any]]
+
 
 class Runner(classlogging.LoggerMixin):
     """Main entry object"""
+
+    _TEMPLATE_SUBST_PATTERN: t.Pattern = re.compile(
+        r"""
+        (?P<prior>
+            (?:^|[^@])  # Ensure that match starts from the first @ sign
+            (?:@@)*  # Possibly escaped @ signs
+        )
+        @\{
+          (?P<expression>.*?)
+        }""",
+        re.VERBOSE,
+    )
 
     def __init__(
         self,
@@ -45,8 +64,7 @@ class Runner(classlogging.LoggerMixin):
         self._display_class: types.DisplayClassType = display_class
         self.logger.debug(f"Using display class: {self._display_class}")
         self._started: bool = False
-        self._actual_results: ActionsResultsContainerDataType = {}
-        self._results_proxy: ResultsProxy = ResultsProxy(self._actual_results)
+        self._outcomes: t.Dict[str, t.Dict[str, t.Any]] = {}
         self._had_failed_actions: bool = False
 
     @functools.cached_property
@@ -117,19 +135,56 @@ class Runner(classlogging.LoggerMixin):
 
     async def _run_action(self, action: ActionBase) -> None:
         try:
-            await action.warmup(results=self._results_proxy)
+            self._render_action(action)
         except Exception as e:
-            self.logger.error(f"Action {action.name!r} warmup failed: {e}")
+            self.logger.error(f"Action {action.name!r} rendering failed: {e}")
             action.fail(e)
             self._had_failed_actions = True
             return
         try:
-            result: ActionResultDataType = await action
+            await action
         except Exception:
             self._had_failed_actions = True
-        else:
-            self._actual_results[action.name] = result
+        finally:
+            self._outcomes[action.name] = action.get_outcomes()
 
     def run_sync(self):
         """Wrap async run into an event loop"""
         asyncio.run(self.run_async())
+
+    def _render_action(self, action: ActionBase) -> None:
+        original_args_dict: dict = asdict(action.args)
+        rendered_args: ArgsBase = dacite.from_dict(
+            data_class=type(action.args),
+            data=original_args_dict,
+            config=dacite.Config(
+                strict=True,
+                type_hooks={
+                    StringTemplate: self._string_template_render_hook,
+                },
+            ),
+        )
+        action.args = rendered_args
+
+    def _string_template_render_hook(self, value: str) -> RenderedStringTemplate:
+        """Process string data, replacing all @{} occurrences"""
+        replaced_value: str = self._TEMPLATE_SUBST_PATTERN.sub(self._replace, value)
+        return RenderedStringTemplate(replaced_value)
+
+    @classmethod
+    def _expression_split(cls, string: str) -> t.List[str]:
+        """Use shell-style lexer, but split by dots instead of whitespaces"""
+        dot_lexer = shlex.shlex(instream=string, punctuation_chars=True)
+        dot_lexer.whitespace = "."
+        # Extra split to unquote quoted values
+        return ["".join(shlex.split(token)) for token in dot_lexer]
+
+    def _replace(self, match: t.Match) -> str:
+        prior: str = match.groupdict()["prior"]
+        expression: str = match.groupdict()["expression"]
+        parts: t.List[str] = self._expression_split(expression)
+        if len(parts) != 2:
+            raise ValueError(f"Expression has {len(parts)} parts: {expression!r} (2 expected)")
+        action_name, key = parts
+        value: t.Any = self._outcomes.get(action_name, {})[key]
+        return f"{prior}{value}"

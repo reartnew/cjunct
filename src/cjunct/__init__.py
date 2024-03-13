@@ -7,4 +7,11 @@ from .strategy import (
     SequentialStrategy,
     LooseStrategy,
 )
+from .actions.base import (
+    ActionBase,
+    ArgsBase,
+    Stderr,
+    StringTemplate,
+)
+
 from .version import __version__
