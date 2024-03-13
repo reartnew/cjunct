@@ -32,14 +32,14 @@ class ShellAction(ActionBase):
 
     args: ShellArgs
 
-    YIELD_SCANNER_PATTERN: t.ClassVar[t.Pattern] = re.compile(r"^(.*?)##cjunct\[yield-b64\s*(\S+)\s+(\S*)\s*]##$")
+    YIELD_SCAN_PATTERN: t.ClassVar[t.Pattern] = re.compile(r"^(.*?)##cjunct\[yield-outcome-b64\s*(\S+)\s+(\S*)\s*]##$")
     YIELD_FUNCTION_BOILERPLATE: t.ClassVar[str] = textwrap.dedent(
         """
-            yield(){
+            yield_outcome(){
               [ "$1" = "" ] && echo "Missing key (first argument)" && return 1
               command -v base64 >/dev/null || ( echo "Missing command: base64" && return 2 )
               [ "$2" = "" ] && value="$(cat /dev/stdin)" || value="$2"
-              echo "##cjunct[yield-b64 $(printf "$1" | base64) $(printf "$value" | base64)]##"
+              echo "##cjunct[yield-outcome-b64 $(printf "$1" | base64) $(printf "$value" | base64)]##"
               return 0
             }
         """
@@ -50,7 +50,7 @@ class ShellAction(ActionBase):
         memorized_prefix: str = ""
         async for line in shell_process.read_stdout():
             # `endswith` is a cheaper check than re.findall
-            if line.endswith("]##") and (matches := self.YIELD_SCANNER_PATTERN.findall(line)):
+            if line.endswith("]##") and (matches := self.YIELD_SCAN_PATTERN.findall(line)):
                 try:
                     for preceding_content, encoded_key, encoded_value in matches:
                         memorized_prefix += preceding_content

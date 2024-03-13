@@ -182,9 +182,11 @@ class Runner(classlogging.LoggerMixin):
     def _replace(self, match: t.Match) -> str:
         prior: str = match.groupdict()["prior"]
         expression: str = match.groupdict()["expression"]
-        parts: t.List[str] = self._expression_split(expression)
-        if len(parts) != 2:
-            raise ValueError(f"Expression has {len(parts)} parts: {expression!r} (2 expected)")
-        action_name, key = parts
-        value: t.Any = self._outcomes.get(action_name, {})[key]
-        return f"{prior}{value}"
+        part_type, *other_parts = self._expression_split(expression)
+        if part_type == "outcomes":
+            if len(other_parts) != 2:
+                raise ValueError(f"Outcome expression has {len(other_parts) + 1} parts: {expression!r} (2 expected)")
+            action_name, key = other_parts
+            value: t.Any = self._outcomes.get(action_name, {})[key]
+            return f"{prior}{value}"
+        raise ValueError(f"Unknown expression type: {part_type!r} (from {expression!r})")

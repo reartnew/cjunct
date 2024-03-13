@@ -72,16 +72,16 @@ def runner_shell_yield_good_context(request: SubRequest, tmp_path: Path, monkeyp
 actions:
   - name: Foo
     type: shell
-    command: yield result-key "I am foo" 
+    command: yield_outcome result-key "I am foo" 
   - name: Bar
     type: shell
     command: |
-     echo "@{{Foo.result-key}}"
-     echo "Prefix ##cjunct[yield-b64 {_str_to_b64('result-key')} {_str_to_b64('bar')}]##"
+     echo "@{{outcomes.Foo.result-key}}"
+     echo "Prefix ##cjunct[yield-outcome-b64 {_str_to_b64('result-key')} {_str_to_b64('bar')}]##"
     depends_on: [Foo]
   - name: Baz
     type: shell
-    command: echo "@{{Bar.result-key}}" 
+    command: echo "@{{outcomes.Bar.result-key}}" 
     depends_on: [Bar]
 """.encode()
     )
@@ -119,7 +119,7 @@ def runner_failing_warmup_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
 actions:
   - name: Baz
     type: shell
-    command: echo "##cjunct[yield-b64 * *]##"
+    command: echo "##cjunct[yield-outcome-b64 * *]##"
   - name: Qux
     type: shell
     command: echo "@{A.B.C}"
