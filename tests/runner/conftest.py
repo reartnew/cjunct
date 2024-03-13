@@ -111,8 +111,8 @@ actions:
 
 
 @pytest.fixture
-def runner_failing_warmup_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Prepare a directory with sample config files of a failing warmup"""
+def runner_failing_render_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Prepare a directory with sample config files of a failing render"""
     actions_source_path: Path = tmp_path / "cjunct.yaml"
     actions_source_path.write_bytes(
         b"""---

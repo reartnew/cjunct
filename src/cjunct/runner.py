@@ -137,13 +137,14 @@ class Runner(classlogging.LoggerMixin):
         try:
             self._render_action(action)
         except Exception as e:
-            self.logger.error(f"Action {action.name!r} rendering failed: {e}")
+            self.logger.warning(f"Action {action.name!r} rendering failed: {e}")
             action.fail(e)
             self._had_failed_actions = True
             return
         try:
             await action
-        except Exception:
+        except Exception as e:
+            self.logger.warning(f"Action {action.name!r} execution failed: {e}")
             self._had_failed_actions = True
         finally:
             self._outcomes[action.name] = action.get_outcomes()
@@ -153,6 +154,7 @@ class Runner(classlogging.LoggerMixin):
         asyncio.run(self.run_async())
 
     def _render_action(self, action: ActionBase) -> None:
+        """Prepare action to execution by rendering its template fields"""
         original_args_dict: dict = asdict(action.args)
         rendered_args: ArgsBase = dacite.from_dict(
             data_class=type(action.args),
@@ -168,21 +170,22 @@ class Runner(classlogging.LoggerMixin):
 
     def _string_template_render_hook(self, value: str) -> RenderedStringTemplate:
         """Process string data, replacing all @{} occurrences"""
-        replaced_value: str = self._TEMPLATE_SUBST_PATTERN.sub(self._replace, value)
+        replaced_value: str = self._TEMPLATE_SUBST_PATTERN.sub(self._string_template_replace_match, value)
         return RenderedStringTemplate(replaced_value)
 
     @classmethod
-    def _expression_split(cls, string: str) -> t.List[str]:
+    def _string_template_expression_split(cls, string: str) -> t.List[str]:
         """Use shell-style lexer, but split by dots instead of whitespaces"""
         dot_lexer = shlex.shlex(instream=string, punctuation_chars=True)
         dot_lexer.whitespace = "."
         # Extra split to unquote quoted values
         return ["".join(shlex.split(token)) for token in dot_lexer]
 
-    def _replace(self, match: t.Match) -> str:
+    def _string_template_replace_match(self, match: t.Match) -> str:
+        """Helper function for template substitution using re.sub"""
         prior: str = match.groupdict()["prior"]
         expression: str = match.groupdict()["expression"]
-        part_type, *other_parts = self._expression_split(expression)
+        part_type, *other_parts = self._string_template_expression_split(expression)
         if part_type == "outcomes":
             if len(other_parts) != 2:
                 raise ValueError(f"Outcome expression has {len(other_parts) + 1} parts: {expression!r} (2 expected)")

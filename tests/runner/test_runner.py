@@ -83,8 +83,8 @@ def test_failing_actions(runner_failing_action_context: None) -> None:
         cjunct.Runner().run_sync()
 
 
-def test_failing_warmup(runner_failing_warmup_context: None) -> None:
-    """Check failing warmup in the runner"""
+def test_failing_render(runner_failing_render_context) -> None:
+    """Check failing render in the runner"""
     with pytest.raises(exceptions.ExecutionFailed):
         cjunct.Runner().run_sync()
 
