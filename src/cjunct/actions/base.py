@@ -66,8 +66,15 @@ class RenderedStringTemplate(StringTemplate):
     """Rendered string arguments"""
 
 
+class ArgsMeta(type):
+    """Metaclass for args containers that makes them all dataclasses"""
+
+    def __new__(cls, name, bases, dct):
+        return dataclass(super().__new__(cls, name, bases, dct))
+
+
 @dataclass
-class ArgsBase:
+class ArgsBase(metaclass=ArgsMeta):
     """Default empty args holder.
     Should be subclassed and then added to the `args` annotation of any action class."""
 
