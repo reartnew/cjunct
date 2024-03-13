@@ -89,6 +89,11 @@ def test_failing_render(runner_failing_render_context) -> None:
         cjunct.Runner().run_sync()
 
 
+def test_external_actions(runner_external_actions_context) -> None:
+    """Check external actions from directories"""
+    cjunct.Runner().run_sync()
+
+
 def test_invalid_action_source_file_via_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Check raising SourceError for absent file via CJUNCT_ACTIONS_SOURCE_FILE"""
     monkeypatch.setenv("CJUNCT_ACTIONS_SOURCE_FILE", str(tmp_path / "missing.yaml"))
