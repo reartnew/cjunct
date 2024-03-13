@@ -123,6 +123,9 @@ actions:
   - name: Qux
     type: shell
     command: echo "@{A.B.C}"
+  - name: Fred
+    type: shell
+    command: echo "@{outcomes.not-enough-parts}"
 """
     )
     monkeypatch.chdir(tmp_path)
