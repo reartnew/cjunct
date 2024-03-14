@@ -145,9 +145,11 @@ class AbstractBaseConfigLoader(LoggerMixin):
         if description is not None and not isinstance(description, str):
             self._throw(f"Unrecognized 'description' content type: {type(description)!r} (expected optional string)")
         # Dependencies
-        deps_node: t.List[t.Union[str, dict]] = node.pop("expects", [])
-        if not isinstance(deps_node, list):
-            self._throw(f"Unrecognized 'expects' content type: {type(deps_node)!r} (expected a list)")
+        deps_node: t.Union[str, t.List[t.Union[str, dict]]] = node.pop("expects", [])
+        if not isinstance(deps_node, str) and not isinstance(deps_node, list):
+            self._throw(f"Unrecognized 'expects' content type: {type(deps_node)!r} (expected a a string or list)")
+        if isinstance(deps_node, str):
+            deps_node = [deps_node]
         dependencies: t.Dict[str, ActionDependency] = dict(
             self.build_dependency_from_node(dep_node) for dep_node in deps_node
         )

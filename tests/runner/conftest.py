@@ -78,11 +78,11 @@ actions:
     command: |
      echo "@{{outcomes.Foo.result-key}}"
      echo "Prefix ##cjunct[yield-outcome-b64 {_str_to_b64('result-key')} {_str_to_b64('bar')}]##"
-    expects: [Foo]
+    expects: Foo
   - name: Baz
     type: shell
     command: echo "@{{outcomes.Bar.result-key}}" 
-    expects: [Bar]
+    expects: Bar
 """.encode()
     )
     if request.param == "chdir":
