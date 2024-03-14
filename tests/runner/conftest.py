@@ -126,6 +126,9 @@ actions:
   - name: Fred
     type: shell
     command: echo "@{outcomes.not-enough-parts}"
+  - name: Egor
+    type: shell
+    command: echo "@{outcomes.Baz.non-existent}"
 """
     )
     monkeypatch.chdir(tmp_path)

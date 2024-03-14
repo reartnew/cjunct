@@ -7,7 +7,7 @@ import textwrap
 import typing as t
 from dataclasses import dataclass
 
-from async_shell import Shell
+from async_shell import Shell, ShellResult
 
 from .base import ActionBase, Stderr, ArgsBase, StringTemplate
 from ..config.constants import C
@@ -85,4 +85,6 @@ class ShellAction(ActionBase):
                 asyncio.create_task(self._read_stderr(shell_process)),
             ]
             await asyncio.gather(*tasks)
-            await shell_process.validate()
+            result: ShellResult = await shell_process
+            if result.code:
+                self.fail(f"Exit code: {result.code}")

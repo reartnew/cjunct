@@ -4,6 +4,8 @@ import typing as t
 
 __all__ = [
     "ExecutionFailed",
+    "ActionRenderError",
+    "ActionRunError",
     "BaseError",
     "LoadError",
     "IntegrityError",
@@ -13,6 +15,14 @@ __all__ = [
 
 class ExecutionFailed(Exception):
     """Some steps failed"""
+
+
+class ActionRenderError(Exception):
+    """Action rendering failed"""
+
+
+class ActionRunError(Exception):
+    """Action execution failed"""
 
 
 class BaseError(Exception):

@@ -9,6 +9,8 @@ from dataclasses import dataclass, fields
 
 import classlogging
 
+from ..exceptions import ActionRunError
+
 __all__ = [
     "ActionDependency",
     "ActionBase",
@@ -165,7 +167,7 @@ class ActionBase(classlogging.LoggerMixin):
         except ActionSkip:
             pass
         except Exception as e:
-            self.fail(e)
+            self._internal_fail(e)
             raise
         else:
             self._status = ActionStatus.SUCCESS
@@ -182,8 +184,13 @@ class ActionBase(classlogging.LoggerMixin):
         self.logger.info(f"Action {self.name!r} skipped")
         raise ActionSkip
 
-    def fail(self, exception: Exception) -> None:
-        """Set corresponding error"""
+    def fail(self, message: str) -> None:
+        """Set corresponding error message"""
+        exception = ActionRunError(message)
+        self._internal_fail(exception)
+        raise exception
+
+    def _internal_fail(self, exception: Exception) -> None:
         self._status = ActionStatus.FAILURE
         self.logger.info(f"Action {self.name!r} failed: {repr(exception)}")
         if not self.get_future().done():

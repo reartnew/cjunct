@@ -21,7 +21,7 @@ from .config.constants import C
 from .config.loaders.helpers import get_default_loader_class_for_file
 from .display.base import BaseDisplay
 from .display.default import NetPrefixDisplay
-from .exceptions import SourceError, ExecutionFailed
+from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError
 from .strategy import BaseStrategy, LooseStrategy
 
 __all__ = [
@@ -140,16 +140,19 @@ class Runner(classlogging.LoggerMixin):
         except Exception as e:
             message = f"Action {action.name!r} rendering failed: {e}"
             self.display.emit_action_error(source=action, message=message)
-            self.logger.warning(message, exc_info=True)
-            action.fail(e)
+            self.logger.warning(message, exc_info=not isinstance(e, ActionRenderError))
+            action._internal_fail(e)  # pylint: disable=protected-access
             self._had_failed_actions = True
             return
         try:
             await action
         except Exception as e:
-            message = f"Action {action.name!r} execution failed: {e}"
-            self.display.emit_action_error(source=action, message=message)
-            self.logger.warning(message, exc_info=True)
+            self.display.emit_action_error(
+                source=action,
+                message=str(e) if isinstance(e, ActionRunError) else f"Action {action.name!r} run exception: {e!r}",
+            )
+            self.logger.warning(f"Action {action.name!r} execution failed: {e!r}")
+            self.logger.debug("Action failure traceback", exc_info=True)
             self._had_failed_actions = True
         finally:
             self._outcomes[action.name] = action.get_outcomes()
@@ -198,12 +201,15 @@ class Runner(classlogging.LoggerMixin):
         part_type, *other_parts = self._string_template_expression_split(expression)
         if part_type == "outcomes":
             if len(other_parts) != 2:
-                raise ValueError(f"Outcome expression has {len(other_parts) + 1} parts: {expression!r} (3 expected)")
+                raise ActionRenderError(f"Outcome expression has {len(other_parts) + 1} parts of 3: {expression!r}")
             action_name, key = other_parts
-            return self._outcomes.get(action_name, {})[key]
+            action_outcomes: dict = self._outcomes.get(action_name, {})
+            if key not in action_outcomes:
+                raise ActionRenderError(f"Outcome {key!r} not found for action {action_name!r} (from {expression!r})")
+            return action_outcomes[key]
         if part_type == "status":
             if len(other_parts) != 1:
-                raise ValueError(f"Status expression has {len(other_parts) + 1} parts: {expression!r} (2 expected)")
+                raise ActionRenderError(f"Status expression has {len(other_parts) + 1} parts of 2: {expression!r}")
             (action_name,) = other_parts
             return self.actions[action_name].status.value
-        raise ValueError(f"Unknown expression type: {part_type!r} (from {expression!r})")
+        raise ActionRenderError(f"Unknown expression type: {part_type!r} (from {expression!r})")

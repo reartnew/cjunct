@@ -16,9 +16,19 @@ from cjunct.exceptions import BaseError, ExecutionFailed
 logger = classlogging.get_module_logger()
 
 
+@click.group
+@click.option("-d", "--directory", help="Context directory. Defaults to current working directory.")
+@click.option("-l", "--log-level", help="Logging level. Defaults to ERROR.", type=click.Choice(list(LOG_LEVELS)))
+@click.option("-f", "--file", help="Action file to execute.")
+@cliargs_receiver
+def main() -> None:
+    """Declarative parallel process runner"""
+
+
 def wrap_cli_command(func):
     """Standard loading and error handling"""
 
+    @main.command
     @cliargs_receiver
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
@@ -46,18 +56,8 @@ def wrap_cli_command(func):
     return wrapped
 
 
-@click.group
-@click.option("-d", "--directory", help="Context directory. Defaults to current working directory.")
-@click.option("-l", "--log-level", help="Logging level. Defaults to ERROR.", type=click.Choice(list(LOG_LEVELS)))
-@click.option("-f", "--file", help="Action file to execute.")
-@cliargs_receiver
-def main() -> None:
-    """Declarative parallel process runner"""
-
-
-@main.command
-@click.option("-s", "--strategy", help="Execution strategy name. Defaults to 'loose'.")
 @wrap_cli_command
+@click.option("-s", "--strategy", help="Execution strategy name. Defaults to 'loose'.")
 def run() -> None:
     """Run pipeline immediately."""
     cjunct.Runner(
@@ -66,7 +66,6 @@ def run() -> None:
     ).run_sync()
 
 
-@main.command
 @wrap_cli_command
 def validate() -> None:
     """Check configuration validity."""
