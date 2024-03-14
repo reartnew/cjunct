@@ -5,11 +5,11 @@ from __future__ import annotations
 import asyncio
 import enum
 import typing as t
-from dataclasses import dataclass, field
+from dataclasses import dataclass, fields
 
 import classlogging
 
-from ..results import ResultsProxy, ActionResultDataType
+from ..exceptions import ActionRunError
 
 __all__ = [
     "ActionDependency",
@@ -17,10 +17,22 @@ __all__ = [
     "ActionStatus",
     "ActionSkip",
     "Stderr",
+    "ArgsBase",
+    "StringTemplate",
+    "RenderedStringTemplate",
+    "ACTION_RESERVED_FIELD_NAMES",
 ]
 
 AT = t.TypeVar("AT", bound="ActionBase")
-RT = t.TypeVar("RT")
+
+ACTION_RESERVED_FIELD_NAMES: t.Set[str] = {
+    "name",
+    "type",
+    "description",
+    "expects",
+    "severity",  # planned in future
+    "selectable",  # planned in future
+}
 
 
 class ActionSkip(BaseException):
@@ -51,31 +63,73 @@ class ActionDependency:
 
 
 EventType = str
+OutcomeStorageType = t.Dict[str, str]
 
 
 class Stderr(str):
     """Strings related to standard error stream"""
 
 
+class StringTemplate(str):
+    """String arguments to be templated later"""
+
+
+class RenderedStringTemplate(StringTemplate):
+    """Rendered string arguments"""
+
+
+class ArgsMeta(type):
+    """Metaclass for args containers that makes them all dataclasses"""
+
+    def __new__(cls, name, bases, dct):
+        sub_dataclass = dataclass(super().__new__(cls, name, bases, dct))
+        reserved_names_collisions: t.Set[str] = {f.name for f in fields(sub_dataclass)} & ACTION_RESERVED_FIELD_NAMES
+        if reserved_names_collisions:
+            raise TypeError(f"Reserved names found in {name!r} class definition: {sorted(reserved_names_collisions)}")
+        return sub_dataclass
+
+
 @dataclass
-class ActionBase(t.Generic[RT], classlogging.LoggerMixin):
+class ArgsBase(metaclass=ArgsMeta):
+    """Default empty args holder.
+    Should be subclassed and then added to the `args` annotation of any action class."""
+
+
+class ActionBase(classlogging.LoggerMixin):
     """Base class for all actions"""
 
-    name: str
-    # Maybe add: type: str
-    on_fail: t.Optional[str] = field(default=None)
-    visible: bool = field(default=True)
-    ancestors: t.Dict[str, ActionDependency] = field(default_factory=dict)
-    description: t.Optional[str] = None
-    descendants: t.Dict[str, ActionDependency] = field(init=False, default_factory=dict)
-    _status: ActionStatus = field(init=False, default=ActionStatus.PENDING)
-    # Do not create asyncio-related objects on constructing object to decouple from the event loop
-    _maybe_finish_flag: t.Optional[asyncio.Future] = field(init=False, default=None)
-    _maybe_event_queue: t.Optional[asyncio.Queue[EventType]] = field(init=False, default=None)
-    _running_task: t.Optional[asyncio.Task] = field(init=False, default=None)
+    args: ArgsBase
+
+    def __init__(
+        self,
+        name: str,
+        args: ArgsBase = ArgsBase(),
+        ancestors: t.Optional[t.Dict[str, ActionDependency]] = None,
+        description: t.Optional[str] = None,
+    ) -> None:
+        self.name: str = name
+        self.args: ArgsBase = args
+        self.description: t.Optional[str] = description
+        self.ancestors: t.Dict[str, ActionDependency] = ancestors or {}
+
+        self._yielded_keys: OutcomeStorageType = {}
+        self._status: ActionStatus = ActionStatus.PENDING
+        # Do not create asyncio-related objects on constructing object to decouple from the event loop
+        self._maybe_finish_flag: t.Optional[asyncio.Future] = None
+        self._maybe_event_queue: t.Optional[asyncio.Queue[EventType]] = None
+        self._running_task: t.Optional[asyncio.Task] = None
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r}, status={self._status.value})"
+
+    def yield_outcome(self, key: str, value: t.Any) -> None:
+        """Report outcome key"""
+        self.logger.info(f"Action {self.name!r} yielded {key!r}")
+        self._yielded_keys[key] = value
+
+    def get_outcomes(self) -> OutcomeStorageType:
+        """Report all registered outcomes"""
+        return self._yielded_keys
 
     def get_future(self) -> asyncio.Future:
         """Return a Future object indicating the end of the action"""
@@ -94,11 +148,11 @@ class ActionBase(t.Generic[RT], classlogging.LoggerMixin):
         """Public getter"""
         return self._status
 
-    async def run(self) -> RT:
+    async def run(self) -> None:
         """Main entry to be implemented in subclasses"""
         raise NotImplementedError
 
-    async def _await(self) -> ActionResultDataType:
+    async def _await(self) -> None:
         fut = self.get_future()
         if fut.done():
             return fut.result()
@@ -107,26 +161,18 @@ class ActionBase(t.Generic[RT], classlogging.LoggerMixin):
             self.logger.info(f"Running action: {self.name!r}")
             self._running_task = asyncio.create_task(self.run())
             self._status = ActionStatus.RUNNING
-        result: ActionResultDataType = {}
         try:
-            running_task_result = await self._running_task
-            if isinstance(running_task_result, t.Mapping):
-                result.update(running_task_result)
-            elif running_task_result is not None:
-                self.logger.warning(
-                    f"Action {self.name!r} returned something different from None "
-                    f"or a mapping: {type(running_task_result)}"
-                )
+            if (running_task_result := await self._running_task) is not None:
+                self.logger.warning(f"Action {self.name!r} return type is {type(running_task_result)} (not NoneType)")
         except ActionSkip:
             pass
         except Exception as e:
-            self.fail(e)
+            self._internal_fail(e)
             raise
         else:
             self._status = ActionStatus.SUCCESS
         if not fut.done():
-            fut.set_result(result)
-        return result
+            fut.set_result(None)
 
     def emit(self, message: EventType) -> None:
         """Issue a message"""
@@ -138,8 +184,13 @@ class ActionBase(t.Generic[RT], classlogging.LoggerMixin):
         self.logger.info(f"Action {self.name!r} skipped")
         raise ActionSkip
 
-    def fail(self, exception: Exception) -> None:
-        """Set corresponding error"""
+    def fail(self, message: str) -> None:
+        """Set corresponding error message"""
+        exception = ActionRunError(message)
+        self._internal_fail(exception)
+        raise exception
+
+    def _internal_fail(self, exception: Exception) -> None:
         self._status = ActionStatus.FAILURE
         self.logger.info(f"Action {self.name!r} failed: {repr(exception)}")
         if not self.get_future().done():
@@ -167,12 +218,9 @@ class ActionBase(t.Generic[RT], classlogging.LoggerMixin):
                         break
                 return
 
-    def __await__(self) -> t.Generator[t.Any, None, ActionResultDataType]:
+    def __await__(self) -> t.Generator[t.Any, None, None]:
         return self._await().__await__()  # pylint: disable=no-member
 
     def done(self) -> bool:
         """Indicate whether the action is over"""
         return self.get_future().done() or self._status == ActionStatus.SKIPPED
-
-    async def warmup(self, results: ResultsProxy) -> None:
-        """May adopt any result of completed tasks"""

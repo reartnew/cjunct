@@ -5,7 +5,7 @@ import typing as t
 
 import pytest
 
-from cjunct.actions import ActionBase
+from cjunct import ActionBase
 
 
 class StubAction(ActionBase):

@@ -1,11 +1,13 @@
 """Loose strategy helpers"""
+
 # pylint: disable=redefined-outer-name
 
 import typing as t
 
 import pytest
 
-from cjunct.actions import ActionNet, ActionBase, ActionDependency
+from cjunct.actions.base import ActionBase, ActionDependency
+from cjunct.actions.net import ActionNet
 
 
 def _make_chained_net(action_class: t.Type[ActionBase]) -> ActionNet:
@@ -32,7 +34,7 @@ def _make_chained_net(action_class: t.Type[ActionBase]) -> ActionNet:
 def strict_successful_net() -> ActionNet:
     """Minimalistic strict chained action net"""
 
-    class SuccessAction(ActionBase[None]):
+    class SuccessAction(ActionBase):
         """Does nothing"""
 
         async def run(self) -> None:
@@ -45,7 +47,7 @@ def strict_successful_net() -> ActionNet:
 def strict_failing_net() -> ActionNet:
     """Minimalistic strict chained action net with failures"""
 
-    class FailingAction(ActionBase[None]):
+    class FailingAction(ActionBase):
         """Raises RuntimeError"""
 
         async def run(self) -> None:
@@ -58,7 +60,7 @@ def strict_failing_net() -> ActionNet:
 def strict_skipping_net() -> ActionNet:
     """Minimalistic strict chained action net with explicit skipping"""
 
-    class SkippingAction(ActionBase[None]):
+    class SkippingAction(ActionBase):
         """Raises RuntimeError"""
 
         async def run(self) -> None:

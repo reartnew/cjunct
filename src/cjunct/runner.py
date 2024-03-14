@@ -5,28 +5,47 @@ thus placed to a separate module.
 
 import asyncio
 import functools
+import re
+import shlex
 import typing as t
+from dataclasses import asdict
 from pathlib import Path
 
 import classlogging
+import dacite
 
 from . import types
-from .actions import ActionNet, ActionBase
+from .actions.base import ActionBase, StringTemplate, RenderedStringTemplate, ArgsBase
+from .actions.net import ActionNet
 from .config.constants import C
 from .config.loaders.helpers import get_default_loader_class_for_file
 from .display.base import BaseDisplay
 from .display.default import NetPrefixDisplay
-from .exceptions import SourceError, ExecutionFailed
-from .results import ResultsProxy, ActionsResultsContainerDataType, ActionResultDataType
+from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError
 from .strategy import BaseStrategy, LooseStrategy
 
 __all__ = [
     "Runner",
 ]
 
+ActionResultDataType = t.Dict[str, t.Any]
+ActionsResultsContainerDataType = t.Dict[str, t.Dict[str, t.Any]]
+
 
 class Runner(classlogging.LoggerMixin):
     """Main entry object"""
+
+    _TEMPLATE_SUBST_PATTERN: t.Pattern = re.compile(
+        r"""
+        (?P<prior>
+            (?:^|[^@])  # Ensure that match starts from the first @ sign
+            (?:@@)*  # Possibly escaped @ signs
+        )
+        @\{
+          (?P<expression>.*?)
+        }""",
+        re.VERBOSE,
+    )
 
     def __init__(
         self,
@@ -45,8 +64,7 @@ class Runner(classlogging.LoggerMixin):
         self._display_class: types.DisplayClassType = display_class
         self.logger.debug(f"Using display class: {self._display_class}")
         self._started: bool = False
-        self._actual_results: ActionsResultsContainerDataType = {}
-        self._results_proxy: ResultsProxy = ResultsProxy(self._actual_results)
+        self._outcomes: t.Dict[str, t.Dict[str, t.Any]] = {}
         self._had_failed_actions: bool = False
 
     @functools.cached_property
@@ -71,7 +89,6 @@ class Runner(classlogging.LoggerMixin):
         cls.logger.debug(f"Looking for config files at {scan_path}")
         located_config_file: t.Optional[Path] = None
         for candidate_file_name in (
-            "cjunct.xml",
             "cjunct.yml",
             "cjunct.yaml",
         ):  # type: str
@@ -117,19 +134,82 @@ class Runner(classlogging.LoggerMixin):
             display.emit_action_message(source=action, message=message)
 
     async def _run_action(self, action: ActionBase) -> None:
+        message: str
         try:
-            await action.warmup(results=self._results_proxy)
+            self._render_action(action)
         except Exception as e:
-            self.logger.error(f"Action {action.name!r} warmup failed: {e}")
-            action.fail(e)
+            message = f"Action {action.name!r} rendering failed: {e}"
+            self.display.emit_action_error(source=action, message=message)
+            self.logger.warning(message, exc_info=not isinstance(e, ActionRenderError))
+            action._internal_fail(e)  # pylint: disable=protected-access
+            self._had_failed_actions = True
             return
         try:
-            result: ActionResultDataType = await action
-        except Exception:
+            await action
+        except Exception as e:
+            self.display.emit_action_error(
+                source=action,
+                message=str(e) if isinstance(e, ActionRunError) else f"Action {action.name!r} run exception: {e!r}",
+            )
+            self.logger.warning(f"Action {action.name!r} execution failed: {e!r}")
+            self.logger.debug("Action failure traceback", exc_info=True)
             self._had_failed_actions = True
-        else:
-            self._actual_results[action.name] = result
+        finally:
+            self._outcomes[action.name] = action.get_outcomes()
 
     def run_sync(self):
         """Wrap async run into an event loop"""
         asyncio.run(self.run_async())
+
+    def _render_action(self, action: ActionBase) -> None:
+        """Prepare action to execution by rendering its template fields"""
+        original_args_dict: dict = asdict(action.args)
+        rendered_args: ArgsBase = dacite.from_dict(
+            data_class=type(action.args),
+            data=original_args_dict,
+            config=dacite.Config(
+                strict=True,
+                type_hooks={
+                    StringTemplate: self._string_template_render_hook,
+                },
+            ),
+        )
+        action.args = rendered_args
+
+    def _string_template_render_hook(self, value: str) -> RenderedStringTemplate:
+        """Process string data, replacing all @{} occurrences"""
+        replaced_value: str = self._TEMPLATE_SUBST_PATTERN.sub(self._string_template_replace_match, value)
+        return RenderedStringTemplate(replaced_value)
+
+    @classmethod
+    def _string_template_expression_split(cls, string: str) -> t.List[str]:
+        """Use shell-style lexer, but split by dots instead of whitespaces"""
+        dot_lexer = shlex.shlex(instream=string, punctuation_chars=True)
+        dot_lexer.whitespace = "."
+        # Extra split to unquote quoted values
+        return ["".join(shlex.split(token)) for token in dot_lexer]
+
+    def _string_template_replace_match(self, match: t.Match) -> str:
+        """Helper function for template substitution using re.sub"""
+        prior: str = match.groupdict()["prior"]
+        expression: str = match.groupdict()["expression"]
+        expression_substitution_result: str = self._string_template_process_expression(expression)
+        return f"{prior}{expression_substitution_result}"
+
+    def _string_template_process_expression(self, expression: str) -> str:
+        """Split the expression into parts and process according to the part name"""
+        part_type, *other_parts = self._string_template_expression_split(expression)
+        if part_type == "outcomes":
+            if len(other_parts) != 2:
+                raise ActionRenderError(f"Outcome expression has {len(other_parts) + 1} parts of 3: {expression!r}")
+            action_name, key = other_parts
+            action_outcomes: dict = self._outcomes.get(action_name, {})
+            if key not in action_outcomes:
+                raise ActionRenderError(f"Outcome {key!r} not found for action {action_name!r} (from {expression!r})")
+            return action_outcomes[key]
+        if part_type == "status":
+            if len(other_parts) != 1:
+                raise ActionRenderError(f"Status expression has {len(other_parts) + 1} parts of 2: {expression!r}")
+            (action_name,) = other_parts
+            return self.actions[action_name].status.value
+        raise ActionRenderError(f"Unknown expression type: {part_type!r} (from {expression!r})")

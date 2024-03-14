@@ -7,6 +7,7 @@ from named_env import (
     OptionalString,
     OptionalTernary,
     OptionalBoolean,
+    OptionalList,
 )
 
 __all__ = [
@@ -25,3 +26,5 @@ class Env(EnvironmentNamespace):
     CJUNCT_STRATEGY_NAME: str = OptionalString("")
     CJUNCT_FORCE_COLOR: t.Optional[bool] = OptionalTernary(None)  # type: ignore
     CJUNCT_SHELL_INJECT_YIELD_FUNCTION: bool = OptionalBoolean(True)  # type: ignore
+    CJUNCT_EXTERNAL_MODULES_PATHS: t.List[str] = OptionalList([])
+    CJUNCT_ACTIONS_CLASS_DEFINITIONS_DIRECTORY: t.List[str] = OptionalList([])

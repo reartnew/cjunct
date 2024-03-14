@@ -1,8 +1,7 @@
 # exception: LoadError
-# match: (expected optional string)
+# match: Unrecognized 'file' content type: <class 'dict'>
 ---
 actions:
   - name: foo
     type: shell
-    script: {}
-    command: {}
+    file: {}

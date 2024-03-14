@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import collections
 import typing as t
 
 from classlogging import LoggerMixin
 
-from .base import ActionBase
+from .base import ActionBase, ActionDependency
 from ..exceptions import IntegrityError
 
 __all__ = [
@@ -22,6 +23,7 @@ class ActionNet(t.Dict[str, ActionBase], LoggerMixin):
         self._entrypoints: t.Set[str] = set()
         self._checklists: t.Dict[str, t.List[str]] = checklists or {}
         self._tiers_sequence: t.List[t.List[ActionBase]] = []
+        self._descendants_map: t.Dict[str, t.Dict[str, ActionDependency]] = collections.defaultdict(dict)
         # Check dependencies integrity
         self._establish_descendants()
         # Create order map to check all actions are reachable
@@ -39,7 +41,7 @@ class ActionNet(t.Dict[str, ActionBase], LoggerMixin):
                         missing_non_external_deps.add(dependency_action_name)
                     continue
                 # Register symmetric descendant connection for further simplicity
-                self[dependency_action_name].descendants[action.name] = dependency
+                self._descendants_map[dependency_action_name][action.name] = dependency
             # Check if there are any dependencies after removal at all
             if not action.ancestors:
                 self._entrypoints.add(action.name)
@@ -66,7 +68,7 @@ class ActionNet(t.Dict[str, ActionBase], LoggerMixin):
                 if tier_action.name in action_name_to_tier_mapping:
                     continue
                 action_name_to_tier_mapping[tier_action.name] = step_tier
-                next_tier_candidate_actions_names |= set(tier_action.descendants)
+                next_tier_candidate_actions_names |= set(self._descendants_map[tier_action_name])
             if not next_tier_candidate_actions_names:
                 break
             step_tier += 1

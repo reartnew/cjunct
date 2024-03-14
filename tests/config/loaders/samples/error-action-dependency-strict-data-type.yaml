@@ -4,6 +4,6 @@
 actions:
   - name: foo
     type: shell
-    depends_on:
+    expects:
       - name: foo
         strict: bar

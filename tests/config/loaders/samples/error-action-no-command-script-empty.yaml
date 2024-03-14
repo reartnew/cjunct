@@ -1,8 +1,0 @@
-# exception: LoadError
-# match: might not be empty
----
-actions:
-  - name: foo
-    type: shell
-    script: ""
-    command: ""

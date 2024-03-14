@@ -5,8 +5,9 @@ import typing as t
 
 import pytest
 
-from cjunct.actions import ActionNet, ActionBase, ActionStatus
-from cjunct.strategy import LooseStrategy
+from cjunct import ActionBase, LooseStrategy
+from cjunct.actions.base import ActionStatus
+from cjunct.actions.net import ActionNet
 
 
 @pytest.mark.asyncio

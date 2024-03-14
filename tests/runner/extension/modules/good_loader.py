@@ -2,43 +2,41 @@
 
 from dataclasses import dataclass
 
-from cjunct.actions import ActionBase
+from cjunct import ActionBase, ArgsBase
 from cjunct.config.loaders.default.yaml import DefaultYAMLConfigLoader
+from external_test_lib.constant import TEST_SUFFIX  # type: ignore  # pylint: disable=wrong-import-order
 
 
 @dataclass
-class EchoAction(ActionBase[None]):
+class EchoArgs(ArgsBase):
+    """Args for EchoAction"""
+
+    message: str
+
+
+class EchoAction(ActionBase):
     """Simple printer"""
 
-    message: str = ""
+    args: EchoArgs
 
     async def run(self) -> None:
         """Show message via display"""
-        self.emit(self.message)
+        self.emit(f"{self.args.message}-{TEST_SUFFIX}")
 
 
-class StringReturningAction(ActionBase[str]):
+class StringReturningAction(ActionBase):
     """Returns not none"""
 
-    async def run(self) -> str:
-        """Just check return"""
+    async def run(self) -> str:  # type: ignore
+        """Just return something that's not None"""
         return "I am a string!"
 
 
 class ConfigLoader(DefaultYAMLConfigLoader):
     """Able to build echoes"""
 
-    ACTION_FACTORIES = {
-        **DefaultYAMLConfigLoader.ACTION_FACTORIES,
+    STATIC_ACTION_FACTORIES = {
+        **DefaultYAMLConfigLoader.STATIC_ACTION_FACTORIES,
         "echo": EchoAction,
         "return-string": StringReturningAction,
     }
-
-    def _build_action_from_dict(self, node: dict) -> ActionBase:
-        action: ActionBase = super()._build_action_from_dict(node)
-        # Varying args for echo
-        if isinstance(action, EchoAction):
-            action.message = self._parse_string_attr(attrib_name="message", node=node)
-            if not action.message:
-                self._throw(f"Action {action.name!r} message not specified")
-        return action

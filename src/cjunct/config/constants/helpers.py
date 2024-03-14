@@ -1,7 +1,11 @@
 """Lazy-loaded constants helpers"""
 
+import hashlib
+import os
+import sys
 import types
 import typing as t
+from contextlib import contextmanager
 from importlib.machinery import ModuleSpec
 from importlib.util import (
     spec_from_file_location,
@@ -10,6 +14,7 @@ from importlib.util import (
 from pathlib import Path
 from types import ModuleType
 
+from ..environment import Env
 from ...exceptions import SourceError
 
 __all__ = [
@@ -22,21 +27,38 @@ __all__ = [
 VT = t.TypeVar("VT")
 GetterType = t.Callable[[], t.Optional[VT]]
 
-EXTERNALS_MODULE_NAME: str = "cjunct.external"
+EXTERNALS_MODULES_PACKAGE: str = "cjunct.external"
+
+
+@contextmanager
+def add_sys_paths(*paths: str) -> t.Iterator[None]:
+    """Temporarily add paths to sys.path"""
+    normalized_paths: t.List[str] = [os.path.expanduser(os.path.abspath(path)) for path in paths]
+    for path in normalized_paths:
+        sys.path.insert(0, path)
+    try:
+        yield
+    finally:
+        for path in normalized_paths:
+            sys.path.remove(path)
 
 
 def load_external_module(source: Path) -> ModuleType:
     """Load an external module"""
     if not source.is_file():
         raise SourceError(f"Missing source module: {source}")
+    source_path_hash: str = hashlib.md5(str(source).encode()).hexdigest()  # nosec
+    module_name: str = f"{EXTERNALS_MODULES_PACKAGE}.{source_path_hash}"
     module_spec: t.Optional[ModuleSpec] = spec_from_file_location(
-        name=EXTERNALS_MODULE_NAME,
+        name=module_name,
         location=source,
     )
     if module_spec is None:
         raise SourceError(f"Can't read module spec from source: {source}")
     module: ModuleType = module_from_spec(module_spec)
-    module_spec.loader.exec_module(module)  # type: ignore
+    with add_sys_paths(*Env.CJUNCT_EXTERNAL_MODULES_PATHS):
+        module_spec.loader.exec_module(module)  # type: ignore
+    sys.modules[module_name] = module
     return module
 
 

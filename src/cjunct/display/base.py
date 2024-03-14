@@ -1,6 +1,7 @@
 """Runner output processor base"""
 
-from ..actions import ActionBase, ActionNet
+from ..actions.base import ActionBase
+from ..actions.net import ActionNet
 
 __all__ = [
     "BaseDisplay",
@@ -16,6 +17,11 @@ class BaseDisplay:
     # pylint: disable=unused-argument
     def emit_action_message(self, source: ActionBase, message: str) -> None:
         """Process a message from some source"""
+        self.display(message)
+
+    # pylint: disable=unused-argument
+    def emit_action_error(self, source: ActionBase, message: str) -> None:
+        """Process an error from some source"""
         self.display(message)
 
     def on_finish(self) -> None:

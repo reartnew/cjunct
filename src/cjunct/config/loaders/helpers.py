@@ -4,7 +4,6 @@ import typing as t
 from pathlib import Path
 
 from .base import AbstractBaseConfigLoader
-from .default.xml import DefaultXMLConfigLoader
 from .default.yaml import DefaultYAMLConfigLoader
 from ...exceptions import SourceError
 
@@ -13,7 +12,6 @@ __all__ = [
 ]
 
 SUFFIX_TO_LOADER_MAP: t.Dict[str, t.Type[AbstractBaseConfigLoader]] = {
-    ".xml": DefaultXMLConfigLoader,
     ".yml": DefaultYAMLConfigLoader,
     ".yaml": DefaultYAMLConfigLoader,
 }

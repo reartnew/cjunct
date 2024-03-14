@@ -5,9 +5,12 @@ from __future__ import annotations
 import typing as t
 from pathlib import Path
 
+import dacite
 from classlogging import LoggerMixin
 
-from ...actions import ActionNet, ActionBase
+from .inspect import get_class_annotations
+from ...actions.base import ActionBase, ArgsBase, ActionDependency, StringTemplate
+from ...actions.net import ActionNet
 from ...exceptions import LoadError
 
 __all__ = [
@@ -19,7 +22,7 @@ class AbstractBaseConfigLoader(LoggerMixin):
     """Loaders base class"""
 
     _RESERVED_CHECKLISTS_NAMES: t.Set[str] = {"ALL", "NONE"}
-    ACTION_FACTORIES: t.Dict[str, t.Type[ActionBase]] = {}
+    STATIC_ACTION_FACTORIES: t.Dict[str, t.Type[ActionBase]] = {}
 
     def __init__(self) -> None:
         self._actions: t.Dict[str, ActionBase] = {}
@@ -36,7 +39,7 @@ class AbstractBaseConfigLoader(LoggerMixin):
         """Raise loader exception from text"""
         raise LoadError(message=message, stack=self._files_stack)
 
-    def _load_checklists_from_directory(self, directory: t.Union[str, Path]) -> None:
+    def load_checklists_from_directory(self, directory: t.Union[str, Path]) -> None:
         """Parse checklists directory safely"""
         directory_path: Path = Path(directory)
         if not directory_path.is_dir():
@@ -77,6 +80,11 @@ class AbstractBaseConfigLoader(LoggerMixin):
         """Load config partially from text (can be called recursively)"""
         raise NotImplementedError
 
+    def _get_action_factory_by_type(self, action_type: str) -> t.Type[ActionBase]:
+        if action_type not in self.STATIC_ACTION_FACTORIES:
+            self._throw(f"Unknown dispatched type: {action_type}")
+        return self.STATIC_ACTION_FACTORIES[action_type]
+
     def loads(self, data: t.Union[str, bytes]) -> ActionNet:
         """Load config from text"""
         self._internal_loads(data=data)
@@ -86,3 +94,112 @@ class AbstractBaseConfigLoader(LoggerMixin):
         """Load config from file"""
         self._internal_load(source_file=source_file)
         return ActionNet(self._actions)
+
+    def build_dependency_from_node(self, dep_node: t.Union[str, dict]) -> t.Tuple[str, ActionDependency]:
+        """Unified method to process transform dependency source data"""
+        dep_holder: ActionDependency = ActionDependency()
+        if isinstance(dep_node, str):
+            return dep_node, dep_holder
+        if isinstance(dep_node, dict):
+            unexpected_dep_keys: t.Set[str] = set(dep_node) - {"name", "strict", "external"}
+            if unexpected_dep_keys:
+                self._throw(f"Unrecognized dependency node keys: {sorted(unexpected_dep_keys)}")
+            # Dependency name
+            if "name" not in dep_node:
+                self._throw(f"Name not specified for the dependency: {sorted(dep_node.items())}")
+            dep_name: str = dep_node["name"]
+            if not isinstance(dep_name, str):
+                self._throw(f"Unrecognized dependency name type: {type(dep_name)!r} (expected a string)")
+            if not dep_name:
+                self._throw("Empty dependency name met")
+            # Dependency 'strict' attr
+            strict: bool = dep_node.get("strict", False)
+            if not isinstance(strict, bool):
+                self._throw(f"Unrecognized 'strict' attribute type: {type(strict)!r} (expected boolean)")
+            dep_holder.strict = strict
+            # Dependency 'external' attr
+            external: bool = dep_node.get("external", False)
+            if not isinstance(external, bool):
+                self._throw(f"Unrecognized 'external' attribute type: {type(external)!r} (expected boolean)")
+            dep_holder.external = external
+            return dep_name, dep_holder
+        self._throw(f"Unrecognized dependency node structure: {type(dep_node)!r} (expected a string or a dict)")
+
+    def build_action_from_dict_data(self, node: dict) -> ActionBase:
+        """Process a dictionary representing an action"""
+        # Action name
+        if "name" not in node:
+            self._throw("Missing action node required key: 'name'")
+        name: str = node.pop("name")
+        if not isinstance(name, str):
+            self._throw(f"Unexpected name type: {type(name)!r} (should be a string")
+        if not name:
+            self._throw("Action node name is empty")
+        # Action type
+        if "type" not in node:
+            self._throw(f"'type' not specified for action {name!r}")
+        action_type: str = node.pop("type")
+        action_class: t.Type[ActionBase] = self._get_action_factory_by_type(action_type)
+        # Description
+        description: t.Optional[str] = node.pop("description", None)
+        if description is not None and not isinstance(description, str):
+            self._throw(f"Unrecognized 'description' content type: {type(description)!r} (expected optional string)")
+        # Dependencies
+        deps_node: t.Union[str, t.List[t.Union[str, dict]]] = node.pop("expects", [])
+        if not isinstance(deps_node, str) and not isinstance(deps_node, list):
+            self._throw(f"Unrecognized 'expects' content type: {type(deps_node)!r} (expected a a string or list)")
+        if isinstance(deps_node, str):
+            deps_node = [deps_node]
+        dependencies: t.Dict[str, ActionDependency] = dict(
+            self.build_dependency_from_node(dep_node) for dep_node in deps_node
+        )
+        args_instance: ArgsBase = self._build_args_from_the_rest_of_the_dict_node(
+            action_name=name,
+            action_class=action_class,
+            node=node,
+        )
+        return action_class(
+            name=name,
+            args=args_instance,
+            description=description,
+            ancestors=dependencies,
+        )
+
+    @classmethod
+    def _ensure_string_template_hook(cls, data: t.Any) -> StringTemplate:
+        if not isinstance(data, str):
+            raise dacite.WrongTypeError(
+                field_type=StringTemplate,
+                value=data,
+            )
+        return StringTemplate(data)
+
+    def _build_args_from_the_rest_of_the_dict_node(
+        self,
+        action_name: str,
+        action_class: t.Type[ActionBase],
+        node: dict,
+    ) -> ArgsBase:
+        for mro_class in action_class.__mro__:
+            if args_class := get_class_annotations(mro_class).get("args"):
+                break
+        else:
+            self._throw(f"Couldn't find an `args` annotation for class {action_class.__name__}")
+        try:
+            return t.cast(
+                ArgsBase,
+                dacite.from_dict(
+                    data_class=args_class,
+                    data=node,
+                    config=dacite.Config(
+                        strict=True,
+                        type_hooks={StringTemplate: self._ensure_string_template_hook},
+                    ),
+                ),
+            )
+        except ValueError as e:
+            self._throw(f"Action {action_name!r}: {e}")
+        except dacite.UnexpectedDataError as e:
+            self._throw(f"Unrecognized keys for action {action_name!r}: {sorted(e.keys)}")
+        except dacite.WrongTypeError as e:
+            self._throw(f"Unrecognized {e.field_path!r} content type: {type(e.value)} (expected {e.field_type!r})")

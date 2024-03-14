@@ -1,7 +1,7 @@
 # exception: LoadError
-# match: Unrecognized 'depends_on' content type
+# match: Unrecognized 'expects' content type
 ---
 actions:
   - name: foo
     type: shell
-    depends_on: {}
+    expects: {}

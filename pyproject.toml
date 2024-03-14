@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cjunct"
-version = "0.1.1"
+version = "1.0.0"
 description = "Declarative parallel process runner"
 license = "MIT"
 authors = [
@@ -13,14 +13,14 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.8, <3.12"
 named-env = "^2.3.2"
 classlogging = "^1.1.1"
-python-dotenv = "^1.0.0"
+python-dotenv = "^1.0.1"
 async-shell = "^1.0.3"
 pyyaml = "^6.0.1"
 click = "^8.1.4"
-defusedxml = "^0.7.1"
+dacite = "^1.8.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.0"
@@ -35,6 +35,7 @@ pytest-bandit = "^0.6.1"
 tox = "^3.28.0"
 pytest-cov = "^4.0.0"
 types-pyyaml = "^6.0.12.10"
+setuptools = "^69.0.3"
 
 [tool.poetry.scripts]
 cjunct = "cjunct.console:main"
