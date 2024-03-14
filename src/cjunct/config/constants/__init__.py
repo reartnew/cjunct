@@ -24,7 +24,21 @@ from ...types import (
 
 __all__ = [
     "C",
+    "LOG_LEVELS",
 ]
+
+LOG_LEVELS: t.Dict[str, str] = {
+    "0": LogLevel.ERROR,
+    "1": LogLevel.WARNING,
+    "2": LogLevel.INFO,
+    "3": LogLevel.DEBUG,
+    "4": LogLevel.TRACE,
+    LogLevel.ERROR: LogLevel.ERROR,
+    LogLevel.WARNING: LogLevel.WARNING,
+    LogLevel.INFO: LogLevel.INFO,
+    LogLevel.DEBUG: LogLevel.DEBUG,
+    LogLevel.TRACE: LogLevel.TRACE,
+}
 
 
 def _maybe_strategy(name: t.Optional[str]) -> t.Optional[StrategyClassType]:
@@ -59,7 +73,7 @@ class C:
     """Runtime constants"""
 
     LOG_LEVEL: Mandatory[str] = Mandatory(
-        lambda: get_cli_arg("log_level"),
+        lambda: LOG_LEVELS[get_cli_arg("log_level")] if get_cli_arg("log_level") is not None else None,
         lambda: Env.CJUNCT_LOG_LEVEL or None,
         lambda: LogLevel.ERROR,
     )
