@@ -134,17 +134,22 @@ class Runner(classlogging.LoggerMixin):
             display.emit_action_message(source=action, message=message)
 
     async def _run_action(self, action: ActionBase) -> None:
+        message: str
         try:
             self._render_action(action)
         except Exception as e:
-            self.logger.warning(f"Action {action.name!r} rendering failed: {e}")
+            message = f"Action {action.name!r} rendering failed: {e}"
+            self.display.emit_action_error(source=action, message=message)
+            self.logger.warning(message, exc_info=True)
             action.fail(e)
             self._had_failed_actions = True
             return
         try:
             await action
         except Exception as e:
-            self.logger.warning(f"Action {action.name!r} execution failed: {e}")
+            message = f"Action {action.name!r} execution failed: {e}"
+            self.display.emit_action_error(source=action, message=message)
+            self.logger.warning(message, exc_info=True)
             self._had_failed_actions = True
         finally:
             self._outcomes[action.name] = action.get_outcomes()

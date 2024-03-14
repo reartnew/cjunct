@@ -32,22 +32,32 @@ class NetPrefixDisplay(BaseDisplay):
         self._action_names_max_len = max(map(len, self._actions))
         self._last_displayed_name: str = ""
 
-    def emit_action_message(self, source: ActionBase, message: str) -> None:
-        # Construct prefix based on previous emitter action name
+    def _make_prefix(self, source_name: str, mark: str = " "):
+        """Construct prefix based on previous emitter action name"""
         justification_len: int = self._action_names_max_len + 2  # "2" here stands for square brackets
         formatted_name: str = (
-            f"[{source.name}]".ljust(justification_len)
-            if self._last_displayed_name != source.name
+            f"[{source_name}]".ljust(justification_len)
+            if self._last_displayed_name != source_name
             else " " * justification_len
         )
+        self._last_displayed_name = source_name
+        return Color.gray(f"{formatted_name} {mark}| ")
+
+    def emit_action_message(self, source: ActionBase, message: str) -> None:
         is_stderr: bool = isinstance(message, Stderr)
-        stderr_mark = "*" if is_stderr else " "
-        line_prefix: str = Color.gray(f"{formatted_name} {stderr_mark}| ")
-        self._last_displayed_name = source.name
-        for line in message.splitlines(True):
+        line_prefix: str = self._make_prefix(source_name=source.name, mark="*" if is_stderr else " ")
+        for line in message.splitlines():
             super().emit_action_message(
                 source=source,
-                message=f"{line_prefix}{Color.red(line) if is_stderr else line}",
+                message=f"{line_prefix}{Color.yellow(line) if is_stderr else line}",
+            )
+
+    def emit_action_error(self, source: ActionBase, message: str) -> None:
+        line_prefix: str = self._make_prefix(source_name=source.name, mark="!")
+        for line in message.splitlines():
+            super().emit_action_error(
+                source=source,
+                message=f"{line_prefix}{Color.red(line)}",
             )
 
     def _display_status_banner(self) -> None:

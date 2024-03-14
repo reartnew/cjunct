@@ -19,6 +19,11 @@ class BaseDisplay:
         """Process a message from some source"""
         self.display(message)
 
+    # pylint: disable=unused-argument
+    def emit_action_error(self, source: ActionBase, message: str) -> None:
+        """Process an error from some source"""
+        self.display(message)
+
     def on_finish(self) -> None:
         """Runner finish handler"""
 
