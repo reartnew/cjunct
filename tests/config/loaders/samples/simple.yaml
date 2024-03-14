@@ -10,7 +10,7 @@ actions:
     description: Run groovy
     type: shell
     command: groovy/Dummy.groovy
-    depends_on:
+    expects:
       - name: RunAnsible
         strict: Yes
       - name: MissingExternal

@@ -8,10 +8,10 @@ actions:
   - name: bar
     type: shell
     command: whoami
-    depends_on:
+    expects:
       - baz
   - name: baz
     type: shell
     command: whoami
-    depends_on:
+    expects:
       - bar

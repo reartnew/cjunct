@@ -45,7 +45,7 @@ actions:
   - name: Bar
     type: shell
     command: echo "bar" >&2
-    depends_on:
+    expects:
       - Foo
 """
     )
@@ -78,11 +78,11 @@ actions:
     command: |
      echo "@{{outcomes.Foo.result-key}}"
      echo "Prefix ##cjunct[yield-outcome-b64 {_str_to_b64('result-key')} {_str_to_b64('bar')}]##"
-    depends_on: [Foo]
+    expects: [Foo]
   - name: Baz
     type: shell
     command: echo "@{{outcomes.Bar.result-key}}" 
-    depends_on: [Bar]
+    expects: [Bar]
 """.encode()
     )
     if request.param == "chdir":

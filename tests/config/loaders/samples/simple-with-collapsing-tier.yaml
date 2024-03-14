@@ -10,13 +10,13 @@ actions:
     description: Run groovy
     type: shell
     command: groovy/Dummy.groovy
-    depends_on:
+    expects:
       - RunAnsible
 
   - name: RunShell
     description: Run shell
     type: shell
     command: echo foo
-    depends_on:
+    expects:
       - RunAnsible
       - RunGroovy
