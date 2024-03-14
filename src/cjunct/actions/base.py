@@ -88,15 +88,11 @@ class ActionBase(classlogging.LoggerMixin):
         self,
         name: str,
         args: ArgsBase = ArgsBase(),
-        on_fail: t.Optional[str] = None,
-        visible: bool = True,
         ancestors: t.Optional[t.Dict[str, ActionDependency]] = None,
         description: t.Optional[str] = None,
     ) -> None:
         self.name: str = name
         self.args: ArgsBase = args
-        self.on_fail: t.Optional[str] = on_fail
-        self.visible: bool = visible
         self.description: t.Optional[str] = description
         self.ancestors: t.Dict[str, ActionDependency] = ancestors or {}
 

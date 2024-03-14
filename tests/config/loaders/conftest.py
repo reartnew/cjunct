@@ -9,14 +9,15 @@ from _pytest.fixtures import SubRequest
 
 from cjunct import exceptions
 
-# Get all sample files list
-SAMPLES_DIR: Path = Path(__file__).parent / "samples"
-SAMPLES: t.List[Path] = [item for item in SAMPLES_DIR.iterdir() if item.is_file()]
-
 # Prepare regex patterns for exception pragma search
 PRAGMA_MATCHER_TEMPLATES_MAP: t.Dict[str, str] = {
     ".yaml": r"^\s*#\s*{}:\s*(.*)$",
 }
+# Get all sample files list
+SAMPLES_DIR: Path = Path(__file__).parent / "samples"
+SAMPLES: t.List[Path] = [
+    item for item in SAMPLES_DIR.iterdir() if item.is_file() and item.suffix in PRAGMA_MATCHER_TEMPLATES_MAP
+]
 
 
 @pytest.fixture(params=SAMPLES, ids=[f"{item.suffix.replace('.', '')}-{item.stem}" for item in SAMPLES])

@@ -135,18 +135,6 @@ class AbstractBaseConfigLoader(LoggerMixin):
             self._throw(f"Unexpected name type: {type(name)!r} (should be a string")
         if not name:
             self._throw("Action node name is empty")
-        # OnFail flag
-        on_fail: t.Optional[str] = node.pop("on_fail", None)
-        if on_fail not in (None, "warn", "stop"):
-            self._throw(f"Invalid 'on_fail' value {on_fail!r} (may be one of 'warn' and 'stop', or not set)")
-        # Visible flag
-        visible_str: t.Optional[str] = node.pop("visible", None)
-        if visible_str not in (None, "true", "false"):
-            self._throw(
-                f"Invalid 'visible' value {visible_str!r} "
-                f"(may be one of 'true' and 'false', or not set, which is considered visible)"
-            )
-        visible: bool = visible_str != "false"
         # Action type
         if "type" not in node:
             self._throw(f"'type' not specified for action {name!r}")
@@ -171,8 +159,6 @@ class AbstractBaseConfigLoader(LoggerMixin):
         return action_class(
             name=name,
             args=args_instance,
-            on_fail=on_fail,
-            visible=visible,
             description=description,
             ancestors=dependencies,
         )
