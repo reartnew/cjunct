@@ -161,7 +161,7 @@ actions:
   - name: Foo
     type: shell
     command: |
-      [[ "@{status.Foo}" == "PENDING" ]] || exit 1
+      [ "@{status.Foo}" = "PENDING" ] || exit 1
 """
     )
     monkeypatch.chdir(tmp_path)
