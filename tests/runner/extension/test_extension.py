@@ -32,10 +32,17 @@ def test_ext_loader_missing_attr(echo_context: None, monkeypatch: pytest.MonkeyP
         cjunct.Runner().run_sync()
 
 
-def test_ext_loader_bad_action(echo_context: None, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Check module with bad actions"""
-    monkeypatch.setenv("CJUNCT_CONFIG_LOADER_SOURCE_FILE", str(MODULES_DIR / "bad_actions_loader.py"))
+def test_ext_loader_bad_no_args_action(echo_context: None, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check module with bad actions without args"""
+    monkeypatch.setenv("CJUNCT_CONFIG_LOADER_SOURCE_FILE", str(MODULES_DIR / "bad_no_args_actions_loader.py"))
     with pytest.raises(LoadError, match="Couldn't find an `args` annotation for class"):
+        cjunct.Runner().run_sync()
+
+
+def test_ext_loader_bad_arg_name_action(echo_context: None, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check module with bad actions with reserved args"""
+    monkeypatch.setenv("CJUNCT_CONFIG_LOADER_SOURCE_FILE", str(MODULES_DIR / "bad_arg_name_actions_loader.py"))
+    with pytest.raises(TypeError, match="Reserved names found in 'ReservedArgs' class definition"):
         cjunct.Runner().run_sync()
 
 

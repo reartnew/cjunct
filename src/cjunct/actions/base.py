@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import enum
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 
 import classlogging
 
@@ -18,9 +18,19 @@ __all__ = [
     "ArgsBase",
     "StringTemplate",
     "RenderedStringTemplate",
+    "ACTION_RESERVED_FIELD_NAMES",
 ]
 
 AT = t.TypeVar("AT", bound="ActionBase")
+
+ACTION_RESERVED_FIELD_NAMES: t.Set[str] = {
+    "name",
+    "type",
+    "description",
+    "expects",
+    "severity",  # planned in future
+    "selectable",  # planned in future
+}
 
 
 class ActionSkip(BaseException):
@@ -70,7 +80,11 @@ class ArgsMeta(type):
     """Metaclass for args containers that makes them all dataclasses"""
 
     def __new__(cls, name, bases, dct):
-        return dataclass(super().__new__(cls, name, bases, dct))
+        sub_dataclass = dataclass(super().__new__(cls, name, bases, dct))
+        reserved_names_collisions: t.Set[str] = {f.name for f in fields(sub_dataclass)} & ACTION_RESERVED_FIELD_NAMES
+        if reserved_names_collisions:
+            raise TypeError(f"Reserved names found in {name!r} class definition: {sorted(reserved_names_collisions)}")
+        return sub_dataclass
 
 
 @dataclass
