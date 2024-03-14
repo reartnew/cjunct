@@ -185,11 +185,20 @@ class Runner(classlogging.LoggerMixin):
         """Helper function for template substitution using re.sub"""
         prior: str = match.groupdict()["prior"]
         expression: str = match.groupdict()["expression"]
+        expression_substitution_result: str = self._string_template_process_expression(expression)
+        return f"{prior}{expression_substitution_result}"
+
+    def _string_template_process_expression(self, expression: str) -> str:
+        """Split the expression into parts and process according to the part name"""
         part_type, *other_parts = self._string_template_expression_split(expression)
         if part_type == "outcomes":
             if len(other_parts) != 2:
-                raise ValueError(f"Outcome expression has {len(other_parts) + 1} parts: {expression!r} (2 expected)")
+                raise ValueError(f"Outcome expression has {len(other_parts) + 1} parts: {expression!r} (3 expected)")
             action_name, key = other_parts
-            value: t.Any = self._outcomes.get(action_name, {})[key]
-            return f"{prior}{value}"
+            return self._outcomes.get(action_name, {})[key]
+        if part_type == "status":
+            if len(other_parts) != 1:
+                raise ValueError(f"Status expression has {len(other_parts) + 1} parts: {expression!r} (2 expected)")
+            (action_name,) = other_parts
+            return self.actions[action_name].status.value
         raise ValueError(f"Unknown expression type: {part_type!r} (from {expression!r})")

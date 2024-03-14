@@ -83,13 +83,13 @@ def test_failing_actions(runner_failing_action_context: None) -> None:
         cjunct.Runner().run_sync()
 
 
-def test_failing_render(runner_failing_render_context) -> None:
+def test_failing_render(runner_failing_render_context: None) -> None:
     """Check failing render in the runner"""
     with pytest.raises(exceptions.ExecutionFailed):
         cjunct.Runner().run_sync()
 
 
-def test_external_actions(runner_external_actions_context) -> None:
+def test_external_actions(runner_external_actions_context: None) -> None:
     """Check external actions from directories"""
     cjunct.Runner().run_sync()
 
@@ -98,4 +98,15 @@ def test_invalid_action_source_file_via_env(tmp_path: Path, monkeypatch: pytest.
     """Check raising SourceError for absent file via CJUNCT_ACTIONS_SOURCE_FILE"""
     monkeypatch.setenv("CJUNCT_ACTIONS_SOURCE_FILE", str(tmp_path / "missing.yaml"))
     with pytest.raises(exceptions.SourceError, match="Pre-configured actions source file does not exist"):
+        cjunct.Runner().run_sync()
+
+
+def test_status_good_substitution(runner_status_substitution_good_context: None) -> None:
+    """Check status good substitution"""
+    cjunct.Runner().run_sync()
+
+
+def test_status_bad_substitution(runner_status_substitution_bad_context: None) -> None:
+    """Check status bad substitution"""
+    with pytest.raises(exceptions.ExecutionFailed):
         cjunct.Runner().run_sync()

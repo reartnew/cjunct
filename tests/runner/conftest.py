@@ -149,3 +149,34 @@ actions:
         name="CJUNCT_ACTIONS_CLASS_DEFINITIONS_DIRECTORY",
         value=",".join(str(actions_class_definitions_base_path / sub_dir) for sub_dir in ("first", "second")),
     )
+
+
+@pytest.fixture
+def runner_status_substitution_good_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Prepare a directory with sample config files testing status good substitution"""
+    actions_source_path: Path = tmp_path / "cjunct.yaml"
+    actions_source_path.write_bytes(
+        b"""---
+actions:
+  - name: Foo
+    type: shell
+    command: |
+      [[ "@{status.Foo}" == "PENDING" ]] || exit 1
+"""
+    )
+    monkeypatch.chdir(tmp_path)
+
+
+@pytest.fixture
+def runner_status_substitution_bad_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Prepare a directory with sample config files testing status bad substitution"""
+    actions_source_path: Path = tmp_path / "cjunct.yaml"
+    actions_source_path.write_bytes(
+        b"""---
+actions:
+  - name: Foo
+    type: shell
+    command: echo "@{status.too.may.parts}"
+"""
+    )
+    monkeypatch.chdir(tmp_path)
