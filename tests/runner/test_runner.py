@@ -2,6 +2,7 @@
 
 # pylint: disable=unused-argument
 
+import io
 import typing as t
 from pathlib import Path
 
@@ -110,3 +111,20 @@ def test_status_bad_substitution(runner_status_substitution_bad_context: None) -
     """Check status bad substitution"""
     with pytest.raises(exceptions.ExecutionFailed):
         cjunct.Runner().run_sync()
+
+
+def test_stdin_feed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check actions fed from stdin"""
+    monkeypatch.setattr(
+        "sys.stdin",
+        io.StringIO(
+            """---
+actions:
+  - name: Foo
+    type: shell
+    command: pwd
+"""
+        ),
+    )
+    monkeypatch.setenv("CJUNCT_ACTIONS_SOURCE_FILE", "-")
+    cjunct.Runner().run_sync()
