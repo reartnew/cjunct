@@ -5,7 +5,6 @@ import base64
 import re
 import textwrap
 import typing as t
-from dataclasses import dataclass
 
 from async_shell import Shell, ShellResult
 
@@ -13,13 +12,13 @@ from .base import ActionBase, Stderr, ArgsBase, StringTemplate
 from ..config.constants import C
 
 
-@dataclass
 class ShellArgs(ArgsBase):
     """Args for shell-related actions"""
 
     command: t.Optional[StringTemplate] = None
     file: t.Optional[StringTemplate] = None
     environment: t.Optional[t.Dict[str, StringTemplate]] = None
+    cwd: t.Optional[str] = None
 
     def __post_init__(self) -> None:
         if self.command is None and self.file is None:
@@ -79,7 +78,8 @@ class ShellAction(ActionBase):
             command = f"{self.YIELD_FUNCTION_BOILERPLATE}\n{command}"
         return Shell(
             command=command,
-            environment=self.args.environment,
+            environment=self.args.environment,  # type: ignore[arg-type]
+            cwd=self.args.cwd,
         )
 
     async def run(self) -> None:
