@@ -5,9 +5,6 @@ thus placed to a separate module.
 
 import asyncio
 import functools
-import os
-import re
-import shlex
 import typing as t
 from dataclasses import asdict
 from pathlib import Path
@@ -23,6 +20,7 @@ from .config.loaders.helpers import get_default_loader_class_for_file
 from .display.base import BaseDisplay
 from .display.default import NetPrefixDisplay
 from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError
+from .rendering import Templar
 from .strategy import BaseStrategy, LooseStrategy
 
 __all__ = [
@@ -36,17 +34,8 @@ ActionsResultsContainerDataType = t.Dict[str, t.Dict[str, t.Any]]
 class Runner(classlogging.LoggerMixin):
     """Main entry object"""
 
-    _TEMPLATE_SUBST_PATTERN: t.Pattern = re.compile(
-        r"""
-        (?P<prior>
-            (?:^|[^@])  # Ensure that match starts from the first @ sign
-            (?:@@)*  # Possibly escaped @ signs
-        )
-        @\{
-          (?P<expression>.*?)
-        }""",
-        re.VERBOSE,
-    )
+    def _get_action_outcome_key(self, action_name: str, outcome_key: str) -> t.Optional[str]:
+        return self._outcomes.get(action_name, {}).get(outcome_key)
 
     def __init__(
         self,
@@ -178,51 +167,8 @@ class Runner(classlogging.LoggerMixin):
         action.args = rendered_args
 
     def _string_template_render_hook(self, value: str) -> RenderedStringTemplate:
-        """Process string data, replacing all @{} occurrences"""
-        replaced_value: str = self._TEMPLATE_SUBST_PATTERN.sub(self._string_template_replace_match, value)
-        return RenderedStringTemplate(replaced_value)
-
-    @classmethod
-    def _string_template_expression_split(cls, string: str) -> t.List[str]:
-        """Use shell-style lexer, but split by dots instead of whitespaces"""
-        dot_lexer = shlex.shlex(instream=string, punctuation_chars=True)
-        dot_lexer.whitespace = "."
-        # Extra split to unquote quoted values
-        return ["".join(shlex.split(token)) for token in dot_lexer]
-
-    def _string_template_replace_match(self, match: t.Match) -> str:
-        """Helper function for template substitution using re.sub"""
-        prior: str = match.groupdict()["prior"]
-        expression: str = match.groupdict()["expression"]
-        expression_substitution_result: str = self._string_template_process_expression(expression)
-        return f"{prior}{expression_substitution_result}"
-
-    def _string_template_process_expression(self, expression: str) -> str:
-        """Split the expression into parts and process according to the part name"""
-        part_type, *other_parts = self._string_template_expression_split(expression)
-        if part_type == "outcomes":
-            if len(other_parts) != 2:
-                raise ActionRenderError(f"Outcomes expression has {len(other_parts) + 1} parts of 3: {expression!r}")
-            action_name, key = other_parts
-            action_outcomes: dict = self._outcomes.get(action_name, {})
-            if key not in action_outcomes:
-                raise ActionRenderError(f"Outcome {key!r} not found for action {action_name!r} (from {expression!r})")
-            return action_outcomes[key]
-        if part_type == "status":
-            if len(other_parts) != 1:
-                raise ActionRenderError(f"Status expression has {len(other_parts) + 1} parts of 2: {expression!r}")
-            (action_name,) = other_parts
-            return self.actions[action_name].status.value
-        if part_type == "environment":
-            if len(other_parts) != 1:
-                raise ActionRenderError(f"Environment expression has {len(other_parts) + 1} parts of 2: {expression!r}")
-            (variable_name,) = other_parts
-            return os.getenv(variable_name, "")
-        if part_type == "context":
-            if len(other_parts) != 1:
-                raise ActionRenderError(f"Context expression has {len(other_parts) + 1} parts of 2: {expression!r}")
-            (context_key,) = other_parts
-            if (raw_context_value := self.actions.get_context_value(key=context_key)) is None:
-                raise ActionRenderError(f"Context key not found: {context_key!r}")
-            return self._string_template_render_hook(raw_context_value)
-        raise ActionRenderError(f"Unknown expression type: {part_type!r} (from {expression!r})")
+        return Templar(
+            outcome_getter=lambda action_name, outcome_key: self._outcomes.get(action_name, {}).get(outcome_key),
+            status_getter=lambda name: self.actions[name].status.value if name in self.actions else None,
+            raw_context_getter=lambda key: self.actions.get_context_value(key=key),
+        ).render(value)
