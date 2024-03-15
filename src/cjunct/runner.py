@@ -5,6 +5,8 @@ thus placed to a separate module.
 
 import asyncio
 import functools
+import io
+import sys
 import typing as t
 from dataclasses import asdict
 from pathlib import Path
@@ -16,7 +18,8 @@ from . import types
 from .actions.base import ActionBase, StringTemplate, RenderedStringTemplate, ArgsBase
 from .actions.net import ActionNet
 from .config.constants import C
-from .config.loaders.helpers import get_default_loader_class_for_file
+from .config.loaders.base import AbstractBaseConfigLoader
+from .config.loaders.helpers import get_default_loader_class_for_source
 from .display.base import BaseDisplay
 from .display.default import NetPrefixDisplay
 from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError
@@ -27,20 +30,24 @@ __all__ = [
     "Runner",
 ]
 
+IOType = io.TextIOBase
+
 
 class Runner(classlogging.LoggerMixin):
     """Main entry object"""
 
     def __init__(
         self,
-        config: t.Union[str, Path, None] = None,
+        config: t.Union[str, Path, IOType, None] = None,
         loader_class: t.Optional[types.LoaderClassType] = None,
         strategy_class: types.StrategyClassType = LooseStrategy,
         display_class: types.DisplayClassType = NetPrefixDisplay,
     ) -> None:
-        self._config_path: Path = self._detect_config_source() if config is None else Path(config)
+        self._config_source: t.Union[Path, IOType] = (
+            self._detect_config_source() if config is None else config if isinstance(config, IOType) else Path(config)
+        )
         self._loader_class: types.LoaderClassType = (
-            loader_class or C.CONFIG_LOADER_CLASS or get_default_loader_class_for_file(self._config_path)
+            loader_class or C.CONFIG_LOADER_CLASS or get_default_loader_class_for_source(self._config_source)
         )
         self.logger.debug(f"Using config loader class: {self._loader_class}")
         self._strategy_class: types.StrategyClassType = strategy_class
@@ -54,7 +61,12 @@ class Runner(classlogging.LoggerMixin):
     @functools.cached_property
     def actions(self) -> ActionNet:
         """Calculated actions net"""
-        return self._loader_class().load(self._config_path)
+        loader: AbstractBaseConfigLoader = self._loader_class()
+        return (
+            loader.loads(self._config_source.read())
+            if isinstance(self._config_source, io.TextIOBase)
+            else loader.load(self._config_source)
+        )
 
     @functools.cached_property
     def display(self) -> BaseDisplay:
@@ -62,12 +74,15 @@ class Runner(classlogging.LoggerMixin):
         return self._display_class(net=self.actions)
 
     @classmethod
-    def _detect_config_source(cls) -> Path:
+    def _detect_config_source(cls) -> t.Union[Path, IOType]:
         if C.ACTIONS_SOURCE_FILE is not None:
             source_file: Path = C.ACTIONS_SOURCE_FILE
-            cls.logger.info(f"Using pre-configured actions source file: {source_file}")
+            if str(source_file) == "-":
+                cls.logger.info("Using stdin as actions source")
+                return t.cast(IOType, sys.stdin)
             if not source_file.exists():
                 raise SourceError(f"Pre-configured actions source file does not exist: {source_file}")
+            cls.logger.info(f"Using pre-configured actions source file: {source_file}")
             return source_file
         scan_path: Path = C.CONTEXT_DIRECTORY
         cls.logger.debug(f"Looking for config files at {scan_path}")

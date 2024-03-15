@@ -1,5 +1,6 @@
 """Common loader utilities"""
 
+import io
 import typing as t
 from pathlib import Path
 
@@ -8,17 +9,20 @@ from .default.yaml import DefaultYAMLConfigLoader
 from ...exceptions import SourceError
 
 __all__ = [
-    "get_default_loader_class_for_file",
+    "get_default_loader_class_for_source",
 ]
 
+STREAM_DEFAULT_LOADER: t.Type[AbstractBaseConfigLoader] = DefaultYAMLConfigLoader
 SUFFIX_TO_LOADER_MAP: t.Dict[str, t.Type[AbstractBaseConfigLoader]] = {
     ".yml": DefaultYAMLConfigLoader,
     ".yaml": DefaultYAMLConfigLoader,
 }
 
 
-def get_default_loader_class_for_file(source: t.Union[str, Path]) -> t.Type[AbstractBaseConfigLoader]:
+def get_default_loader_class_for_source(source: t.Union[str, Path, io.TextIOBase]) -> t.Type[AbstractBaseConfigLoader]:
     """Return loader class based on file stats"""
+    if isinstance(source, io.TextIOBase):
+        return STREAM_DEFAULT_LOADER
     source_path: Path = Path(source)
     if (loader_class := SUFFIX_TO_LOADER_MAP.get(source_path.suffix)) is None:
         raise SourceError(f"Unrecognized source: {source_path}")
