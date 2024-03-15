@@ -24,9 +24,8 @@ dacite = "^1.8.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.0"
-pylint = "^2.17.5"
-pytest-pylint = "^0.19.0"
-pylint-quotes = "^0.2.3"
+pylint = "^3.1.0"
+pytest-pylint = "^0.21.0"
 pytest-mypy = "^0.10.2"
 pytest-black = "^0.3.12"
 pytest-data-suites = "^1.0.4"
@@ -83,7 +82,6 @@ line-length = 120
 [tool.pylint.MASTER]
 fail-under = 10.0
 jobs = 1
-load-plugins = ["pylint_quotes"]
 unsafe-load-any-extension = "no"
 
 [tool.pylint."MESSAGES CONTROL"]
@@ -126,9 +124,6 @@ max-line-length = 120
 max-module-lines = 1000
 single-line-class-stmt = "no"
 single-line-if-stmt = "no"
-string-quote = "double-avoid-escape"
-triple-quote = "double"
-docstring-quote = "double"
 
 [tool.pylint.MISCELLANEOUS]
 notes = "TODO"
