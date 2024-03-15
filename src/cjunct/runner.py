@@ -197,7 +197,7 @@ class Runner(classlogging.LoggerMixin):
         expression_substitution_result: str = self._string_template_process_expression(expression)
         return f"{prior}{expression_substitution_result}"
 
-    def _string_template_process_expression(self, expression: str, original_expression: t.Optional[str] = None) -> str:
+    def _string_template_process_expression(self, expression: str) -> str:
         """Split the expression into parts and process according to the part name"""
         part_type, *other_parts = self._string_template_expression_split(expression)
         if part_type == "outcomes":
