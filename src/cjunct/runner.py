@@ -27,15 +27,9 @@ __all__ = [
     "Runner",
 ]
 
-ActionResultDataType = t.Dict[str, t.Any]
-ActionsResultsContainerDataType = t.Dict[str, t.Dict[str, t.Any]]
-
 
 class Runner(classlogging.LoggerMixin):
     """Main entry object"""
-
-    def _get_action_outcome_key(self, action_name: str, outcome_key: str) -> t.Optional[str]:
-        return self._outcomes.get(action_name, {}).get(outcome_key)
 
     def __init__(
         self,
