@@ -83,7 +83,7 @@ actions:
     expects: Foo
   - name: Baz
     type: shell
-    command: echo "@{{outcomes.Bar.result-key}}" 
+    command: echo "@{{outcomes.Bar.result-key}}"
     expects: Bar
 """.encode()
     )
