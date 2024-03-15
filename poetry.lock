@@ -21,17 +21,17 @@ wrapt = [
 
 [[package]]
 name = "async-shell"
-version = "1.0.3"
+version = "1.0.4"
 description = "Asyncio subprocess shell command wrapper"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "async_shell-1.0.3-py3-none-any.whl", hash = "sha256:6fcaf817e70b76ac5481686109c9a28fcdaf054eda716337c1a2dedb4002f9c4"},
-    {file = "async_shell-1.0.3.tar.gz", hash = "sha256:9856e5cb991d4c4d61ba14776ecf79dcff8e22c5eadf5276498910a10b8d483a"},
+    {file = "async_shell-1.0.4-py3-none-any.whl", hash = "sha256:094b51584f1494656a575213b313a501774bfabe3b650cb34aa0f6271dd3bb8c"},
+    {file = "async_shell-1.0.4.tar.gz", hash = "sha256:f98f4575fdde2b947033c186b67b1560ff0603d540d7c4fe5dc833dc43628748"},
 ]
 
 [package.dependencies]
-classlogging = ">=1.0.2,<2.0.0"
+classlogging = ">=1.1.1,<2.0.0"
 
 [[package]]
 name = "attrs"
@@ -1070,4 +1070,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8, <3.12"
-content-hash = "21ce101c4a103d14eff3dae49a6504812118efc805690d8f28027b8ffbb56edc"
+content-hash = "383e89e1f5f8bbb7c6392a71856c8ba1858a2a744ab5dbe4fe631999c57683cf"
