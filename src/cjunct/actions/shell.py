@@ -72,14 +72,14 @@ class ShellAction(ActionBase):
         async for line in shell_process.read_stderr():
             self.emit(Stderr(line))
 
-    def _make_command(self) -> str:
+    async def _create_shell(self) -> Shell:
         command: str = self.args.command or f"source '{self.args.file}'"
         if C.SHELL_INJECT_YIELD_FUNCTION:
             command = f"{self.YIELD_FUNCTION_BOILERPLATE}\n{command}"
-        return command
+        return Shell(command=command)
 
     async def run(self) -> None:
-        async with Shell(command=self._make_command()) as shell_process:
+        async with await self._create_shell() as shell_process:
             tasks: t.List[asyncio.Task] = [
                 asyncio.create_task(self._read_stdout(shell_process)),
                 asyncio.create_task(self._read_stderr(shell_process)),
