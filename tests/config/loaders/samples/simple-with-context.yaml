@@ -1,0 +1,8 @@
+---
+context:
+  executable: echo
+actions:
+
+  - name: Test
+    type: shell
+    command: "@{context.executable} hello world"
