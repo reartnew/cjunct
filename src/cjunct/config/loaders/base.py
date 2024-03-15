@@ -29,6 +29,7 @@ class AbstractBaseConfigLoader(LoggerMixin):
         self._files_stack: t.List[str] = []
         self._checklists: t.Dict[str, t.List[str]] = {}
         self._loaded_file: t.Optional[Path] = None
+        self._gathered_context: t.Dict[str, str] = {}
 
     def _register_action(self, action: ActionBase) -> None:
         if action.name in self._actions:
@@ -88,12 +89,12 @@ class AbstractBaseConfigLoader(LoggerMixin):
     def loads(self, data: t.Union[str, bytes]) -> ActionNet:
         """Load config from text"""
         self._internal_loads(data=data)
-        return ActionNet(self._actions)
+        return ActionNet(self._actions, context=self._gathered_context)
 
     def load(self, source_file: t.Union[str, Path]) -> ActionNet:
         """Load config from file"""
         self._internal_load(source_file=source_file)
-        return ActionNet(self._actions)
+        return ActionNet(self._actions, context=self._gathered_context)
 
     def build_dependency_from_node(self, dep_node: t.Union[str, dict]) -> t.Tuple[str, ActionDependency]:
         """Unified method to process transform dependency source data"""

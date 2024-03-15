@@ -5,6 +5,7 @@ thus placed to a separate module.
 
 import asyncio
 import functools
+import os
 import re
 import shlex
 import typing as t
@@ -196,12 +197,12 @@ class Runner(classlogging.LoggerMixin):
         expression_substitution_result: str = self._string_template_process_expression(expression)
         return f"{prior}{expression_substitution_result}"
 
-    def _string_template_process_expression(self, expression: str) -> str:
+    def _string_template_process_expression(self, expression: str, original_expression: t.Optional[str] = None) -> str:
         """Split the expression into parts and process according to the part name"""
         part_type, *other_parts = self._string_template_expression_split(expression)
         if part_type == "outcomes":
             if len(other_parts) != 2:
-                raise ActionRenderError(f"Outcome expression has {len(other_parts) + 1} parts of 3: {expression!r}")
+                raise ActionRenderError(f"Outcomes expression has {len(other_parts) + 1} parts of 3: {expression!r}")
             action_name, key = other_parts
             action_outcomes: dict = self._outcomes.get(action_name, {})
             if key not in action_outcomes:
@@ -212,4 +213,16 @@ class Runner(classlogging.LoggerMixin):
                 raise ActionRenderError(f"Status expression has {len(other_parts) + 1} parts of 2: {expression!r}")
             (action_name,) = other_parts
             return self.actions[action_name].status.value
+        if part_type == "environment":
+            if len(other_parts) != 1:
+                raise ActionRenderError(f"Environment expression has {len(other_parts) + 1} parts of 2: {expression!r}")
+            (variable_name,) = other_parts
+            return os.getenv(variable_name, "")
+        if part_type == "context":
+            if len(other_parts) != 1:
+                raise ActionRenderError(f"Context expression has {len(other_parts) + 1} parts of 2: {expression!r}")
+            (context_key,) = other_parts
+            if (raw_context_value := self.actions.get_context_value(key=context_key)) is None:
+                raise ActionRenderError(f"Context key not found: {context_key!r}")
+            return self._string_template_render_hook(raw_context_value)
         raise ActionRenderError(f"Unknown expression type: {part_type!r} (from {expression!r})")
