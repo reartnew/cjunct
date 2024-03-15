@@ -19,6 +19,7 @@ class ShellArgs(ArgsBase):
 
     command: t.Optional[StringTemplate] = None
     file: t.Optional[StringTemplate] = None
+    environment: t.Optional[t.Dict[str, StringTemplate]] = None
 
     def __post_init__(self) -> None:
         if self.command is None and self.file is None:
@@ -76,7 +77,10 @@ class ShellAction(ActionBase):
         command: str = self.args.command or f"source '{self.args.file}'"
         if C.SHELL_INJECT_YIELD_FUNCTION:
             command = f"{self.YIELD_FUNCTION_BOILERPLATE}\n{command}"
-        return Shell(command=command)
+        return Shell(
+            command=command,
+            environment=self.args.environment,
+        )
 
     async def run(self) -> None:
         async with await self._create_shell() as shell_process:
