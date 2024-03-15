@@ -36,6 +36,7 @@ class ActionNet(t.Dict[str, ActionBase], LoggerMixin):
         self._allocate_tiers()
 
     def get_context_value(self, key: str) -> t.Optional[str]:
+        """Obtain raw value of the context key"""
         return self._context.get(key)
 
     def _establish_descendants(self) -> None:
