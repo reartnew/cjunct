@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from cjunct import ActionBase, ArgsBase
+from cjunct import ActionBase, ArgsBase, StringTemplate
 from cjunct.config.loaders.default.yaml import DefaultYAMLConfigLoader
 from external_test_lib.constant import TEST_SUFFIX  # type: ignore  # pylint: disable=wrong-import-order
 
@@ -11,7 +11,7 @@ from external_test_lib.constant import TEST_SUFFIX  # type: ignore  # pylint: di
 class EchoArgs(ArgsBase):
     """Args for EchoAction"""
 
-    message: str
+    message: StringTemplate
 
 
 class EchoAction(ActionBase):

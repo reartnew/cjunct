@@ -69,6 +69,8 @@ def runner_shell_yield_good_context(request: SubRequest, tmp_path: Path, monkeyp
     actions_source_path: Path = tmp_path / "cjunct.yaml"
     actions_source_path.write_bytes(
         f"""---
+context:
+    bar-prefix: Prefix
 actions:
   - name: Foo
     type: shell
@@ -77,11 +79,11 @@ actions:
     type: shell
     command: |
      echo "@{{outcomes.Foo.result-key}}"
-     echo "Prefix ##cjunct[yield-outcome-b64 {_str_to_b64('result-key')} {_str_to_b64('bar')}]##"
+     echo "@{{context.bar-prefix}} ##cjunct[yield-outcome-b64 {_str_to_b64('result-key')} {_str_to_b64('bar')}]##"
     expects: Foo
   - name: Baz
     type: shell
-    command: echo "@{{outcomes.Bar.result-key}}" 
+    command: echo "@{{outcomes.Bar.result-key}}"
     expects: Bar
 """.encode()
     )

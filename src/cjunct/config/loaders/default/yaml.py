@@ -54,7 +54,11 @@ class DefaultYAMLConfigLoader(DefaultRootConfigLoader):
             self._throw(f"Unrecognized '!import' contents type: {type(path)!r} (expected a string)")
         if not path:
             self._throw(f"Empty import: {path!r}")
-        self._internal_load(path)
+        with self._read_file(path) as file_data:
+            self._internal_loads_with_filter(
+                data=file_data,
+                allowed_root_keys={"actions"},
+            )
 
     def _parse_checklists(self, tag: ChecklistsDirectoryTag) -> None:
         path: str = tag.data
@@ -65,6 +69,16 @@ class DefaultYAMLConfigLoader(DefaultRootConfigLoader):
         self.load_checklists_from_directory(path)
 
     def _internal_loads(self, data: t.Union[str, bytes]) -> None:
+        self._internal_loads_with_filter(
+            data=data,
+            allowed_root_keys={"actions", "context"},
+        )
+
+    def _internal_loads_with_filter(
+        self,
+        data: t.Union[str, bytes],
+        allowed_root_keys: t.Set[str],
+    ) -> None:
         if isinstance(data, bytes):
             data = data.decode()
         root_node: dict = yaml.load(data, YAMLLoader)  # nosec
@@ -72,19 +86,32 @@ class DefaultYAMLConfigLoader(DefaultRootConfigLoader):
             self._throw(f"Unknown config structure: {type(root_node)!r} (should be a dict)")
         root_keys: t.Set[str] = set(root_node)
         if not root_keys:
-            self._throw("Empty root dictionary (expecting 'actions')")
-        if unrecognized_keys := root_keys - {"actions"}:
-            self._throw(f"Unrecognized root keys: {sorted(unrecognized_keys)} (expecting 'actions' only)")
-        actions: t.List[t.Union[dict, ImportTag]] = root_node["actions"]
-        if not isinstance(actions, list):
-            self._throw(f"'actions' contents should be a list (get {type(actions)!r})")
-        for child_node in actions:
-            if isinstance(child_node, dict):
-                action: ActionBase = self.build_action_from_dict_data(child_node)
-                self._register_action(action)
-            elif isinstance(child_node, ImportTag):
-                self._parse_import(child_node)
-            elif isinstance(child_node, ChecklistsDirectoryTag):
-                self._parse_checklists(child_node)
-            else:
-                self._throw(f"Unrecognized node type: {type(child_node)!r}")
+            self._throw("Empty root dictionary (expecting 'actions' or 'context')")
+        if unrecognized_keys := root_keys - {"actions", "context"}:
+            self._throw(f"Unrecognized root keys: {sorted(unrecognized_keys)} (expecting 'actions' or 'context')")
+        processable_keys: t.Set[str] = set(root_node) & allowed_root_keys
+        if "actions" in processable_keys:
+            actions: t.List[t.Union[dict, ImportTag]] = root_node["actions"]
+            if not isinstance(actions, list):
+                self._throw(f"'actions' contents should be a list (got {type(actions)!r})")
+            for child_node in actions:
+                if isinstance(child_node, dict):
+                    action: ActionBase = self.build_action_from_dict_data(child_node)
+                    self._register_action(action)
+                elif isinstance(child_node, ImportTag):
+                    self._parse_import(child_node)
+                elif isinstance(child_node, ChecklistsDirectoryTag):
+                    self._parse_checklists(child_node)
+                else:
+                    self._throw(f"Unrecognized node type: {type(child_node)!r}")
+        if "context" in processable_keys:
+            context: t.Dict[str, str] = root_node["context"]
+            if not isinstance(context, dict):
+                self._throw(f"'context' contents should be a dict (got {type(context)!r})")
+            for context_key, context_value in context.items():
+                if not isinstance(context_key, str):
+                    self._throw(f"Context keys should be strings (got {type(context_key)!r} for {context_key!r})")
+                if not isinstance(context_value, str):
+                    self._throw(f"Context values should be strings (got {type(context_value)!r} for {context_value!r})")
+                self.logger.info(f"Context key added: {context_key}")
+                self._gathered_context[context_key] = context_value

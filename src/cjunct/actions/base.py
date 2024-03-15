@@ -152,6 +152,10 @@ class ActionBase(classlogging.LoggerMixin):
         """Main entry to be implemented in subclasses"""
         raise NotImplementedError
 
+    async def _run_with_log_context(self) -> None:
+        with self.logger.context(name=self.name):
+            return await self.run()
+
     async def _await(self) -> None:
         fut = self.get_future()
         if fut.done():
@@ -159,7 +163,7 @@ class ActionBase(classlogging.LoggerMixin):
         # Allocate asyncio task
         if self._running_task is None:
             self.logger.info(f"Running action: {self.name!r}")
-            self._running_task = asyncio.create_task(self.run())
+            self._running_task = asyncio.create_task(self._run_with_log_context())
             self._status = ActionStatus.RUNNING
         try:
             if (running_task_result := await self._running_task) is not None:
