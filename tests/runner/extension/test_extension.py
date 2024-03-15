@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 import cjunct
-from cjunct.exceptions import SourceError, LoadError
+from cjunct.exceptions import SourceError, LoadError, ExecutionFailed
 
 MODULES_DIR: Path = Path(__file__).parent / "modules"
 
@@ -73,3 +73,19 @@ def test_ext_loader_return_string(
         "============",
         "SUCCESS: Foo",
     ]
+
+
+def test_imports_context_isolation(
+    context_keys_isolation_context: None,
+    monkeypatch: pytest.MonkeyPatch,
+    display_collector: t.List[str],
+) -> None:
+    """Check that 'context' fields are not being imported"""
+    monkeypatch.setenv("CJUNCT_CONFIG_LOADER_SOURCE_FILE", str(MODULES_DIR / "good_loader.py"))
+    monkeypatch.setenv("CJUNCT_EXTERNAL_MODULES_PATHS", str(MODULES_DIR))
+    with pytest.raises(ExecutionFailed):
+        cjunct.Runner().run_sync()
+    assert (
+        "[Foo] !| Action 'Foo' rendering failed: Context key not found: 'imported-key' (from 'context.imported-key')"
+        in display_collector
+    )
