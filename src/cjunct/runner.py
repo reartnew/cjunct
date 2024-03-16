@@ -22,7 +22,7 @@ from .config.loaders.base import AbstractBaseConfigLoader
 from .config.loaders.helpers import get_default_loader_class_for_source
 from .display.base import BaseDisplay
 from .display.default import NetPrefixDisplay
-from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError
+from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError, ActionUnionRenderError
 from .rendering import Templar
 from .strategy import BaseStrategy, LooseStrategy
 
@@ -162,22 +162,35 @@ class Runner(classlogging.LoggerMixin):
 
     def _render_action(self, action: ActionBase) -> None:
         """Prepare action to execution by rendering its template fields"""
-        original_args_dict: dict = asdict(action.args)
-        rendered_args: ArgsBase = dacite.from_dict(
-            data_class=type(action.args),
-            data=original_args_dict,
-            config=dacite.Config(
-                strict=True,
-                type_hooks={
-                    StringTemplate: self._string_template_render_hook,
-                },
-            ),
-        )
-        action.args = rendered_args
+        union_render_errors: t.List[str] = []
 
-    def _string_template_render_hook(self, value: str) -> RenderedStringTemplate:
-        return Templar(
-            outcome_getter=lambda action_name, outcome_key: self._outcomes.get(action_name, {}).get(outcome_key),
-            status_getter=lambda name: self.actions[name].status.value if name in self.actions else None,
-            raw_context_getter=lambda key: self.actions.get_context_value(key=key),
-        ).render(value)
+        def _string_template_render_hook(value: str) -> RenderedStringTemplate:
+            templar: Templar = Templar(
+                outcomes_getter=self._outcomes.get,
+                status_getter=lambda name: self.actions[name].status.value if name in self.actions else None,
+                raw_context_getter=self.actions.get_context_value,
+            )
+            try:
+                return templar.render(value)
+            except ActionRenderError as e:
+                union_render_errors.append(str(e))
+                raise
+
+        original_args_dict: dict = asdict(action.args)
+        try:
+            rendered_args: ArgsBase = dacite.from_dict(
+                data_class=type(action.args),
+                data=original_args_dict,
+                config=dacite.Config(
+                    strict=True,
+                    type_hooks={
+                        StringTemplate: _string_template_render_hook,
+                    },
+                ),
+            )
+        # dacite union processing broadly suppresses all exceptions appearing during trying each type of the union
+        except dacite.UnionMatchError as e:
+            if not union_render_errors:
+                raise
+            raise ActionUnionRenderError("; ".join(union_render_errors)) from e
+        action.args = rendered_args
