@@ -185,3 +185,23 @@ actions:
 """
     )
     monkeypatch.chdir(tmp_path)
+
+
+@pytest.fixture
+def runner_failing_union_render_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Prepare a directory with sample config files using external actions from directories with union render types"""
+    actions_source_path: Path = tmp_path / "cjunct.yaml"
+    actions_source_path.write_bytes(
+        b"""---
+actions:
+  - name: Foo
+    type: union-arg-action
+    message: "@{some.failing.expression}"
+"""
+    )
+    monkeypatch.chdir(tmp_path)
+    actions_class_definitions_base_path: Path = Path(__file__).parent / "extension" / "modules" / "actions"
+    monkeypatch.setenv(
+        name="CJUNCT_ACTIONS_CLASS_DEFINITIONS_DIRECTORY",
+        value=",".join(str(actions_class_definitions_base_path / sub_dir) for sub_dir in ("first", "second")),
+    )

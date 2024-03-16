@@ -191,6 +191,7 @@ class Runner(classlogging.LoggerMixin):
         # dacite union processing broadly suppresses all exceptions appearing during trying each type of the union
         except dacite.UnionMatchError as e:
             if not union_render_errors:
-                raise
+                # Native dacite error
+                raise  # pragma: no cover
             raise ActionUnionRenderError("; ".join(union_render_errors)) from e
         action.args = rendered_args
