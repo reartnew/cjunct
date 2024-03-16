@@ -10,14 +10,12 @@ def templar(monkeypatch: pytest.MonkeyPatch) -> Templar:
     """Prepare a standalone templar"""
     monkeypatch.setenv("TEMPLAR_ENVIRONMENT_KEY", "test")
     return Templar(
-        outcome_getter=lambda name, key: {
+        outcomes_getter={
             "Foo": {
                 "bar": "ok",
                 "baz qux.fred": "also ok",
             },
-        }
-        .get(name, {})
-        .get(key),
+        }.get,
         status_getter={"Foo": "SUCCESS"}.get,
         raw_context_getter={
             "plugh": "xyzzy",

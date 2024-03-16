@@ -114,3 +114,6 @@ class C:
     SHELL_INJECT_YIELD_FUNCTION: Mandatory[bool] = Mandatory(
         lambda: Env.CJUNCT_SHELL_INJECT_YIELD_FUNCTION,
     )
+    STRICT_OUTCOMES_RENDERING: Mandatory[bool] = Mandatory(
+        lambda: Env.CJUNCT_STRICT_OUTCOMES_RENDERING,
+    )

@@ -2,6 +2,7 @@
 
 import pytest
 
+from cjunct.config.constants import C
 from cjunct.exceptions import ActionRenderError
 from cjunct.rendering import Templar
 
@@ -19,13 +20,13 @@ def test_outcome_unbalanced_expression_rendering(templar: Templar) -> None:
 
 def test_outcome_missing_action_rendering(templar: Templar) -> None:
     """Test missing action outcome rendering"""
-    with pytest.raises(ActionRenderError, match="Either an action"):
+    with pytest.raises(ActionRenderError, match="Action not found"):
         templar.render("@{outcomes.'Unknown action'.bar}")
 
 
 def test_outcome_missing_key_rendering(templar: Templar) -> None:
     """Test missing outcome key rendering"""
-    with pytest.raises(ActionRenderError, match="Either an action"):
+    with pytest.raises(ActionRenderError, match="outcome key 'unknown key' not found"):
         templar.render("@{outcomes.Foo.'unknown key'}")
 
 
@@ -94,3 +95,9 @@ def test_expression_cycle_rendering(templar: Templar) -> None:
     """Test outcome rendering"""
     with pytest.raises(ActionRenderError, match="Expression cycle"):
         templar.render("@{context.waldo}")
+
+
+def test_loose_rendering(templar: Templar, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test loose rendering"""
+    monkeypatch.setattr(C, "STRICT_OUTCOMES_RENDERING", False)
+    assert templar.render("@{outcomes.Foo.'unknown key'}") == ""

@@ -90,6 +90,12 @@ def test_failing_render(runner_failing_render_context: None) -> None:
         cjunct.Runner().run_sync()
 
 
+def test_failing_union_render(runner_failing_union_render_context: None) -> None:
+    """Check failing union render in the runner"""
+    with pytest.raises(exceptions.ExecutionFailed):
+        cjunct.Runner().run_sync()
+
+
 def test_external_actions(runner_external_actions_context: None) -> None:
     """Check external actions from directories"""
     cjunct.Runner().run_sync()

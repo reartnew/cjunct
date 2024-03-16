@@ -5,6 +5,7 @@ import typing as t
 __all__ = [
     "ExecutionFailed",
     "ActionRenderError",
+    "ActionUnionRenderError",
     "ActionRunError",
     "BaseError",
     "LoadError",
@@ -19,6 +20,10 @@ class ExecutionFailed(Exception):
 
 class ActionRenderError(Exception):
     """Action rendering failed"""
+
+
+class ActionUnionRenderError(ActionRenderError):
+    """Action rendering failed for union field"""
 
 
 class ActionRunError(Exception):
