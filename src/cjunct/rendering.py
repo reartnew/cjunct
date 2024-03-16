@@ -11,6 +11,7 @@ import typing as t
 from classlogging import LoggerMixin
 
 from .actions.base import RenderedStringTemplate
+from .config.constants import C
 from .exceptions import ActionRenderError
 
 __all__ = [
@@ -21,6 +22,7 @@ __all__ = [
 class Templar(LoggerMixin):
     """Expression renderer"""
 
+    _LOOSE_OUTCOMES_RENDERING_DEFAULT_VALUE: str = ""
     _TEMPLATE_SUBST_PATTERN: t.Pattern = re.compile(
         r"""
         (?P<prior>
@@ -35,11 +37,11 @@ class Templar(LoggerMixin):
 
     def __init__(
         self,
-        outcome_getter: t.Callable[[str, str], t.Optional[str]],
+        outcomes_getter: t.Callable[[str], t.Optional[t.Dict[str, str]]],
         status_getter: t.Callable[[str], t.Optional[str]],
         raw_context_getter: t.Callable[[str], t.Optional[str]],
     ) -> None:
-        self._outcome_getter = outcome_getter
+        self._outcomes_getter = outcomes_getter
         self._status_getter = status_getter
         self._raw_context_getter = raw_context_getter
         self._expression_stack: t.List[str] = []
@@ -77,15 +79,22 @@ class Templar(LoggerMixin):
                 if len(all_parts) != 3:
                     self._error(f"Outcomes expression has {len(all_parts)} parts of 3")
                 action_name, key = other_parts
-                if (outcome := self._outcome_getter(action_name, key)) is None:
-                    self._error(f"Either an action {action_name!r} or its outcome key {key!r} not found")
+                actions_outcomes: t.Optional[t.Dict[str, str]] = self._outcomes_getter(action_name)
+                if actions_outcomes is None:
+                    self._error(f"Action not found: {action_name!r}")
+                outcome: t.Optional[str] = actions_outcomes.get(key)
+                if outcome is None:
+                    if C.STRICT_OUTCOMES_RENDERING:
+                        self._error(f"Action {action_name!r} outcome key {key!r} not found")
+                    else:
+                        outcome = self._LOOSE_OUTCOMES_RENDERING_DEFAULT_VALUE
                 return outcome
             if part_type == "status":
                 if len(all_parts) != 2:
                     self._error(f"Status expression has {len(all_parts)} parts of 2")
                 (action_name,) = other_parts
                 if (action_status := self._status_getter(action_name)) is None:
-                    self._error(f"Action not found: {action_status!r}")
+                    self._error(f"Action not found: {action_name!r}")
                 return action_status
             if part_type == "environment":
                 if len(all_parts) != 2:

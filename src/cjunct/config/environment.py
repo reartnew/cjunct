@@ -28,3 +28,4 @@ class Env(EnvironmentNamespace):
     CJUNCT_SHELL_INJECT_YIELD_FUNCTION: bool = OptionalBoolean(True)  # type: ignore
     CJUNCT_EXTERNAL_MODULES_PATHS: t.List[str] = OptionalList([])
     CJUNCT_ACTIONS_CLASS_DEFINITIONS_DIRECTORY: t.List[str] = OptionalList([])
+    CJUNCT_STRICT_OUTCOMES_RENDERING: bool = OptionalBoolean(True)  # type: ignore
