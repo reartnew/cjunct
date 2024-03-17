@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import enum
+import re
 import typing as t
 from dataclasses import dataclass, fields
 
 import classlogging
 
+from .constants import ACTION_RESERVED_FIELD_NAMES
+from .types import Stderr, EventType, OutcomeStorageType
 from ..exceptions import ActionRunError
-from .types import (
-    EventType,
-    OutcomeStorageType,
-)
 
 __all__ = [
     "ActionDependency",
@@ -21,19 +21,8 @@ __all__ = [
     "ActionStatus",
     "ActionSkip",
     "ArgsBase",
-    "ACTION_RESERVED_FIELD_NAMES",
+    "EmissionScannerActionBase",
 ]
-
-AT = t.TypeVar("AT", bound="ActionBase")
-
-ACTION_RESERVED_FIELD_NAMES: t.Set[str] = {
-    "name",
-    "type",
-    "description",
-    "expects",
-    "severity",  # planned in future
-    "selectable",  # planned in future
-}
 
 
 class ActionSkip(BaseException):
@@ -168,10 +157,13 @@ class ActionBase(classlogging.LoggerMixin):
         self._event_queue.put_nowait(message)
 
     def skip(self) -> t.NoReturn:
-        """Set status to SKIPPED"""
+        """Set status to SKIPPED and stop execution"""
+        self._internal_skip()
+        raise ActionSkip
+
+    def _internal_skip(self) -> None:
         self._status = ActionStatus.SKIPPED
         self.logger.info(f"Action {self.name!r} skipped")
-        raise ActionSkip
 
     def fail(self, message: str) -> None:
         """Set corresponding error message"""
@@ -213,3 +205,35 @@ class ActionBase(classlogging.LoggerMixin):
     def done(self) -> bool:
         """Indicate whether the action is over"""
         return self.get_future().done() or self._status == ActionStatus.SKIPPED
+
+
+# pylint: disable=abstract-method
+class EmissionScannerActionBase(ActionBase):
+    """Base class for stream-scanning actions"""
+
+    _YIELD_SCAN_PATTERN: t.ClassVar[t.Pattern] = re.compile(r"^(.*?)##cjunct\[yield-outcome-b64\s*(\S+)\s+(\S*)\s*]##$")
+
+    def emit(self, message: EventType) -> None:
+        # Do not check stderr
+        if isinstance(message, Stderr):
+            super().emit(message)
+            return
+        memorized_prefix: str = ""
+        for line in message.splitlines():
+            # `endswith` is a cheaper check than re.findall
+            if line.endswith("]##") and (matches := self._YIELD_SCAN_PATTERN.findall(line)):
+                try:
+                    for preceding_content, encoded_key, encoded_value in matches:
+                        memorized_prefix += preceding_content
+                        self.logger.debug(f"Action {self.name!r} emission stream reported an outcome: {encoded_key!r}")
+                        key: str = base64.b64decode(encoded_key, validate=True).decode()
+                        value: str = base64.b64decode(encoded_value, validate=True).decode()
+                        self.yield_outcome(key, value)
+                except Exception:
+                    self.logger.warning("Failed while parsing system message", exc_info=True)
+            else:
+                super().emit(memorized_prefix + line)
+                memorized_prefix = ""
+            # Do not forget to report system message prefix, if any
+        if memorized_prefix:
+            super().emit(memorized_prefix)

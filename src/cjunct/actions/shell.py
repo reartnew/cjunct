@@ -1,20 +1,17 @@
 """Separate module for shell-related action"""
 
 import asyncio
-import base64
-import re
 import textwrap
 import typing as t
 
 from async_shell import Shell, ShellResult
 
-from .base import ActionBase, ArgsBase
-from .types import Stderr, StringTemplate, EventType
+from .base import ArgsBase, EmissionScannerActionBase
+from .types import Stderr, StringTemplate
 from ..config.constants import C
 
 __all__ = [
     "YIELD_FUNCTION_BOILERPLATE",
-    "EmissionScannerActionBase",
     "ShellArgs",
     "ShellAction",
 ]
@@ -30,38 +27,6 @@ YIELD_FUNCTION_BOILERPLATE: str = textwrap.dedent(
         }
     """
 ).lstrip()
-
-
-# pylint: disable=abstract-method
-class EmissionScannerActionBase(ActionBase):
-    """Base class for stream-scanning actions"""
-
-    _YIELD_SCAN_PATTERN: t.ClassVar[t.Pattern] = re.compile(r"^(.*?)##cjunct\[yield-outcome-b64\s*(\S+)\s+(\S*)\s*]##$")
-
-    def emit(self, message: EventType) -> None:
-        # Do not check stderr
-        if isinstance(message, Stderr):
-            super().emit(message)
-            return
-        memorized_prefix: str = ""
-        for line in message.splitlines():
-            # `endswith` is a cheaper check than re.findall
-            if line.endswith("]##") and (matches := self._YIELD_SCAN_PATTERN.findall(line)):
-                try:
-                    for preceding_content, encoded_key, encoded_value in matches:
-                        memorized_prefix += preceding_content
-                        self.logger.debug(f"Action {self.name!r} emission stream reported an outcome: {encoded_key!r}")
-                        key: str = base64.b64decode(encoded_key, validate=True).decode()
-                        value: str = base64.b64decode(encoded_value, validate=True).decode()
-                        self.yield_outcome(key, value)
-                except Exception:
-                    self.logger.warning("Failed while parsing system message", exc_info=True)
-            else:
-                super().emit(memorized_prefix + line)
-                memorized_prefix = ""
-            # Do not forget to report system message prefix, if any
-        if memorized_prefix:
-            super().emit(memorized_prefix)
 
 
 class ShellArgs(ArgsBase):
