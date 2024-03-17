@@ -1,7 +1,6 @@
 """Separate module for shell-related action"""
 
 import asyncio
-import textwrap
 import typing as t
 
 from async_shell import Shell, ShellResult
@@ -11,22 +10,9 @@ from .types import Stderr, StringTemplate
 from ..config.constants import C
 
 __all__ = [
-    "YIELD_FUNCTION_BOILERPLATE",
     "ShellArgs",
     "ShellAction",
 ]
-
-YIELD_FUNCTION_BOILERPLATE: str = textwrap.dedent(
-    """
-        yield_outcome(){
-          [ "$1" = "" ] && echo "Missing key (first argument)" && return 1
-          command -v base64 >/dev/null || ( echo "Missing command: base64" && return 2 )
-          [ "$2" = "" ] && value="$(cat /dev/stdin)" || value="$2"
-          echo "##cjunct[yield-outcome-b64 $(printf "$1" | base64) $(printf "$value" | base64)]##"
-          return 0
-        }
-    """
-).lstrip()
 
 
 class ShellArgs(ArgsBase):
@@ -60,7 +46,7 @@ class ShellAction(EmissionScannerActionBase):
     async def _create_shell(self) -> Shell:
         command: str = self.args.command or f"source '{self.args.file}'"
         if C.SHELL_INJECT_YIELD_FUNCTION:
-            command = f"{YIELD_FUNCTION_BOILERPLATE}\n{command}"
+            command = f"{self._YIELD_SHELL_FUNCTION_DEFINITION}\n{command}"
         return Shell(
             command=command,
             environment=self.args.environment,  # type: ignore[arg-type]

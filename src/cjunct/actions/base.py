@@ -6,6 +6,7 @@ import asyncio
 import base64
 import enum
 import re
+import textwrap
 import typing as t
 from dataclasses import dataclass, fields
 
@@ -212,6 +213,21 @@ class EmissionScannerActionBase(ActionBase):
     """Base class for stream-scanning actions"""
 
     _YIELD_SCAN_PATTERN: t.ClassVar[t.Pattern] = re.compile(r"^(.*?)##cjunct\[yield-outcome-b64\s*(\S+)\s+(\S*)\s*]##$")
+    _YIELD_SHELL_FUNCTION_DEFINITION: str = textwrap.dedent(
+        r"""
+            yield_outcome(){
+              [ "$1" = "" ] && echo "Missing key (first argument)" && return 1
+              command -v base64 >/dev/null || ( echo "Missing command: base64" && return 2 )
+              [ "$2" = "" ] && value="$(cat /dev/stdin)" || value="$2"
+              echo "##cjunct[yield-outcome-b64 $(
+                printf "$1" | base64 | tr -d '\n'
+              ) $(
+                printf "$value" | base64 | tr -d '\n'
+              )]##"
+              return 0
+            }
+        """
+    ).lstrip()
 
     def emit(self, message: EventType) -> None:
         # Do not check stderr
