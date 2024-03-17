@@ -9,12 +9,12 @@ import typing as t
 from async_shell import Shell, ShellResult
 
 from .base import ActionBase, ArgsBase
-from .types import Stderr, StringTemplate
+from .types import Stderr, StringTemplate, EventType
 from ..config.constants import C
 
 __all__ = [
     "YIELD_FUNCTION_BOILERPLATE",
-    "StreamScannerActionBase",
+    "EmissionScannerActionBase",
     "ShellArgs",
     "ShellAction",
 ]
@@ -33,33 +33,35 @@ YIELD_FUNCTION_BOILERPLATE: str = textwrap.dedent(
 
 
 # pylint: disable=abstract-method
-class StreamScannerActionBase(ActionBase):
+class EmissionScannerActionBase(ActionBase):
     """Base class for stream-scanning actions"""
 
     _YIELD_SCAN_PATTERN: t.ClassVar[t.Pattern] = re.compile(r"^(.*?)##cjunct\[yield-outcome-b64\s*(\S+)\s+(\S*)\s*]##$")
 
-    async def _process_system_messages_in_stream(self, stream: t.AsyncIterable[str]) -> t.AsyncGenerator[str, None]:
-        """Extract system messages from a stream"""
-        # Store data prior to the system message
+    def emit(self, message: EventType) -> None:
+        # Do not check stderr
+        if isinstance(message, Stderr):
+            super().emit(message)
+            return
         memorized_prefix: str = ""
-        async for line in stream:
+        for line in message.splitlines():
             # `endswith` is a cheaper check than re.findall
             if line.endswith("]##") and (matches := self._YIELD_SCAN_PATTERN.findall(line)):
                 try:
                     for preceding_content, encoded_key, encoded_value in matches:
                         memorized_prefix += preceding_content
-                        self.logger.debug(f"Action {self.name!r} stream reported a key: {encoded_key!r}")
+                        self.logger.debug(f"Action {self.name!r} emission stream reported an outcome: {encoded_key!r}")
                         key: str = base64.b64decode(encoded_key, validate=True).decode()
                         value: str = base64.b64decode(encoded_value, validate=True).decode()
                         self.yield_outcome(key, value)
                 except Exception:
                     self.logger.warning("Failed while parsing system message", exc_info=True)
             else:
-                yield memorized_prefix + line
+                super().emit(memorized_prefix + line)
                 memorized_prefix = ""
-        # Do not forget to report system message prefix, if any
+            # Do not forget to report system message prefix, if any
         if memorized_prefix:
-            yield memorized_prefix
+            super().emit(memorized_prefix)
 
 
 class ShellArgs(ArgsBase):
@@ -77,13 +79,13 @@ class ShellArgs(ArgsBase):
             raise ValueError("Both command and file specified")
 
 
-class ShellAction(StreamScannerActionBase):
+class ShellAction(EmissionScannerActionBase):
     """Shell commands handler"""
 
     args: ShellArgs
 
     async def _read_stdout(self, shell_process: Shell) -> None:
-        async for line in self._process_system_messages_in_stream(shell_process.read_stdout()):
+        async for line in shell_process.read_stdout():
             self.emit(line)
 
     async def _read_stderr(self, shell_process: Shell) -> None:
