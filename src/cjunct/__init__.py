@@ -10,6 +10,8 @@ from .strategy import (
 from .actions.base import (
     ActionBase,
     ArgsBase,
+)
+from .actions.types import (
     Stderr,
     StringTemplate,
 )

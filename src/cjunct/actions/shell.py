@@ -8,7 +8,8 @@ import typing as t
 
 from async_shell import Shell, ShellResult
 
-from .base import ActionBase, Stderr, ArgsBase, StringTemplate
+from .base import ActionBase, ArgsBase
+from .types import Stderr, StringTemplate
 from ..config.constants import C
 
 __all__ = [

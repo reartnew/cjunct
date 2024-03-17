@@ -10,16 +10,17 @@ from dataclasses import dataclass, fields
 import classlogging
 
 from ..exceptions import ActionRunError
+from .types import (
+    EventType,
+    OutcomeStorageType,
+)
 
 __all__ = [
     "ActionDependency",
     "ActionBase",
     "ActionStatus",
     "ActionSkip",
-    "Stderr",
     "ArgsBase",
-    "StringTemplate",
-    "RenderedStringTemplate",
     "ACTION_RESERVED_FIELD_NAMES",
 ]
 
@@ -60,22 +61,6 @@ class ActionDependency:
 
     strict: bool = False
     external: bool = False
-
-
-EventType = str
-OutcomeStorageType = t.Dict[str, str]
-
-
-class Stderr(str):
-    """Strings related to standard error stream"""
-
-
-class StringTemplate(str):
-    """String arguments to be templated later"""
-
-
-class RenderedStringTemplate(StringTemplate):
-    """Rendered string arguments"""
 
 
 class ArgsMeta(type):

@@ -15,8 +15,9 @@ import classlogging
 import dacite
 
 from . import types
-from .actions.base import ActionBase, StringTemplate, RenderedStringTemplate, ArgsBase
+from .actions.base import ActionBase, ArgsBase
 from .actions.net import ActionNet
+from .actions.types import StringTemplate, RenderedStringTemplate
 from .config.constants import C
 from .config.loaders.base import AbstractBaseConfigLoader
 from .config.loaders.helpers import get_default_loader_class_for_source

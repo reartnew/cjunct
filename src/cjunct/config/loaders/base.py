@@ -10,8 +10,9 @@ import dacite
 from classlogging import LoggerMixin
 
 from .inspect import get_class_annotations
-from ...actions.base import ActionBase, ArgsBase, ActionDependency, StringTemplate
+from ...actions.base import ActionBase, ArgsBase, ActionDependency
 from ...actions.net import ActionNet
+from ...actions.types import StringTemplate
 from ...exceptions import LoadError
 
 __all__ = [
