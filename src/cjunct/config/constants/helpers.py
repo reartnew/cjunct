@@ -43,12 +43,13 @@ def add_sys_paths(*paths: str) -> t.Iterator[None]:
             sys.path.remove(path)
 
 
-def load_external_module(source: Path) -> ModuleType:
+def load_external_module(source: Path, submodule_name: t.Optional[str] = None) -> ModuleType:
     """Load an external module"""
     if not source.is_file():
         raise SourceError(f"Missing source module: {source}")
-    source_path_hash: str = hashlib.md5(str(source).encode()).hexdigest()  # nosec
-    module_name: str = f"{EXTERNALS_MODULES_PACKAGE}.{source_path_hash}"
+    if submodule_name is None:
+        submodule_name = hashlib.md5(str(source).encode()).hexdigest()  # nosec
+    module_name: str = f"{EXTERNALS_MODULES_PACKAGE}.{submodule_name}"
     module_spec: t.Optional[ModuleSpec] = spec_from_file_location(
         name=module_name,
         location=source,
@@ -95,11 +96,11 @@ def maybe_path(path_str: str) -> t.Optional[Path]:
     return Path(path_str) if path_str else None
 
 
-def maybe_class_from_module(path_str: str, class_name: str) -> t.Optional[type]:
+def maybe_class_from_module(path_str: str, class_name: str, submodule_name: t.Optional[str] = None) -> t.Optional[type]:
     """Get a class from an external module, if given"""
     if (source_path := maybe_path(path_str)) is None:
         return None
-    module: types.ModuleType = load_external_module(source_path)
+    module: types.ModuleType = load_external_module(source_path, submodule_name)
     if not hasattr(module, class_name):
         raise AttributeError(f"External module contains no class {class_name!r} in {path_str!r}")
     return getattr(module, class_name)

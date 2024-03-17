@@ -42,6 +42,7 @@ class DefaultRootConfigLoader(AbstractBaseConfigLoader):
                     maybe_class_from_module(
                         path_str=str(class_file),
                         class_name="Action",
+                        submodule_name=f"actions.{action_type}",
                     ),
                 )
                 if action_type in dynamic_bases_map:
