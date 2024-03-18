@@ -1,4 +1,7 @@
-from cjunct import ActionBase, ArgsBase, StringTemplate
+"""Simple printer"""
+
+from ..base import ArgsBase, ActionBase
+from ..types import StringTemplate
 
 __all__ = [
     "EchoAction",
@@ -7,10 +10,14 @@ __all__ = [
 
 
 class EchoArgs(ArgsBase):
+    """Echo arguments"""
+
     message: StringTemplate
 
 
 class EchoAction(ActionBase):
+    """Simple printer"""
+
     args: EchoArgs
 
     async def run(self) -> None:

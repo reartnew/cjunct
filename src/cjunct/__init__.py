@@ -15,5 +15,7 @@ from .strategy import (
     FreeStrategy,
     SequentialStrategy,
     LooseStrategy,
+    StrictStrategy,
+    StrictSequentialStrategy,
 )
 from .version import __version__

@@ -145,6 +145,8 @@ class ActionBase(classlogging.LoggerMixin):
                 self.logger.warning(f"Action {self.name!r} return type is {type(running_task_result)} (not NoneType)")
         except ActionSkip:
             pass
+        except ActionRunError:
+            raise
         except Exception as e:
             self._internal_fail(e)
             raise

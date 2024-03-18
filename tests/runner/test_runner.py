@@ -61,7 +61,16 @@ def test_unrecognized_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
         cjunct.Runner(config=tmp_path / "network.foo").run_sync()
 
 
-@pytest.mark.parametrize("strategy_class", [cjunct.FreeStrategy, cjunct.SequentialStrategy, cjunct.LooseStrategy])
+@pytest.mark.parametrize(
+    "strategy_class",
+    [
+        cjunct.FreeStrategy,
+        cjunct.SequentialStrategy,
+        cjunct.LooseStrategy,
+        cjunct.StrictStrategy,
+        cjunct.StrictSequentialStrategy,
+    ],
+)
 def test_strategy_runner_call(
     runner_good_context: None,
     strategy_class: t.Type[BaseStrategy],
