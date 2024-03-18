@@ -48,7 +48,7 @@ def load_external_module(source: Path, submodule_name: t.Optional[str] = None) -
     if not source.is_file():
         raise SourceError(f"Missing source module: {source}")
     if submodule_name is None:
-        submodule_name = hashlib.md5(str(source).encode()).hexdigest()  # nosec
+        submodule_name = hashlib.md5(str(source).encode()).hexdigest()  # nosec  # pragma: no cover
     module_name: str = f"{EXTERNALS_MODULES_PACKAGE}.{submodule_name}"
     module_spec: t.Optional[ModuleSpec] = spec_from_file_location(
         name=module_name,
