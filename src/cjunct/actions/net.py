@@ -90,7 +90,8 @@ class ActionNet(t.Dict[str, ActionBase], LoggerMixin):
         if unreachable_action_names:
             raise IntegrityError(f"Unreachable actions found: {sorted(unreachable_action_names)}")
         self._tiers_sequence = [[] for _ in range(step_tier + 1)]
-        for action_name, action_tier in action_name_to_tier_mapping.items():
+        for action_name, action in self.items():
+            action_tier: int = action_name_to_tier_mapping[action_name]
             self._tiers_sequence[action_tier].append(self[action_name])
 
     def iter_actions_by_tier(self) -> t.Generator[t.Tuple[int, ActionBase], None, None]:
