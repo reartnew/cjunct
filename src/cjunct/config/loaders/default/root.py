@@ -11,6 +11,7 @@ from ....actions.base import ActionBase
 from ....actions.bundled import (
     EchoAction,
     ShellAction,
+    DockerShellAction,
 )
 
 __all__ = [
@@ -23,8 +24,13 @@ class DefaultRootConfigLoader(AbstractBaseConfigLoader):
     """Bind default actions to abstract base"""
 
     STATIC_ACTION_FACTORIES = {
-        "echo": EchoAction,
-        "shell": ShellAction,
+        name: klass
+        for name, klass in (
+            ("echo", EchoAction),
+            ("shell", ShellAction),
+            ("docker-shell", DockerShellAction),
+        )
+        if klass is not None
     }
 
     def _get_action_factory_by_type(self, action_type: str) -> t.Type[ActionBase]:
