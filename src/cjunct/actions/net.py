@@ -83,7 +83,7 @@ class ActionNet(t.Dict[str, ActionBase], LoggerMixin):
                 break
             step_tier += 1
             current_tier_actions_names = next_tier_candidate_actions_names
-        self.logger.debug(f"Number of tiers: {step_tier}")
+        self.logger.debug(f"Number of tiers: {step_tier + 1}")
         unreachable_action_names: t.Set[str] = {
             action.name for action in self.values() if action.name not in action_name_to_tier_mapping
         }
