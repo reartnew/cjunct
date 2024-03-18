@@ -5,9 +5,10 @@ import typing as t
 
 import pytest
 
-from cjunct import ActionBase, LooseStrategy
+from cjunct import ActionBase, LooseStrategy, StrictSequentialStrategy
 from cjunct.actions.base import ActionStatus
 from cjunct.actions.net import ActionNet
+from cjunct.strategy import BaseStrategy
 
 
 @pytest.mark.asyncio
@@ -22,11 +23,12 @@ async def test_chain_success(strict_successful_net: ActionNet) -> None:
     assert all(action.status == ActionStatus.SUCCESS for action in result)
 
 
+@pytest.mark.parametrize("strategy_class", [LooseStrategy, StrictSequentialStrategy])
 @pytest.mark.asyncio
-async def test_chain_failure(strict_failing_net: ActionNet) -> None:
+async def test_chain_failure(strict_failing_net: ActionNet, strategy_class: t.Type[BaseStrategy]) -> None:
     """Chain failing execution"""
     result: t.List[ActionBase] = []
-    strategy: t.AsyncIterable[ActionBase] = LooseStrategy(strict_failing_net)
+    strategy: t.AsyncIterable[ActionBase] = strategy_class(strict_failing_net)
     async for action in strategy:  # type: ActionBase
         with pytest.raises(RuntimeError):
             await action

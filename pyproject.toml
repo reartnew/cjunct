@@ -61,6 +61,7 @@ filterwarnings = [
 source = ["src"]
 omit = [
     "src/cjunct/console.py",
+    "src/cjunct/actions/shell.py", # deprecated
 ]
 
 [tool.coverage.report]

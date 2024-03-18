@@ -92,7 +92,7 @@ class ActionNet(t.Dict[str, ActionBase], LoggerMixin):
         self._tiers_sequence = [[] for _ in range(step_tier + 1)]
         for action_name, action in self.items():
             action_tier: int = action_name_to_tier_mapping[action_name]
-            self._tiers_sequence[action_tier].append(self[action_name])
+            self._tiers_sequence[action_tier].append(action)
 
     def iter_actions_by_tier(self) -> t.Generator[t.Tuple[int, ActionBase], None, None]:
         """Yield actions tier by tier"""

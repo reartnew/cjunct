@@ -10,7 +10,7 @@ import typing as t
 
 import classlogging
 
-from .actions.base import ActionStatus, ActionBase
+from .actions.base import ActionStatus, ActionBase, ActionSkip
 from .actions.net import ActionNet
 
 ST = t.TypeVar("ST", bound="BaseStrategy")
@@ -50,6 +50,13 @@ class BaseStrategy(classlogging.LoggerMixin, t.AsyncIterable[ActionBase]):
                 f"Please specify another name for the {cls.__module__}.{cls.__name__}."
             )
 
+    @classmethod
+    def _skip_action(cls, action: ActionBase) -> None:
+        try:
+            action.skip()
+        except ActionSkip:
+            pass
+
 
 class FreeStrategy(BaseStrategy):
     """Free execution (fully parallel)"""
@@ -83,7 +90,7 @@ class SequentialStrategy(FreeStrategy):
                 if self.STRICT:
                     while True:
                         next_action = await super().__anext__()
-                        next_action._internal_skip()  # pylint: disable=protected-access
+                        self._skip_action(next_action)
         self._current = await super().__anext__()
         return self._current
 
@@ -125,7 +132,7 @@ class LooseStrategy(BaseStrategy):
                     ancestor_dependency.strict or self.STRICT
                 ):
                     self.logger.debug(f"Action {next_action} is qualified as skipped due to strict failure: {ancestor}")
-                    next_action._internal_skip()  # pylint: disable=protected-access
+                    self._skip_action(next_action)
                     break
             else:
                 return next_action
