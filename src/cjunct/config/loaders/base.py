@@ -208,6 +208,8 @@ class AbstractBaseConfigLoader(LoggerMixin):
             )
         except ValueError as e:
             self._throw(f"Action {action_name!r}: {e}")
+        except dacite.MissingValueError as e:
+            self._throw(f"Missing key for action {action_name!r}: {e.field_path!r}")
         except dacite.UnexpectedDataError as e:
             self._throw(f"Unrecognized keys for action {action_name!r}: {sorted(e.keys)}")
         except dacite.WrongTypeError as e:
