@@ -90,6 +90,7 @@ class C:
         lambda: maybe_class_from_module(
             path_str=Env.CJUNCT_CONFIG_LOADER_SOURCE_FILE,
             class_name="ConfigLoader",
+            submodule_name="config.loader",
         )
     )
     ACTION_CLASSES_DIRECTORIES: Mandatory[t.List[str]] = Mandatory(
@@ -99,6 +100,7 @@ class C:
         lambda: maybe_class_from_module(
             path_str=Env.CJUNCT_DISPLAY_SOURCE_FILE,
             class_name="Display",
+            submodule_name="display",
         ),
         _get_default_display_class,
     )

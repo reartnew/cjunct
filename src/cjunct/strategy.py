@@ -10,7 +10,7 @@ import typing as t
 
 import classlogging
 
-from .actions.base import ActionStatus, ActionBase, ActionSkip
+from .actions.base import ActionStatus, ActionBase
 from .actions.net import ActionNet
 
 ST = t.TypeVar("ST", bound="BaseStrategy")
@@ -114,10 +114,7 @@ class LooseStrategy(BaseStrategy):
                 ancestor: ActionBase = self._actions[ancestor_name]
                 if ancestor.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED) and ancestor_dependency.strict:
                     self.logger.debug(f"Action {next_action} is qualified as skipped due to strict failure: {ancestor}")
-                    try:
-                        next_action.skip()
-                    except ActionSkip:
-                        pass
+                    next_action._internal_skip()  # pylint: disable=protected-access
                     break
             else:
                 return next_action

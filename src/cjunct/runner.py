@@ -15,8 +15,9 @@ import classlogging
 import dacite
 
 from . import types
-from .actions.base import ActionBase, StringTemplate, RenderedStringTemplate, ArgsBase
+from .actions.base import ActionBase, ArgsBase
 from .actions.net import ActionNet
+from .actions.types import StringTemplate, RenderedStringTemplate
 from .config.constants import C
 from .config.loaders.base import AbstractBaseConfigLoader
 from .config.loaders.helpers import get_default_loader_class_for_source
@@ -107,6 +108,9 @@ class Runner(classlogging.LoggerMixin):
         self._started = True
         strategy: BaseStrategy = self._strategy_class(net=self.actions)
         background_tasks: t.List[asyncio.Task] = []
+        # Prefill outcomes map
+        for action_name in self.actions:
+            self._outcomes[action_name] = {}
         async for action in strategy:  # type: ActionBase
             self.logger.trace(f"Allocating action runner for {action.name!r}")
             background_tasks.append(asyncio.create_task(self._run_action(action=action)))
@@ -154,7 +158,7 @@ class Runner(classlogging.LoggerMixin):
             self.logger.debug("Action failure traceback", exc_info=True)
             self._had_failed_actions = True
         finally:
-            self._outcomes[action.name] = action.get_outcomes()
+            self._outcomes[action.name].update(action.get_outcomes())
 
     def run_sync(self):
         """Wrap async run into an event loop"""

@@ -4,12 +4,9 @@ import typing as t
 
 from .base import BaseDisplay
 from .color import Color
-from ..actions.base import (
-    ActionBase,
-    ActionStatus,
-    Stderr,
-)
+from ..actions.base import ActionBase, ActionStatus
 from ..actions.net import ActionNet
+from ..actions.types import Stderr
 
 __all__ = [
     "NetPrefixDisplay",

@@ -10,7 +10,7 @@ import typing as t
 
 from classlogging import LoggerMixin
 
-from .actions.base import RenderedStringTemplate
+from .actions.types import RenderedStringTemplate
 from .config.constants import C
 from .exceptions import ActionRenderError
 
