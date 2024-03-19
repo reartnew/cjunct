@@ -50,7 +50,7 @@ class DefaultYAMLConfigLoader(DefaultRootConfigLoader):
 
     ALLOWED_ROOT_TAGS: t.Set[str] = {"actions", "context", "miscellaneous"}
 
-    def _parse_import(self, tag: ImportTag) -> None:
+    def _parse_import(self, tag: ImportTag, allowed_root_keys: t.Set[str]) -> None:
         path: str = tag.data
         if not isinstance(path, str):
             self._throw(f"Unrecognized '!import' contents type: {type(path)!r} (expected a string)")
@@ -59,7 +59,7 @@ class DefaultYAMLConfigLoader(DefaultRootConfigLoader):
         with self._read_file(path) as file_data:
             self._internal_loads_with_filter(
                 data=file_data,
-                allowed_root_keys={"actions"},
+                allowed_root_keys=allowed_root_keys,
             )
 
     def _parse_checklists(self, tag: ChecklistsDirectoryTag) -> None:
@@ -104,22 +104,31 @@ class DefaultYAMLConfigLoader(DefaultRootConfigLoader):
                     action: ActionBase = self.build_action_from_dict_data(child_node)
                     self._register_action(action)
                 elif isinstance(child_node, ImportTag):
-                    self._parse_import(child_node)
+                    self._parse_import(
+                        tag=child_node,
+                        allowed_root_keys={"actions"},
+                    )
                 elif isinstance(child_node, ChecklistsDirectoryTag):
                     self._parse_checklists(child_node)
                 else:
                     self._throw(f"Unrecognized node type: {type(child_node)!r}")
         if "context" in processable_keys:
-            context: t.Union[t.Dict[str, str], t.List[t.Dict[str, str]]] = root_node["context"]
+            context: t.Union[t.Dict[str, str], t.List[t.Union[t.Dict[str, str], ImportTag]]] = root_node["context"]
             if isinstance(context, dict):
                 self._loads_contexts_dict(data=context)
             elif isinstance(context, list):
-                for num, context_item in enumerate(context):
-                    if not isinstance(data, dict):
-                        self._throw(f"Context item #{num + 1} is not a dict (got {type(context_item)!r})")
-                    self._loads_contexts_dict(data=context_item)
+                for num, item in enumerate(context):
+                    if isinstance(item, dict):
+                        self._loads_contexts_dict(data=item)
+                    elif isinstance(item, ImportTag):
+                        self._parse_import(
+                            tag=item,
+                            allowed_root_keys={"context"},
+                        )
+                    else:
+                        self._throw(f"Context item #{num + 1} is not a dict nor an '!import' (got {type(item)!r})")
             else:
-                self._throw(f"'context' contents should be a dict or a list of dicts (got {type(context)!r})")
+                self._throw(f"'context' contents should be a dict or a list (got {type(context)!r})")
 
     def _loads_contexts_dict(self, data: t.Dict[str, str]) -> None:
         for context_key, context_value in data.items():
@@ -127,5 +136,8 @@ class DefaultYAMLConfigLoader(DefaultRootConfigLoader):
                 self._throw(f"Context keys should be strings (got {type(context_key)!r} for {context_key!r})")
             if not isinstance(context_value, str):
                 self._throw(f"Context values should be strings (got {type(context_value)!r} for {context_value!r})")
-            self.logger.info(f"Context key added: {context_key}")
+            if context_key in self._gathered_context:
+                self.logger.info(f"Context key redefined: {context_key}")
+            else:
+                self.logger.info(f"Context key added: {context_key}")
             self._gathered_context[context_key] = context_value

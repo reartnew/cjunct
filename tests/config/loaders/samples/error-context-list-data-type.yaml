@@ -1,7 +1,8 @@
 # exception: LoadError
-# match: 'context' contents should be a dict or a list
+# match: Context item #1 is not a dict nor an '!import'
 ---
-context: foo
+context:
+  - foo
 actions:
 
   - name: Test
