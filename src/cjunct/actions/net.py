@@ -83,15 +83,16 @@ class ActionNet(t.Dict[str, ActionBase], LoggerMixin):
                 break
             step_tier += 1
             current_tier_actions_names = next_tier_candidate_actions_names
-        self.logger.debug(f"Number of tiers: {step_tier}")
+        self.logger.debug(f"Number of tiers: {step_tier + 1}")
         unreachable_action_names: t.Set[str] = {
             action.name for action in self.values() if action.name not in action_name_to_tier_mapping
         }
         if unreachable_action_names:
             raise IntegrityError(f"Unreachable actions found: {sorted(unreachable_action_names)}")
         self._tiers_sequence = [[] for _ in range(step_tier + 1)]
-        for action_name, action_tier in action_name_to_tier_mapping.items():
-            self._tiers_sequence[action_tier].append(self[action_name])
+        for action_name, action in self.items():
+            action_tier: int = action_name_to_tier_mapping[action_name]
+            self._tiers_sequence[action_tier].append(action)
 
     def iter_actions_by_tier(self) -> t.Generator[t.Tuple[int, ActionBase], None, None]:
         """Yield actions tier by tier"""

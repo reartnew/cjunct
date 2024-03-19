@@ -99,7 +99,7 @@ class ActionBase(classlogging.LoggerMixin):
 
     def yield_outcome(self, key: str, value: t.Any) -> None:
         """Report outcome key"""
-        self.logger.info(f"Action {self.name!r} yielded {key!r}")
+        self.logger.info(f"Yielded a key: {key!r}")
         self._yielded_keys[key] = value
 
     def get_outcomes(self) -> OutcomeStorageType:
@@ -129,6 +129,7 @@ class ActionBase(classlogging.LoggerMixin):
 
     async def _run_with_log_context(self) -> None:
         with self.logger.context(name=self.name):
+            self.logger.info("Running action")
             return await self.run()
 
     async def _await(self) -> None:
@@ -137,7 +138,6 @@ class ActionBase(classlogging.LoggerMixin):
             return fut.result()
         # Allocate asyncio task
         if self._running_task is None:
-            self.logger.info(f"Running action: {self.name!r}")
             self._running_task = asyncio.create_task(self._run_with_log_context())
             self._status = ActionStatus.RUNNING
         try:
@@ -145,6 +145,8 @@ class ActionBase(classlogging.LoggerMixin):
                 self.logger.warning(f"Action {self.name!r} return type is {type(running_task_result)} (not NoneType)")
         except ActionSkip:
             pass
+        except ActionRunError:
+            raise
         except Exception as e:
             self._internal_fail(e)
             raise
@@ -173,9 +175,9 @@ class ActionBase(classlogging.LoggerMixin):
         raise exception
 
     def _internal_fail(self, exception: Exception) -> None:
-        self._status = ActionStatus.FAILURE
-        self.logger.info(f"Action {self.name!r} failed: {repr(exception)}")
         if not self.get_future().done():
+            self._status = ActionStatus.FAILURE
+            self.logger.info(f"Action {self.name!r} failed: {repr(exception)}")
             self.get_future().set_exception(exception)
 
     async def read_events(self) -> t.AsyncGenerator[EventType, None]:

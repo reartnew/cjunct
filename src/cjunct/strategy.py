@@ -10,7 +10,7 @@ import typing as t
 
 import classlogging
 
-from .actions.base import ActionStatus, ActionBase
+from .actions.base import ActionStatus, ActionBase, ActionSkip
 from .actions.net import ActionNet
 
 ST = t.TypeVar("ST", bound="BaseStrategy")
@@ -20,6 +20,8 @@ __all__ = [
     "FreeStrategy",
     "SequentialStrategy",
     "LooseStrategy",
+    "StrictStrategy",
+    "StrictSequentialStrategy",
     "KNOWN_STRATEGIES",
 ]
 
@@ -30,6 +32,7 @@ class BaseStrategy(classlogging.LoggerMixin, t.AsyncIterable[ActionBase]):
     """Strategy abstract base"""
 
     NAME: str = ""
+    STRICT: bool = False
 
     def __init__(self, net: ActionNet) -> None:
         self._actions = net
@@ -46,6 +49,13 @@ class BaseStrategy(classlogging.LoggerMixin, t.AsyncIterable[ActionBase]):
                 f"Strategy named {cls.NAME!r} already exists. "
                 f"Please specify another name for the {cls.__module__}.{cls.__name__}."
             )
+
+    @classmethod
+    def _skip_action(cls, action: ActionBase) -> None:
+        try:
+            action.skip()
+        except ActionSkip:
+            pass
 
 
 class FreeStrategy(BaseStrategy):
@@ -74,7 +84,13 @@ class SequentialStrategy(FreeStrategy):
 
     async def __anext__(self) -> ActionBase:
         if self._current is not None:
-            await self._current
+            try:
+                await self._current
+            except Exception:
+                if self.STRICT:
+                    while True:
+                        next_action = await super().__anext__()
+                        self._skip_action(next_action)
         self._current = await super().__anext__()
         return self._current
 
@@ -112,9 +128,11 @@ class LooseStrategy(BaseStrategy):
             self.logger.debug(f"The next action is: {next_action}")
             for ancestor_name, ancestor_dependency in next_action.ancestors.items():
                 ancestor: ActionBase = self._actions[ancestor_name]
-                if ancestor.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED) and ancestor_dependency.strict:
+                if ancestor.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED) and (
+                    ancestor_dependency.strict or self.STRICT
+                ):
                     self.logger.debug(f"Action {next_action} is qualified as skipped due to strict failure: {ancestor}")
-                    next_action._internal_skip()  # pylint: disable=protected-access
+                    self._skip_action(next_action)
                     break
             else:
                 return next_action
@@ -138,3 +156,17 @@ class LooseStrategy(BaseStrategy):
         if maybe_next_action := self._get_maybe_next_action():
             return maybe_next_action
         raise StopAsyncIteration
+
+
+class StrictStrategy(LooseStrategy):
+    """Respect all dependencies, but force them strict"""
+
+    STRICT = True
+    NAME = "strict"
+
+
+class StrictSequentialStrategy(SequentialStrategy):
+    """Linear execution until first failure"""
+
+    STRICT = True
+    NAME = "strict-sequential"

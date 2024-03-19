@@ -1,4 +1,9 @@
 ---
+context:
+
+  x: y
+  z: w
+
 actions:
 
   - name: RunAnsible

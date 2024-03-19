@@ -42,8 +42,8 @@ class NetPrefixDisplay(BaseDisplay):
 
     def emit_action_message(self, source: ActionBase, message: str) -> None:
         is_stderr: bool = isinstance(message, Stderr)
-        line_prefix: str = self._make_prefix(source_name=source.name, mark="*" if is_stderr else " ")
         for line in message.splitlines():
+            line_prefix: str = self._make_prefix(source_name=source.name, mark="*" if is_stderr else " ")
             super().emit_action_message(
                 source=source,
                 message=f"{line_prefix}{Color.yellow(line) if is_stderr else line}",

@@ -8,7 +8,11 @@ from ..base import AbstractBaseConfigLoader
 from ...constants import C
 from ...constants.helpers import maybe_class_from_module
 from ....actions.base import ActionBase
-from ....actions.shell import ShellAction
+from ....actions.bundled import (
+    EchoAction,
+    ShellAction,
+    DockerShellAction,
+)
 
 __all__ = [
     "DefaultRootConfigLoader",
@@ -19,7 +23,15 @@ __all__ = [
 class DefaultRootConfigLoader(AbstractBaseConfigLoader):
     """Bind default actions to abstract base"""
 
-    STATIC_ACTION_FACTORIES = {"shell": ShellAction}
+    STATIC_ACTION_FACTORIES = {
+        name: klass
+        for name, klass in (
+            ("echo", EchoAction),
+            ("shell", ShellAction),
+            ("docker-shell", DockerShellAction),
+        )
+        if klass is not None
+    }
 
     def _get_action_factory_by_type(self, action_type: str) -> t.Type[ActionBase]:
         if (dynamically_resolved_action_class := self._load_external_action_factories().get(action_type)) is not None:

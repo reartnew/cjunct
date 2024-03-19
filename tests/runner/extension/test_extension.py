@@ -19,7 +19,7 @@ def test_good_ext_loader(echo_context: None, monkeypatch: pytest.MonkeyPatch, di
     monkeypatch.setenv("CJUNCT_EXTERNAL_MODULES_PATHS", str(MODULES_DIR))
     cjunct.Runner().run_sync()
     assert display_collector == [
-        "[Foo]  | foo-bar",
+        "[Foo]  | foo",
         "============",
         "SUCCESS: Foo",
     ]

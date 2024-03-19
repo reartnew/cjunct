@@ -50,7 +50,7 @@ def wrap_cli_command(func):
             sys.exit(1)
         except Exception as e:
             logger.debug("", exc_info=True)
-            sys.stderr.write(f"! UNHANDLED EXCEPTION: {e}\n")
+            sys.stderr.write(f"! UNHANDLED EXCEPTION: {e!r}\n")
             sys.exit(2)
 
     return wrapped

@@ -1,0 +1,10 @@
+# exception: LoadError
+# match: Neither contents nor src specified
+---
+actions:
+  - name: Foo
+    type: docker-shell
+    command: bar
+    image: baz
+    bind:
+      - dest: qux

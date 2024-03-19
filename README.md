@@ -26,7 +26,7 @@ Requires system-wide poetry>=1.3.2, see [official documentation](https://python-
 
 ```shell
 poetry env use python3.8
-poetry install --no-root --sync
+poetry install --no-root --sync --all-extras
 ```
 
 The root directory for the source code is `src`,

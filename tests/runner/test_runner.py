@@ -61,7 +61,16 @@ def test_unrecognized_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
         cjunct.Runner(config=tmp_path / "network.foo").run_sync()
 
 
-@pytest.mark.parametrize("strategy_class", [cjunct.FreeStrategy, cjunct.SequentialStrategy, cjunct.LooseStrategy])
+@pytest.mark.parametrize(
+    "strategy_class",
+    [
+        cjunct.FreeStrategy,
+        cjunct.SequentialStrategy,
+        cjunct.LooseStrategy,
+        cjunct.StrictStrategy,
+        cjunct.StrictSequentialStrategy,
+    ],
+)
 def test_strategy_runner_call(
     runner_good_context: None,
     strategy_class: t.Type[BaseStrategy],
@@ -134,3 +143,21 @@ actions:
     )
     monkeypatch.setenv("CJUNCT_ACTIONS_SOURCE_FILE", "-")
     cjunct.Runner().run_sync()
+
+
+@pytest.mark.asyncio
+async def test_docker_good_context(runner_docker_good_context: None, display_collector: t.List[str]) -> None:
+    """Check docker shell action step"""
+    await cjunct.Runner().run_async()
+    assert set(display_collector) == {
+        "[Foo]  | bar-baz",
+        "============",
+        "SUCCESS: Foo",
+    }
+
+
+@pytest.mark.asyncio
+async def test_docker_bad_context(runner_docker_bad_context: None) -> None:
+    """Check docker shell action step failure"""
+    with pytest.raises(exceptions.ExecutionFailed):
+        await cjunct.Runner().run_async()
