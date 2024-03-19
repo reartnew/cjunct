@@ -5,7 +5,7 @@ import contextlib
 import tempfile
 import typing as t
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
@@ -69,7 +69,7 @@ class DockerShellArgs(ArgsBase):
     pull: bool = False
     executable: StringTemplate = "/bin/sh"  # type: ignore[assignment]
     bind: t.Optional[t.List[DockerBind]] = None
-    network: Network = Network()
+    network: Network = field(default_factory=Network)  # pylint: disable=invalid-field-call
     privileged: bool = False
 
 
