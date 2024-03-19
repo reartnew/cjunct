@@ -5,5 +5,5 @@ from .shell import ShellAction
 
 try:
     from .docker_shell import DockerShellAction
-except ImportError:
+except ImportError:  # pragma: no cover
     DockerShellAction = None  # type: ignore

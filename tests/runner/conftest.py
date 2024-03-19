@@ -1,16 +1,21 @@
 """Runner call fixtures"""
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,unused-argument
 
 import base64
+import textwrap
 import typing as t
 from pathlib import Path
 
+import aiodocker
 import pytest
+import pytest_asyncio
 from _pytest.fixtures import SubRequest
 
 from cjunct.config.environment import Env
 from cjunct.display.base import BaseDisplay
+
+CtxFactoryType = t.Callable[[str], Path]
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -32,27 +37,49 @@ def display_collector(monkeypatch: pytest.MonkeyPatch) -> t.List[str]:
     return results
 
 
+@pytest.fixture
+def ctx_from_text(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> CtxFactoryType:
+    """Context factory"""
+
+    def make(data: str) -> Path:
+        actions_source_path: Path = tmp_path / "cjunct.yaml"
+        actions_source_path.write_bytes(textwrap.dedent(data).encode())
+        monkeypatch.chdir(tmp_path)
+        return actions_source_path
+
+    return make
+
+
+@pytest.fixture
+def actions_definitions_directory(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Add actions definitions from directories"""
+    actions_class_definitions_base_path: Path = Path(__file__).parent / "extension" / "modules" / "actions"
+    monkeypatch.setenv(
+        name="CJUNCT_ACTIONS_CLASS_DEFINITIONS_DIRECTORY",
+        value=",".join(str(actions_class_definitions_base_path / sub_dir) for sub_dir in ("first", "second")),
+    )
+
+
 @pytest.fixture(params=["chdir", "env_context_dir", "env_actions_source"])
-def runner_good_context(request: SubRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def runner_good_context(ctx_from_text: CtxFactoryType, request: SubRequest, monkeypatch: pytest.MonkeyPatch) -> None:
     """Prepare a directory with good sample config files"""
-    actions_source_path: Path = tmp_path / "cjunct.yaml"
-    actions_source_path.write_bytes(
-        b"""---
-actions:
-  - name: Foo
-    type: shell
-    command: echo "foo"
-  - name: Bar
-    type: shell
-    command: echo "bar" >&2
-    expects:
-      - Foo
-"""
+    actions_source_path: Path = ctx_from_text(
+        """
+        actions:
+          - name: Foo
+            type: shell
+            command: echo "foo"
+          - name: Bar
+            type: shell
+            command: echo "bar" >&2
+            expects:
+              - Foo
+        """
     )
     if request.param == "chdir":
-        monkeypatch.chdir(tmp_path)
+        monkeypatch.chdir(actions_source_path.parent)
     elif request.param == "env_context_dir":
-        monkeypatch.setenv("CJUNCT_CONTEXT_DIRECTORY", str(tmp_path))
+        monkeypatch.setenv("CJUNCT_CONTEXT_DIRECTORY", str(actions_source_path.parent))
     elif request.param == "env_actions_source":
         monkeypatch.setenv("CJUNCT_ACTIONS_SOURCE_FILE", str(actions_source_path))
     else:
@@ -98,110 +125,137 @@ actions:
 
 
 @pytest.fixture
-def runner_failing_action_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def runner_failing_action_context(ctx_from_text: CtxFactoryType) -> None:
     """Prepare a directory with sample config files of a failing action"""
-    actions_source_path: Path = tmp_path / "cjunct.yaml"
-    actions_source_path.write_bytes(
-        b"""---
-actions:
-  - name: Qux
-    type: shell
-    command: echo "qux" && exit 1
-"""
+    ctx_from_text(
+        """
+        actions:
+          - name: Qux
+            type: shell
+            command: echo "qux" && exit 1
+        """
     )
-    monkeypatch.chdir(tmp_path)
 
 
 @pytest.fixture
-def runner_failing_render_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def runner_failing_render_context(ctx_from_text: CtxFactoryType) -> None:
     """Prepare a directory with sample config files of a failing render"""
-    actions_source_path: Path = tmp_path / "cjunct.yaml"
-    actions_source_path.write_bytes(
-        b"""---
-actions:
-  - name: Baz
-    type: shell
-    command: echo "##cjunct[yield-outcome-b64 * *]##"
-  - name: Qux
-    type: shell
-    command: echo "@{A.B.C}"
-  - name: Fred
-    type: shell
-    command: echo "@{outcomes.not-enough-parts}"
-  - name: Egor
-    type: shell
-    command: echo "@{outcomes.Baz.non-existent}"
-"""
+    ctx_from_text(
+        """
+        actions:
+          - name: Baz
+            type: shell
+            command: echo "##cjunct[yield-outcome-b64 * *]##"
+          - name: Qux
+            type: shell
+            command: echo "@{A.B.C}"
+          - name: Fred
+            type: shell
+            command: echo "@{outcomes.not-enough-parts}"
+          - name: Egor
+            type: shell
+            command: echo "@{outcomes.Baz.non-existent}"
+        """
     )
-    monkeypatch.chdir(tmp_path)
 
 
 @pytest.fixture
-def runner_external_actions_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def runner_external_actions_context(ctx_from_text: CtxFactoryType, actions_definitions_directory: None) -> None:
     """Prepare a directory with sample config files using external actions from directories"""
-    actions_source_path: Path = tmp_path / "cjunct.yaml"
-    actions_source_path.write_bytes(
-        b"""---
-actions:
-  - name: Foo
-    type: debug
-    message: Hi
-"""
-    )
-    monkeypatch.chdir(tmp_path)
-    actions_class_definitions_base_path: Path = Path(__file__).parent / "extension" / "modules" / "actions"
-    monkeypatch.setenv(
-        name="CJUNCT_ACTIONS_CLASS_DEFINITIONS_DIRECTORY",
-        value=",".join(str(actions_class_definitions_base_path / sub_dir) for sub_dir in ("first", "second")),
+    ctx_from_text(
+        """
+        actions:
+          - name: Foo
+            type: debug
+            message: Hi
+        """
     )
 
 
 @pytest.fixture
-def runner_status_substitution_good_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def runner_status_substitution_good_context(ctx_from_text: CtxFactoryType) -> None:
     """Prepare a directory with sample config files testing status good substitution"""
-    actions_source_path: Path = tmp_path / "cjunct.yaml"
-    actions_source_path.write_bytes(
-        b"""---
-actions:
-  - name: Foo
-    type: shell
-    command: |
-      [ "@{status.Foo}" = "PENDING" ] || exit 1
-"""
+    ctx_from_text(
+        """
+        actions:
+          - name: Foo
+            type: shell
+            command: |
+              [ "@{status.Foo}" = "PENDING" ] || exit 1
+        """
     )
-    monkeypatch.chdir(tmp_path)
 
 
 @pytest.fixture
-def runner_status_substitution_bad_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def runner_status_substitution_bad_context(ctx_from_text: CtxFactoryType) -> None:
     """Prepare a directory with sample config files testing status bad substitution"""
-    actions_source_path: Path = tmp_path / "cjunct.yaml"
-    actions_source_path.write_bytes(
-        b"""---
-actions:
-  - name: Foo
-    type: shell
-    command: echo "@{status.too.may.parts}"
-"""
+    ctx_from_text(
+        """
+        actions:
+          - name: Foo
+            type: shell
+            command: echo "@{status.too.may.parts}"
+        """
     )
-    monkeypatch.chdir(tmp_path)
 
 
 @pytest.fixture
-def runner_failing_union_render_context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def runner_failing_union_render_context(ctx_from_text: CtxFactoryType, actions_definitions_directory: None) -> None:
     """Prepare a directory with sample config files using external actions from directories with union render types"""
-    actions_source_path: Path = tmp_path / "cjunct.yaml"
-    actions_source_path.write_bytes(
-        b"""---
-actions:
-  - name: Foo
-    type: union-arg-action
-    message: "@{some.failing.expression}"
-"""
+    ctx_from_text(
+        """
+        actions:
+          - name: Foo
+            type: union-arg-action
+            message: "@{some.failing.expression}"
+        """
     )
-    monkeypatch.chdir(tmp_path)
-    actions_class_definitions_base_path: Path = Path(__file__).parent / "extension" / "modules" / "actions"
-    monkeypatch.setenv(
-        name="CJUNCT_ACTIONS_CLASS_DEFINITIONS_DIRECTORY",
-        value=",".join(str(actions_class_definitions_base_path / sub_dir) for sub_dir in ("first", "second")),
+
+
+@pytest_asyncio.fixture
+async def check_docker() -> None:
+    """Skip if no docker context is available"""
+    try:
+        async with aiodocker.Docker():
+            pass
+    except Exception as e:
+        pytest.skip(f"Unable to load docker context: {e!r}")
+
+
+@pytest_asyncio.fixture
+async def runner_docker_good_context(check_docker: None, ctx_from_text: CtxFactoryType, tmp_path: Path) -> None:
+    """Docker-shell good context"""
+    tmp_file_to_bind: Path = tmp_path / "bind_file.txt"
+    tmp_file_to_bind.write_bytes(b"bar")
+    ctx_from_text(
+        f"""
+        actions:
+          - type: docker-shell
+            name: Foo
+            image: alpine:latest
+            command: |
+              cat /tmp/bind_file.txt
+              printf "-"
+              cat /tmp/bind_text.txt
+            pull: True
+            bind:
+              - src: {tmp_file_to_bind}
+                dest: /tmp/bind_file.txt
+              - contents: baz
+                dest: /tmp/bind_text.txt
+        """
+    )
+
+
+@pytest_asyncio.fixture
+async def runner_docker_bad_context(check_docker: None, ctx_from_text: CtxFactoryType) -> None:
+    """Docker-shell bad context"""
+    ctx_from_text(
+        """
+        actions:
+          - type: docker-shell
+            name: Foo
+            image: alpine:latest
+            command: no-such-command
+        """
     )
