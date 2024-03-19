@@ -79,7 +79,7 @@ class NetPrefixDisplay(BaseDisplay):
         displayed_action_names: t.List[str] = []
         default_selected_action_names: t.List[str] = []
         for _, action in net.iter_actions_by_tier():
-            if action.visible:
+            if action.selectable:
                 displayed_action_names.append(action.name)
                 default_selected_action_names.append(action.name)
         answers: t.Dict[str, t.List[str]] = inquirer.prompt(

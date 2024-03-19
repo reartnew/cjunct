@@ -107,12 +107,9 @@ class Runner(classlogging.LoggerMixin):
         if self._started:
             raise RuntimeError("Runner has been started more than one time")
         self._started = True
-
-        actions: ActionNet = self._loader_class().load(self._config_path)
-        display: BaseDisplay = self._display_class(actions)
-        strategy: BaseStrategy = self._strategy_class(actions)
+        strategy: BaseStrategy = self._strategy_class(net=self.actions)
         if C.INTERACTIVE_MODE:
-            display.on_plan_interaction(net=actions)
+            self.display.on_plan_interaction(net=self.actions)
         background_tasks: t.List[asyncio.Task] = []
         # Prefill outcomes map
         for action_name in self.actions:
@@ -128,7 +125,7 @@ class Runner(classlogging.LoggerMixin):
                 asyncio.create_task(
                     self._dispatch_action_events_to_display(
                         action=action,
-                        display=display,
+                        display=self.display,
                     )
                 )
             )
@@ -136,7 +133,7 @@ class Runner(classlogging.LoggerMixin):
         # Finalize running actions and message dispatchers
         for task in background_tasks:
             await task
-        display.on_finish()
+        self.display.on_finish()
         if self._had_failed_actions:
             raise ExecutionFailed
 
