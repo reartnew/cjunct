@@ -161,3 +161,8 @@ async def test_docker_bad_context(runner_docker_bad_context: None) -> None:
     """Check docker shell action step failure"""
     with pytest.raises(exceptions.ExecutionFailed):
         await cjunct.Runner().run_async()
+
+
+def test_complex_loose_context(runner_non_releasing_action_context: None) -> None:
+    """Test a context where a finished action releases no new actions"""
+    cjunct.Runner().run_sync()

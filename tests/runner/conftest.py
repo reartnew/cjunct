@@ -259,3 +259,24 @@ async def runner_docker_bad_context(check_docker: None, ctx_from_text: CtxFactor
             command: no-such-command
         """
     )
+
+
+@pytest.fixture
+def runner_non_releasing_action_context(ctx_from_text: CtxFactoryType, actions_definitions_directory: None) -> None:
+    """Prepare context where a finished action releases no new actions"""
+    ctx_from_text(
+        """
+        actions:
+          - name: Foo
+            description: Finishes very soon, but releases nothing
+            type: sleep
+            duration: 0.0
+          - name: Bar
+            type: sleep
+            duration: 0.1
+          - name: Baz
+            type: echo
+            message: Done
+            expects: Bar
+        """
+    )
