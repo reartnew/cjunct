@@ -110,13 +110,22 @@ class DefaultYAMLConfigLoader(DefaultRootConfigLoader):
                 else:
                     self._throw(f"Unrecognized node type: {type(child_node)!r}")
         if "context" in processable_keys:
-            context: t.Dict[str, str] = root_node["context"]
-            if not isinstance(context, dict):
-                self._throw(f"'context' contents should be a dict (got {type(context)!r})")
-            for context_key, context_value in context.items():
-                if not isinstance(context_key, str):
-                    self._throw(f"Context keys should be strings (got {type(context_key)!r} for {context_key!r})")
-                if not isinstance(context_value, str):
-                    self._throw(f"Context values should be strings (got {type(context_value)!r} for {context_value!r})")
-                self.logger.info(f"Context key added: {context_key}")
-                self._gathered_context[context_key] = context_value
+            context: t.Union[t.Dict[str, str], t.List[t.Dict[str, str]]] = root_node["context"]
+            if isinstance(context, dict):
+                self._loads_contexts_dict(data=context)
+            elif isinstance(context, list):
+                for num, context_item in enumerate(context):
+                    if not isinstance(data, dict):
+                        self._throw(f"Context item #{num + 1} is not a dict (got {type(context_item)!r})")
+                    self._loads_contexts_dict(data=context_item)
+            else:
+                self._throw(f"'context' contents should be a dict or a list of dicts (got {type(context)!r})")
+
+    def _loads_contexts_dict(self, data: t.Dict[str, str]) -> None:
+        for context_key, context_value in data.items():
+            if not isinstance(context_key, str):
+                self._throw(f"Context keys should be strings (got {type(context_key)!r} for {context_key!r})")
+            if not isinstance(context_value, str):
+                self._throw(f"Context values should be strings (got {type(context_value)!r} for {context_value!r})")
+            self.logger.info(f"Context key added: {context_key}")
+            self._gathered_context[context_key] = context_value
