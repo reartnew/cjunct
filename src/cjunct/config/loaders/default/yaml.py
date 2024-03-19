@@ -48,6 +48,8 @@ for extra_tag_class in (ImportTag, ChecklistsDirectoryTag):
 class DefaultYAMLConfigLoader(DefaultRootConfigLoader):
     """Loader for YAML source files"""
 
+    ALLOWED_ROOT_TAGS: t.Set[str] = {"actions", "context", "miscellaneous"}
+
     def _parse_import(self, tag: ImportTag) -> None:
         path: str = tag.data
         if not isinstance(path, str):
@@ -86,9 +88,12 @@ class DefaultYAMLConfigLoader(DefaultRootConfigLoader):
             self._throw(f"Unknown config structure: {type(root_node)!r} (should be a dict)")
         root_keys: t.Set[str] = set(root_node)
         if not root_keys:
-            self._throw("Empty root dictionary (expecting 'actions' or 'context')")
-        if unrecognized_keys := root_keys - {"actions", "context"}:
-            self._throw(f"Unrecognized root keys: {sorted(unrecognized_keys)} (expecting 'actions' or 'context')")
+            self._throw(f"Empty root dictionary (expected some of: {', '.join(sorted(self.ALLOWED_ROOT_TAGS))}")
+        if unrecognized_keys := root_keys - self.ALLOWED_ROOT_TAGS:
+            self._throw(
+                f"Unrecognized root keys: {sorted(unrecognized_keys)} "
+                f"(expected some of: {', '.join(sorted(self.ALLOWED_ROOT_TAGS))}"
+            )
         processable_keys: t.Set[str] = set(root_node) & allowed_root_keys
         if "actions" in processable_keys:
             actions: t.List[t.Union[dict, ImportTag]] = root_node["actions"]
