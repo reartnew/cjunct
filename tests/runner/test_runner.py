@@ -166,3 +166,13 @@ async def test_docker_bad_context(runner_docker_bad_context: None) -> None:
 def test_complex_loose_context(runner_non_releasing_action_context: None) -> None:
     """Test a context where a finished action releases no new actions"""
     cjunct.Runner().run_sync()
+
+
+def test_empty_echo_context(runner_empty_echo_context: None, display_collector: t.List[str]) -> None:
+    """Test empty echo"""
+    cjunct.Runner().run_sync()
+    assert set(display_collector) == {
+        "[Foo]  | ",
+        "============",
+        "SUCCESS: Foo",
+    }

@@ -42,7 +42,7 @@ class NetPrefixDisplay(BaseDisplay):
 
     def emit_action_message(self, source: ActionBase, message: str) -> None:
         is_stderr: bool = isinstance(message, Stderr)
-        for line in message.splitlines():
+        for line in message.splitlines() if message else [message]:
             line_prefix: str = self._make_prefix(source_name=source.name, mark="*" if is_stderr else " ")
             super().emit_action_message(
                 source=source,

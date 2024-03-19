@@ -263,7 +263,7 @@ async def runner_docker_bad_context(check_docker: None, ctx_from_text: CtxFactor
 
 @pytest.fixture
 def runner_non_releasing_action_context(ctx_from_text: CtxFactoryType, actions_definitions_directory: None) -> None:
-    """Prepare context where a finished action releases no new actions"""
+    """Prepare a context where a finished action releases no new actions"""
     ctx_from_text(
         """
         actions:
@@ -278,5 +278,18 @@ def runner_non_releasing_action_context(ctx_from_text: CtxFactoryType, actions_d
             type: echo
             message: Done
             expects: Bar
+        """
+    )
+
+
+@pytest.fixture
+def runner_empty_echo_context(ctx_from_text: CtxFactoryType) -> None:
+    """Prepare a context with empty echo message"""
+    ctx_from_text(
+        """
+        actions:
+          - name: Foo
+            type: echo
+            message: ""
         """
     )
