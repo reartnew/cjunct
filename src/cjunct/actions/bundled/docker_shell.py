@@ -65,11 +65,12 @@ class DockerShellArgs(ArgsBase):
     command: StringTemplate
     image: StringTemplate
     environment: t.Optional[t.Dict[str, StringTemplate]] = None
-    cwd: t.Optional[str] = None
-    pull: t.Optional[bool] = False
+    cwd: t.Optional[StringTemplate] = None
+    pull: bool = False
     executable: StringTemplate = "/bin/sh"  # type: ignore[assignment]
     bind: t.Optional[t.List[DockerBind]] = None
     network: Network = Network()
+    privileged: bool = False
 
 
 class DockerShellAction(EmissionScannerActionBase):
@@ -119,6 +120,7 @@ class DockerShellAction(EmissionScannerActionBase):
                     },
                     "Env": [f"{k}={v}" for k, v in (self.args.environment or {}).items()],
                     "WorkingDir": self.args.cwd,
+                    "Privileged": self.args.privileged,
                 },
             )
             try:
