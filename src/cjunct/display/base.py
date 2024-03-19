@@ -30,7 +30,7 @@ class BaseDisplay:
 
     def on_plan_interaction(self, net: ActionNet) -> None:
         """Execution plan approval handler"""
-        raise InteractionError
+        raise InteractionError  # pragma: no cover
 
     def display(self, message: str) -> None:
         """Send text to the end user"""

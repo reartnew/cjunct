@@ -176,3 +176,13 @@ def test_empty_echo_context(runner_empty_echo_context: None, display_collector: 
         "============",
         "SUCCESS: Foo",
     }
+
+
+def test_misplaced_disable_context(runner_misplaced_disable_context: None, display_collector: t.List[str]) -> None:
+    """Test context with misplaced action disable call"""
+    with pytest.raises(exceptions.ExecutionFailed):
+        cjunct.Runner().run_sync()
+    assert (
+        "[Foo] !| Action 'Foo' run exception: RuntimeError(\"Action Foo can't be disabled due to its status: RUNNING\")"
+        in display_collector
+    )

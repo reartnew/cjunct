@@ -293,3 +293,15 @@ def runner_empty_echo_context(ctx_from_text: CtxFactoryType) -> None:
             message: ""
         """
     )
+
+
+@pytest.fixture
+def runner_misplaced_disable_context(ctx_from_text: CtxFactoryType, actions_definitions_directory: None) -> None:
+    """Prepare a context with misplaced action disable call"""
+    ctx_from_text(
+        """
+        actions:
+          - name: Foo
+            type: misplaced-disable
+        """
+    )

@@ -74,19 +74,33 @@ class NetPrefixDisplay(BaseDisplay):
         self._display_status_banner()
 
     def on_plan_interaction(self, net: ActionNet) -> None:
-        if not sys.stdin.isatty():
-            raise InteractionError
         displayed_action_names: t.List[str] = []
         default_selected_action_names: t.List[str] = []
         for _, action in net.iter_actions_by_tier():
             if action.selectable:
                 displayed_action_names.append(action.name)
                 default_selected_action_names.append(action.name)
+        selected_action_names: t.List[str] = self._run_dialog(
+            displayed_action_names=displayed_action_names,
+            default_selected_action_names=default_selected_action_names,
+        )
+        for action_name, action in net.items():
+            if action_name not in selected_action_names:
+                action.disable()
+
+    @classmethod
+    def _run_dialog(
+        cls,
+        displayed_action_names: t.List[str],
+        default_selected_action_names: t.List[str],
+    ) -> t.List[str]:  # pragma: no cover
+        if not sys.stdin.isatty():
+            raise InteractionError
         answers: t.Dict[str, t.List[str]] = inquirer.prompt(
             [
                 inquirer.Checkbox(
                     name="actions",
-                    message="Select steps (SPACE to check, RETURN to proceed)",
+                    message="Select actions (SPACE to check, RETURN to proceed)",
                     choices=displayed_action_names,
                     default=default_selected_action_names,
                     carousel=True,
@@ -94,6 +108,4 @@ class NetPrefixDisplay(BaseDisplay):
             ]
         )
         selected_action_names: t.List[str] = answers["actions"]
-        for action_name, action in net.items():
-            if action_name not in selected_action_names:
-                action.disable()
+        return selected_action_names

@@ -20,7 +20,7 @@ SAMPLES: t.List[Path] = [
 ]
 
 
-@pytest.fixture(params=SAMPLES, ids=[f"{item.suffix.replace('.', '')}-{item.stem}" for item in SAMPLES])
+@pytest.fixture(params=SAMPLES, ids=[item.stem for item in SAMPLES])
 def sample_config(
     request: SubRequest,
     monkeypatch: pytest.MonkeyPatch,
