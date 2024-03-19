@@ -6,6 +6,7 @@ import tempfile
 import typing as t
 import uuid
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 
 import aiodocker
@@ -20,6 +21,28 @@ __all__ = [
 ]
 
 
+class BindMode(Enum):
+    """Allowed bind mount modes"""
+
+    READ_ONLY = "ro"
+    READ_WRITE = "rw"
+
+
+class NetworkMode(Enum):
+    """Allowed network modes"""
+
+    BRIDGE = "bridge"
+    HOST = "host"
+    NONE = "none"
+
+
+@dataclass
+class Network:
+    """Container network specification"""
+
+    mode: NetworkMode = NetworkMode.BRIDGE
+
+
 @dataclass
 class DockerBind:
     """Bind mount specification"""
@@ -27,7 +50,7 @@ class DockerBind:
     dest: StringTemplate
     src: t.Optional[StringTemplate] = None
     contents: t.Optional[StringTemplate] = None
-    mode: str = "rw"
+    mode: BindMode = BindMode.READ_WRITE
 
     def __post_init__(self) -> None:
         if self.contents is None and self.src is None:
@@ -46,6 +69,7 @@ class DockerShellArgs(ArgsBase):
     pull: t.Optional[bool] = False
     executable: StringTemplate = "/bin/sh"  # type: ignore[assignment]
     bind: t.Optional[t.List[DockerBind]] = None
+    network: Network = Network()
 
 
 class DockerShellAction(EmissionScannerActionBase):
@@ -74,21 +98,25 @@ class DockerShellAction(EmissionScannerActionBase):
             container_binds: t.List[str] = [f"{tmp_directory}:{script_container_directory}:ro"]
             for bind_config in self.args.bind or []:
                 if bind_config.src is not None:
-                    container_binds.append(f"{bind_config.src}:{bind_config.dest}:{bind_config.mode}")
+                    container_binds.append(f"{bind_config.src}:{bind_config.dest}:{bind_config.mode.value}")
                 elif bind_config.contents is not None:
-                    bind_contents_file_local_path: Path = tmp_dir_path / uuid.uuid4().hex
-                    bind_contents_file_local_path.write_text(
+                    bind_contents_local_file: Path = tmp_dir_path / uuid.uuid4().hex
+                    bind_contents_local_file.write_text(
                         data=bind_config.contents,
                         encoding="utf-8",
                     )
-                    container_binds.append(f"{bind_contents_file_local_path}:{bind_config.dest}:{bind_config.mode}")
+                    container_binds.append(f"{bind_contents_local_file}:{bind_config.dest}:{bind_config.mode.value}")
 
             container: DockerContainer = await client.containers.run(
                 name=container_name,
                 config={
                     "Cmd": [self.args.executable, f"{script_container_directory}/{self._ENTRY_SCRIPT_FILE_NAME}"],
                     "Image": self.args.image,
-                    "HostConfig": {"Binds": container_binds},
+                    "HostConfig": {
+                        "Binds": container_binds,
+                        "Init": True,
+                        "NetworkMode": self.args.network.mode.value,
+                    },
                     "Env": [f"{k}={v}" for k, v in (self.args.environment or {}).items()],
                     "WorkingDir": self.args.cwd,
                 },
