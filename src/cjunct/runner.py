@@ -9,6 +9,7 @@ import io
 import sys
 import typing as t
 from dataclasses import asdict
+from enum import Enum
 from pathlib import Path
 
 import classlogging
@@ -187,6 +188,7 @@ class Runner(classlogging.LoggerMixin):
                 data=original_args_dict,
                 config=dacite.Config(
                     strict=True,
+                    cast=[Enum],
                     type_hooks={
                         StringTemplate: _string_template_render_hook,
                     },

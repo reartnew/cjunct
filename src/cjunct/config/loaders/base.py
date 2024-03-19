@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import typing as t
+from enum import Enum
 from pathlib import Path
 
 import dacite
@@ -202,6 +203,7 @@ class AbstractBaseConfigLoader(LoggerMixin):
                     data=node,
                     config=dacite.Config(
                         strict=True,
+                        cast=[Enum],
                         type_hooks={StringTemplate: self._ensure_string_template_hook},
                     ),
                 ),
