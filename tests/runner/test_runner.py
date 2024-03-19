@@ -186,3 +186,14 @@ def test_misplaced_disable_context(runner_misplaced_disable_context: None, displ
         "[Foo] !| Action 'Foo' run exception: RuntimeError(\"Action Foo can't be disabled due to its status: RUNNING\")"
         in display_collector
     )
+
+
+def test_interaction_context(runner_interaction_context: None, display_collector: t.List[str]) -> None:
+    """Test interaction context"""
+    cjunct.Runner().run_sync()
+    assert display_collector == [
+        "============",
+        "SUCCESS: Foo",
+        "OMITTED: Bar",
+        "OMITTED: Baz",
+    ]
