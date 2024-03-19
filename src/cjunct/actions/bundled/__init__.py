@@ -6,4 +6,4 @@ from .shell import ShellAction
 try:
     from .docker_shell import DockerShellAction
 except ImportError:
-    DockerShellAction = None
+    DockerShellAction = None  # type: ignore

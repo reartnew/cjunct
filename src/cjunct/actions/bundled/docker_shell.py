@@ -11,7 +11,8 @@ from pathlib import Path
 import aiodocker
 from aiodocker.containers import DockerContainer
 
-from cjunct import StringTemplate, EmissionScannerActionBase, Stderr, ArgsBase
+from ..base import EmissionScannerActionBase, ArgsBase
+from ..types import StringTemplate, Stderr
 
 __all__ = [
     "DockerShellArgs",
@@ -52,6 +53,7 @@ class DockerShellAction(EmissionScannerActionBase):
 
     args: DockerShellArgs
     _ENTRY_SCRIPT_FILE_NAME: str = "entry.sh"
+    _CONTAINER_TMP_DIRECTORY: str = "/tmp"  # nosec
 
     @contextlib.asynccontextmanager
     async def _make_container(self, client: aiodocker.Docker) -> t.AsyncGenerator[DockerContainer, None]:
@@ -59,7 +61,7 @@ class DockerShellAction(EmissionScannerActionBase):
         self.logger.info(f"Starting docker shell container {container_name!r}")
         with tempfile.TemporaryDirectory() as tmp_directory:
             tmp_dir_path: Path = Path(tmp_directory)
-            script_container_directory: str = f"/tmp/{container_name}-exec-source"
+            script_container_directory: str = f"{self._CONTAINER_TMP_DIRECTORY}/{container_name}-exec-source"
             script_container_file: Path = tmp_dir_path / self._ENTRY_SCRIPT_FILE_NAME
             script_container_file_clauses: t.List[str] = [
                 self._YIELD_SHELL_FUNCTION_DEFINITION,
@@ -81,7 +83,7 @@ class DockerShellAction(EmissionScannerActionBase):
                     )
                     container_binds.append(f"{bind_contents_file_local_path}:{bind_config.dest}:{bind_config.mode}")
 
-            yield await client.containers.run(
+            container: DockerContainer = await client.containers.run(
                 name=container_name,
                 config={
                     "Cmd": [self.args.executable, f"{script_container_directory}/{self._ENTRY_SCRIPT_FILE_NAME}"],
@@ -91,6 +93,10 @@ class DockerShellAction(EmissionScannerActionBase):
                     "WorkingDir": self.args.cwd,
                 },
             )
+            try:
+                yield container
+            finally:
+                await container.delete(force=True)
 
     async def run(self) -> None:
         async with aiodocker.Docker() as client:
@@ -98,18 +104,15 @@ class DockerShellAction(EmissionScannerActionBase):
                 self.logger.info(f"Pulling image: {self.args.image!r}")
                 await client.pull(self.args.image)
             async with self._make_container(client) as container:
-                try:
-                    tasks: t.List[asyncio.Task] = [
-                        asyncio.create_task(self._read_stdout(container)),
-                        asyncio.create_task(self._read_stderr(container)),
-                    ]
-                    await asyncio.gather(*tasks)
-                    result: dict = await container.wait()
-                    self.logger.debug(f"Docker container result: {result}")
-                    if (code := result.get("StatusCode", -1)) != 0:
-                        self.fail(f"Exit code: {code}")
-                finally:
-                    await container.delete(force=True)
+                tasks: t.List[asyncio.Task] = [
+                    asyncio.create_task(self._read_stdout(container)),
+                    asyncio.create_task(self._read_stderr(container)),
+                ]
+                await asyncio.gather(*tasks)
+                result: dict = await container.wait()
+                self.logger.debug(f"Docker container result: {result}")
+                if (code := result.get("StatusCode", -1)) != 0:
+                    self.fail(f"Exit code: {code}")
 
     async def _read_stdout(self, container: DockerContainer) -> None:
         async for chunk in container.log(stdout=True, follow=True):
