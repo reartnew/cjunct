@@ -2,6 +2,7 @@
 
 from ..actions.base import ActionBase
 from ..actions.net import ActionNet
+from ..exceptions import InteractionError
 
 __all__ = [
     "BaseDisplay",
@@ -26,6 +27,10 @@ class BaseDisplay:
 
     def on_finish(self) -> None:
         """Runner finish handler"""
+
+    def on_plan_interaction(self, net: ActionNet) -> None:
+        """Execution plan approval handler"""
+        raise InteractionError  # pragma: no cover
 
     def display(self, message: str) -> None:
         """Send text to the end user"""

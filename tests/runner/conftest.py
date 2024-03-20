@@ -13,7 +13,8 @@ import pytest_asyncio
 from _pytest.fixtures import SubRequest
 
 from cjunct.config.environment import Env
-from cjunct.display.base import BaseDisplay
+from cjunct.config.constants import C
+from cjunct.display.default import NetPrefixDisplay
 
 CtxFactoryType = t.Callable[[str], Path]
 
@@ -33,7 +34,16 @@ def display_collector(monkeypatch: pytest.MonkeyPatch) -> t.List[str]:
     def display(self, message: str) -> None:
         results.append(message)
 
-    monkeypatch.setattr(BaseDisplay, "display", display)
+    # pylint: disable=unused-argument
+    def _run_dialog(
+        cls,
+        displayed_action_names: t.List[str],
+        default_selected_action_names: t.List[str],
+    ) -> t.List[str]:
+        return default_selected_action_names[:1]
+
+    monkeypatch.setattr(NetPrefixDisplay, "display", display)
+    monkeypatch.setattr(NetPrefixDisplay, "_run_dialog", _run_dialog)
     return results
 
 
@@ -293,3 +303,37 @@ def runner_empty_echo_context(ctx_from_text: CtxFactoryType) -> None:
             message: ""
         """
     )
+
+
+@pytest.fixture
+def runner_misplaced_disable_context(ctx_from_text: CtxFactoryType, actions_definitions_directory: None) -> None:
+    """Prepare a context with misplaced action disable call"""
+    ctx_from_text(
+        """
+        actions:
+          - name: Foo
+            type: misplaced-disable
+        """
+    )
+
+
+@pytest.fixture
+def runner_interaction_context(
+    ctx_from_text: CtxFactoryType,
+    actions_definitions_directory: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Prepare an interaction context"""
+    ctx_from_text(
+        """
+        actions:
+          - name: Foo
+            type: noop
+          - name: Bar
+            type: noop
+            selectable: False
+          - name: Baz
+            type: noop
+        """
+    )
+    monkeypatch.setattr(C, "INTERACTIVE_MODE", True)

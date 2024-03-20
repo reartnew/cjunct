@@ -157,12 +157,17 @@ class AbstractBaseConfigLoader(LoggerMixin):
         # Dependencies
         deps_node: t.Union[str, t.List[t.Union[str, dict]]] = node.pop("expects", [])
         if not isinstance(deps_node, str) and not isinstance(deps_node, list):
-            self._throw(f"Unrecognized 'expects' content type: {type(deps_node)!r} (expected a a string or list)")
+            self._throw(f"Unrecognized 'expects' content type: {type(deps_node)!r} (expected a string or list)")
         if isinstance(deps_node, str):
             deps_node = [deps_node]
         dependencies: t.Dict[str, ActionDependency] = dict(
             self.build_dependency_from_node(dep_node) for dep_node in deps_node
         )
+        # Selectable
+        selectable: bool = node.pop("selectable", True)
+        if not isinstance(selectable, bool):
+            self._throw(f"Unrecognized 'selectable' content type: {type(selectable)!r} (expected a bool)")
+        # Make action instance
         args_instance: ArgsBase = self._build_args_from_the_rest_of_the_dict_node(
             action_name=name,
             action_class=action_class,
@@ -173,6 +178,7 @@ class AbstractBaseConfigLoader(LoggerMixin):
             args=args_instance,
             description=description,
             ancestors=dependencies,
+            selectable=selectable,
         )
 
     @classmethod

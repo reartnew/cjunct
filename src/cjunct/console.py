@@ -58,6 +58,7 @@ def wrap_cli_command(func):
 
 @wrap_cli_command
 @click.option("-s", "--strategy", help="Execution strategy name. Defaults to 'loose'.")
+@click.option("-i", "--interactive", help="Run in interactive mode.", is_flag=True, default=False)
 def run() -> None:
     """Run pipeline immediately."""
     cjunct.Runner(

@@ -33,11 +33,12 @@ class ActionSkip(BaseException):
 class ActionStatus(enum.Enum):
     """Action valid states"""
 
-    PENDING = "PENDING"
-    RUNNING = "RUNNING"
-    SUCCESS = "SUCCESS"
-    FAILURE = "FAILURE"
-    SKIPPED = "SKIPPED"
+    PENDING = "PENDING"  # Enabled, but not started yet
+    RUNNING = "RUNNING"  # Execution in process
+    SUCCESS = "SUCCESS"  # Finished without errors
+    FAILURE = "FAILURE"  # Erroneous action
+    SKIPPED = "SKIPPED"  # May be set by action itself
+    OMITTED = "OMITTED"  # Disabled during interaction or via checklists
 
     def __repr__(self) -> str:
         return self.name
@@ -81,11 +82,13 @@ class ActionBase(classlogging.LoggerMixin):
         args: ArgsBase = ArgsBase(),
         ancestors: t.Optional[t.Dict[str, ActionDependency]] = None,
         description: t.Optional[str] = None,
+        selectable: bool = True,
     ) -> None:
         self.name: str = name
         self.args: ArgsBase = args
         self.description: t.Optional[str] = description
         self.ancestors: t.Dict[str, ActionDependency] = ancestors or {}
+        self.selectable: bool = selectable
 
         self._yielded_keys: OutcomeStorageType = {}
         self._status: ActionStatus = ActionStatus.PENDING
@@ -93,6 +96,19 @@ class ActionBase(classlogging.LoggerMixin):
         self._maybe_finish_flag: t.Optional[asyncio.Future] = None
         self._maybe_event_queue: t.Optional[asyncio.Queue[EventType]] = None
         self._running_task: t.Optional[asyncio.Task] = None
+
+    @property
+    def enabled(self) -> bool:
+        """Check whether the action has not been disabled"""
+        return self._status != ActionStatus.OMITTED
+
+    def disable(self) -> None:
+        """Marking the action as not planned for launch"""
+        self.logger.info(f"Disabling {self}")
+        if self._status != ActionStatus.PENDING:
+            raise RuntimeError(f"Action {self.name} can't be disabled due to its status: {self._status!r}")
+        self._status = ActionStatus.OMITTED
+        self.get_future().set_result(None)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r}, status={self._status.value})"
@@ -207,7 +223,7 @@ class ActionBase(classlogging.LoggerMixin):
 
     def done(self) -> bool:
         """Indicate whether the action is over"""
-        return self.get_future().done() or self._status == ActionStatus.SKIPPED
+        return self.get_future().done() or self._status in (ActionStatus.SKIPPED, ActionStatus.OMITTED)
 
 
 # pylint: disable=abstract-method

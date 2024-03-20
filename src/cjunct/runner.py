@@ -108,11 +108,16 @@ class Runner(classlogging.LoggerMixin):
             raise RuntimeError("Runner has been started more than one time")
         self._started = True
         strategy: BaseStrategy = self._strategy_class(net=self.actions)
+        if C.INTERACTIVE_MODE:
+            self.display.on_plan_interaction(net=self.actions)
         background_tasks: t.List[asyncio.Task] = []
         # Prefill outcomes map
         for action_name in self.actions:
             self._outcomes[action_name] = {}
         async for action in strategy:  # type: ActionBase
+            if not action.enabled:
+                self.logger.debug(f"Skipping {action} as it is not enabled")
+                continue
             self.logger.trace(f"Allocating action runner for {action.name!r}")
             background_tasks.append(asyncio.create_task(self._run_action(action=action)))
             self.logger.trace(f"Allocating action dispatcher for {action.name!r}")

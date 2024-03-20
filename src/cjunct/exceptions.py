@@ -11,6 +11,7 @@ __all__ = [
     "LoadError",
     "IntegrityError",
     "SourceError",
+    "InteractionError",
 ]
 
 
@@ -60,3 +61,9 @@ class SourceError(BaseError):
     """Source file not recognized"""
 
     CODE: int = 104
+
+
+class InteractionError(BaseError):
+    """Can't interact with a display"""
+
+    CODE: int = 105
