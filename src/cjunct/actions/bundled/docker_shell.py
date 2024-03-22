@@ -8,6 +8,7 @@ import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
+import functools
 
 import aiodocker
 from aiodocker.containers import DockerContainer
@@ -34,6 +35,15 @@ class NetworkMode(Enum):
     BRIDGE = "bridge"
     HOST = "host"
     NONE = "none"
+
+
+@dataclass
+class Auth:
+    """Docker auth info"""
+
+    username: StringTemplate
+    password: StringTemplate
+    hostname: t.Optional[StringTemplate] = None
 
 
 @dataclass
@@ -71,6 +81,7 @@ class DockerShellArgs(ArgsBase):
     bind: t.Optional[t.List[DockerBind]] = None
     network: Network = field(default_factory=Network)  # pylint: disable=invalid-field-call
     privileged: bool = False
+    auth: t.Optional[Auth] = None
 
 
 class DockerShellAction(EmissionScannerActionBase):
@@ -122,17 +133,33 @@ class DockerShellAction(EmissionScannerActionBase):
                     "WorkingDir": self.args.cwd,
                     "Privileged": self.args.privileged,
                 },
+                auth=self._make_auth(),
             )
             try:
                 yield container
             finally:
                 await container.delete(force=True)
 
+    @functools.lru_cache(maxsize=1)
+    def _make_auth(self) -> t.Optional[t.Dict[str, str]]:
+        if self.args.auth is None:
+            return None
+        auth_dict: t.Dict[str, str] = {
+            "username": self.args.auth.username,
+            "password": self.args.auth.password,
+        }
+        if self.args.auth.hostname is not None:
+            auth_dict["serveraddress"] = self.args.auth.hostname
+        return auth_dict
+
     async def run(self) -> None:
         async with aiodocker.Docker() as client:
             if self.args.pull:
                 self.logger.info(f"Pulling image: {self.args.image!r}")
-                await client.pull(self.args.image)
+                await client.pull(
+                    from_image=self.args.image,
+                    auth=self._make_auth(),
+                )
             async with self._make_container(client) as container:
                 tasks: t.List[asyncio.Task] = [
                     asyncio.create_task(self._read_stdout(container)),

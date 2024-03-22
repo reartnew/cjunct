@@ -271,6 +271,25 @@ async def runner_docker_bad_context(check_docker: None, ctx_from_text: CtxFactor
     )
 
 
+@pytest_asyncio.fixture
+async def runner_docker_bad_auth_context(check_docker: None, ctx_from_text: CtxFactoryType) -> None:
+    """Docker-shell bad auth context"""
+    ctx_from_text(
+        """
+        actions:
+          - type: docker-shell
+            name: Foo
+            image: alpine:latest
+            command: pwd
+            pull: True
+            auth:
+              username: foo
+              password: bar
+              hostname: baz
+        """
+    )
+
+
 @pytest.fixture
 def runner_non_releasing_action_context(ctx_from_text: CtxFactoryType, actions_definitions_directory: None) -> None:
     """Prepare a context where a finished action releases no new actions"""
