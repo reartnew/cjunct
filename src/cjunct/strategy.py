@@ -50,8 +50,7 @@ class BaseStrategy(classlogging.LoggerMixin, t.AsyncIterable[ActionBase]):
                 f"Please specify another name for the {cls.__module__}.{cls.__name__}."
             )
 
-    @classmethod
-    def _skip_action(cls, action: ActionBase) -> None:
+    def _skip_action(self, action: ActionBase) -> None:
         try:
             action.skip()
         except ActionSkip:
@@ -106,6 +105,10 @@ class LooseStrategy(BaseStrategy):
         self._active_actions_map: t.Dict[str, ActionBase] = {}
         # Just a structured mutable copy of the dependency map
         self._action_blockers: t.Dict[str, t.Set[str]] = {name: set(net[name].ancestors) for name in net}
+
+    def _skip_action(self, action: ActionBase) -> None:
+        super()._skip_action(action)
+        self._active_actions_map.pop(action.name, None)
 
     def _get_maybe_next_action(self) -> t.Optional[ActionBase]:
         """Completely non-optimal (always scan all actions), but readable yet"""

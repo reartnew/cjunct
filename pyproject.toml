@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cjunct"
-version = "1.4.5"
+version = "1.4.6"
 description = "Declarative parallel process runner"
 license = "MIT"
 authors = [
