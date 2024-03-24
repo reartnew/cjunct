@@ -11,18 +11,37 @@ import dotenv
 import cjunct
 from cjunct.config.constants import C, LOG_LEVELS
 from cjunct.config.constants.cli import cliargs_receiver
+from cjunct.config.environment import Env
+from cjunct.config.loaders.inspect import get_class_annotations
 from cjunct.exceptions import BaseError, ExecutionFailed
+from cjunct.strategy import KNOWN_STRATEGIES
 
 logger = classlogging.get_module_logger()
 
 
 @click.group
-@click.option("-d", "--directory", help="Context directory. Defaults to current working directory.")
-@click.option("-l", "--log-level", help="Logging level. Defaults to ERROR.", type=click.Choice(list(LOG_LEVELS)))
-@click.option("-f", "--file", help="Action file to execute.")
+@click.option(
+    "-d",
+    "--directory",
+    help="Context directory. Defaults to current working directory. "
+    "Also configurable via the CJUNCT_CONTEXT_DIRECTORY environment variable.",
+)
+@click.option(
+    "-l",
+    "--log-level",
+    help="Logging level. Defaults to ERROR. Also configurable via the CJUNCT_LOG_LEVEL environment variable.",
+    type=click.Choice(list(LOG_LEVELS)),
+)
+@click.option(
+    "-f",
+    "--file",
+    help="Workflow file. Use '-' value to read yaml configuration from the standard input. "
+    "When not given, will look for one of cjunct.yml/cjunct.yaml files in the context directory. "
+    "Also configurable via the CJUNCT_WORKFLOW_FILE environment variable.",
+)
 @cliargs_receiver
 def main() -> None:
-    """Declarative parallel process runner"""
+    """Declarative task runner"""
 
 
 def wrap_cli_command(func):
@@ -57,8 +76,13 @@ def wrap_cli_command(func):
 
 
 @wrap_cli_command
-@click.option("-s", "--strategy", help="Execution strategy name. Defaults to 'loose'.")
-@click.option("-i", "--interactive", help="Run in interactive mode.", is_flag=True, default=False)
+@click.option(
+    "-s",
+    "--strategy",
+    help="Execution strategy. Defaults to loose. Also configurable via the CJUNCT_STRATEGY_NAME environment variable.",
+    type=click.Choice(list(KNOWN_STRATEGIES)),
+)
+@click.option("-i", "--interactive", help="Run in dialog mode.", is_flag=True, default=False)
 def run() -> None:
     """Run pipeline immediately."""
     cjunct.Runner(
@@ -77,3 +101,21 @@ def validate() -> None:
         ).actions
     )
     logger.info(f"Located actions number: {action_num}")
+
+
+@main.group
+def info() -> None:
+    """Package information."""
+
+
+@info.command
+def version() -> None:
+    """Show package version."""
+    print(cjunct.__version__)
+
+
+@info.command
+def env_vars() -> None:
+    """Show environment variables that are taken into account."""
+    for env_var in get_class_annotations(Env):
+        print(env_var)
