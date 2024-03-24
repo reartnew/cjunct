@@ -184,8 +184,8 @@ class ActionBase(classlogging.LoggerMixin):
         self._status = ActionStatus.SKIPPED
         self.logger.info(f"Action {self.name!r} skipped")
 
-    def fail(self, message: str) -> None:
-        """Set corresponding error message"""
+    def fail(self, message: str) -> t.NoReturn:
+        """Set corresponding error message and raise an exception"""
         exception = ActionRunError(message)
         self._internal_fail(exception)
         raise exception
