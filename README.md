@@ -1,26 +1,77 @@
 # cjunct
 
-Declarative parallel process runner.
+Cjunct (pronounced *SEE-jen*) is an extensible declarative task runner,
+aimed to make complex routine jobs easier to configure.
 
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cjunct)](https://pypi.python.org/pypi/cjunct/)
-[![License](https://img.shields.io/pypi/l/cjunct.svg)](https://pypi.python.org/pypi/cjunct/)
-[![PyPI version](https://badge.fury.io/py/cjunct.svg)](https://badge.fury.io/py/cjunct)
-![Tests](https://github.com/reartnew/cjunct/workflows/main/badge.svg)
+[![License](https://img.shields.io/pypi/l/cjunct.svg)](https://opensource.org/license/mit/)
+[![PyPI version](https://badge.fury.io/py/cjunct.svg)](https://pypi.python.org/pypi/cjunct/)
+[![Tests](https://github.com/reartnew/cjunct/workflows/main/badge.svg)](https://github.com/reartnew/cjunct/actions/workflows/main.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
+
+<details>
+  <summary>Table of Contents</summary>
+
+1. [Installation](#installation)
+2. [Usage](#usage)
+3. [How to contribute](#contribute)
+
+</details>
+
+<div id="installation"></div>
 
 ## Installation
 
 ```shell
+# Install only core components
 pip install cjunct
+
+# Install both core components and docker-related extensions
+pip install "cjunct[docker]"
 ```
 
-## Usage example
+<div id="usage"></div>
+
+## Usage
+
+#### Basic examples
 
 ```shell
+# Execute a workflow that is outlined
+# in the workdir-located cjunct.yaml file
 cjunct run
+
+# Print usage
+cjunct --help
 ```
 
-## Development environment setup
+Options are configured either via environment variables or via command-line switches. The most common are:
+
+- `CJUNCT_LOG_LEVEL`: Set log level.
+- `CJUNCT_CONTEXT_DIRECTORY`: Where to look for workflow default files.
+- `CJUNCT_WORKFLOW_FILE`: Set the workflow file path explicitly.
+- `CJUNCT_CONFIG_LOADER_SOURCE_FILE`: Replace the original loader class (cjunct.DefaultYAMLConfigLoader)
+  with a custom definition from the provided file.
+- `CJUNCT_DISPLAY_SOURCE_FILE`: Replace the original display class (cjunct.NetPrefixDisplay)
+  with a custom definition from the provided file.
+- `CJUNCT_STRATEGY_NAME`: Manage execution strategy.
+- `CJUNCT_FORCE_COLOR`: Indicate the need of using (or not using) colors.
+- `CJUNCT_SHELL_INJECT_YIELD_FUNCTION`: Whether to inject the `yield_outcome` function to the `shell` action or not.
+- `CJUNCT_EXTERNAL_MODULES_PATHS`: Which paths should be treated as system during external modules loading.
+- `CJUNCT_ACTIONS_CLASS_DEFINITIONS_DIRECTORY`: Where to look for custom action runners.
+- `CJUNCT_STRICT_OUTCOMES_RENDERING`: Manage failure behaviour when an outcome key is missing.
+
+Full list of used environment variable names can be obtained with this command:
+
+```shell
+cjunct info env-vars
+```
+
+<div id="contribute"></div>
+
+## How to contribute
+
+#### Development environment setup
 
 Requires system-wide poetry>=1.3.2, see [official documentation](https://python-poetry.org).
 
