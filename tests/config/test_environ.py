@@ -9,8 +9,8 @@ from cjunct.config.environment import Env
 from cjunct.config.loaders.inspect import get_class_annotations
 
 
-@pytest.mark.parametrize("var", list(get_class_annotations(Env)))
-def test_env(var: str) -> None:
+@pytest.mark.parametrize("variable_name", list(get_class_annotations(Env)))
+def test_env(variable_name: str) -> None:
     """Test that all vars are described in doc"""
-    docs: t.List[str] = textwrap.dedent(Env.__doc__).splitlines()  # type: ignore
-    assert any((line.lstrip().startswith(f"{var}: ") for line in docs)), f"Variable {var!r} is not documented"
+    docs_lines: t.List[str] = textwrap.dedent(Env.__doc__).splitlines()  # type: ignore
+    assert f"{variable_name}:" in docs_lines, f"Variable {variable_name!r} is not documented"
