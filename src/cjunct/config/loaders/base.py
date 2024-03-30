@@ -29,9 +29,9 @@ class AbstractBaseConfigLoader(LoggerMixin):
 
     def __init__(self) -> None:
         self._actions: t.Dict[str, ActionBase] = {}
-        self._files_stack: t.List[str] = []
+        self._raw_file_names_stack: t.List[str] = []
+        self._resolved_file_paths_stack: t.List[Path] = []
         self._checklists: t.Dict[str, t.List[str]] = {}
-        self._loaded_file: t.Optional[Path] = None
         self._gathered_context: t.Dict[str, str] = {}
 
     def _register_action(self, action: ActionBase) -> None:
@@ -41,7 +41,7 @@ class AbstractBaseConfigLoader(LoggerMixin):
 
     def _throw(self, message: str) -> t.NoReturn:
         """Raise loader exception from text"""
-        raise LoadError(message=message, stack=self._files_stack)
+        raise LoadError(message=message, stack=self._raw_file_names_stack)
 
     def load_checklists_from_directory(self, directory: t.Union[str, Path]) -> None:
         """Parse checklists directory safely"""
@@ -70,21 +70,29 @@ class AbstractBaseConfigLoader(LoggerMixin):
         with self._read_file(source_file) as file_data:
             self._internal_loads(file_data)
 
+    def _get_context(self) -> Path:
+        """Return active context directory for relative path resolution"""
+        return self._resolved_file_paths_stack[-1].parent if self._resolved_file_paths_stack else Path()
+
     @contextlib.contextmanager
     def _read_file(self, source_file: t.Union[str, Path]) -> t.Iterator[bytes]:
         """Read file data"""
-        source_file_path: Path = Path(source_file)
-        if self._loaded_file is None:
-            # TODO: raise on double load
-            self._loaded_file = source_file_path
-        self._files_stack.append(str(source_file_path))
-        self.logger.debug(f"Loading config file: {source_file_path}")
+        source_file_raw_path: Path = Path(source_file)
+        if not source_file_raw_path.is_absolute():
+            source_file_raw_path = self._get_context() / source_file_raw_path
+        source_resolved_file_path = source_file_raw_path.resolve()
+        if source_resolved_file_path in self._resolved_file_paths_stack:
+            self._throw("Cyclic load")
+        self._raw_file_names_stack.append(str(source_file))
+        self._resolved_file_paths_stack.append(source_resolved_file_path)
+        self.logger.debug(f"Loading config file: {source_resolved_file_path}")
         try:
-            if not source_file_path.is_file():
-                self._throw(f"Config file not found: {source_file_path}")
-            yield source_file_path.read_bytes()
+            if not source_resolved_file_path.is_file():
+                self._throw(f"Config file not found: {source_resolved_file_path}")
+            yield source_resolved_file_path.read_bytes()
         finally:
-            self._files_stack.pop()
+            self._raw_file_names_stack.pop()
+            self._resolved_file_paths_stack.pop()
 
     def _internal_loads(self, data: t.Union[str, bytes]) -> None:
         """Load config partially from text (can be called recursively)"""
