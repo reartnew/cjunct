@@ -77,6 +77,7 @@ class C:
         lambda: Env.CJUNCT_LOG_LEVEL or None,
         lambda: LogLevel.ERROR,
     )
+    ENV_FILE: Mandatory[Path] = Mandatory()
     CONTEXT_DIRECTORY: Mandatory[Path] = Mandatory(
         lambda: get_cli_arg("directory"),
         lambda: maybe_path(Env.CJUNCT_CONTEXT_DIRECTORY),

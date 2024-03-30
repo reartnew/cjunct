@@ -12,7 +12,6 @@ import cjunct
 from cjunct.config.constants import C, LOG_LEVELS
 from cjunct.config.constants.cli import cliargs_receiver
 from cjunct.config.environment import Env
-from cjunct.config.loaders.inspect import get_class_annotations
 from cjunct.exceptions import BaseError, ExecutionFailed
 from cjunct.strategy import KNOWN_STRATEGIES
 
@@ -117,5 +116,4 @@ def version() -> None:
 @info.command
 def env_vars() -> None:
     """Show environment variables that are taken into account."""
-    for env_var in get_class_annotations(Env):
-        print(env_var)
+    print(Env.__doc__)
