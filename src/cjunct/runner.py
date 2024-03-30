@@ -87,14 +87,14 @@ class Runner(classlogging.LoggerMixin):
             cls.logger.info(f"Using pre-configured actions source file: {source_file}")
             return source_file
         scan_path: Path = C.CONTEXT_DIRECTORY
-        cls.logger.debug(f"Looking for config files at {scan_path}")
+        cls.logger.debug(f"Looking for workflow files at {str(scan_path)!r}")
         located_config_file: t.Optional[Path] = None
         for candidate_file_name in (
             "cjunct.yml",
             "cjunct.yaml",
         ):  # type: str
             if (maybe_config_file := scan_path / candidate_file_name).exists():
-                cls.logger.info(f"Detected config source: {maybe_config_file}")
+                cls.logger.info(f"Detected the workflow source: {str(maybe_config_file)!r}")
                 if located_config_file is not None:
                     raise SourceError(f"Multiple config sources detected in {scan_path}")
                 located_config_file = maybe_config_file

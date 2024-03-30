@@ -59,7 +59,7 @@ def wrap_cli_command(func):
             stream=None if C.LOG_FILE else classlogging.LogStream.STDERR,
         )
         if dotenv_loaded:
-            logger.info(f"Loaded environment variables from {dotenv_path!r}")
+            logger.info(f"Loaded environment variables from {str(dotenv_path)!r}")
         else:
             logger.debug(f"Dotenv not found: {dotenv_path!r}")
         try:

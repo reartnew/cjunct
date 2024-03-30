@@ -115,7 +115,7 @@ class ActionBase(classlogging.LoggerMixin):
 
     def yield_outcome(self, key: str, value: t.Any) -> None:
         """Report outcome key"""
-        self.logger.info(f"Yielded a key: {key!r}")
+        self.logger.debug(f"Yielded a key: {key!r}")
         self._yielded_keys[key] = value
 
     def get_outcomes(self) -> OutcomeStorageType:
@@ -144,8 +144,8 @@ class ActionBase(classlogging.LoggerMixin):
         raise NotImplementedError
 
     async def _run_with_log_context(self) -> None:
+        self.logger.info(f"Running action: {self.name!r}")
         with self.logger.context(name=self.name):
-            self.logger.info("Running action")
             return await self.run()
 
     async def _await(self) -> None:

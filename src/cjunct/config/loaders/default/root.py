@@ -43,12 +43,12 @@ class DefaultRootConfigLoader(AbstractBaseConfigLoader):
         dynamic_bases_map: t.Dict[str, t.Type[ActionBase]] = {}
         for class_directory in C.ACTION_CLASSES_DIRECTORIES:  # type: str
             class_directory_path = Path(class_directory).resolve()
-            self.logger.info(f"Loading external action classes from {class_directory_path}")
+            self.logger.info(f"Loading external action classes from {str(class_directory_path)!r}")
             for class_file in class_directory_path.iterdir():
                 if not class_file.is_file() or not class_file.suffix == ".py":
                     continue
                 action_type: str = class_file.stem
-                self.logger.info(f"Trying external action class source: {class_file}")
+                self.logger.debug(f"Trying external action class source: {class_file}")
                 action_class: t.Type[ActionBase] = t.cast(
                     t.Type[ActionBase],
                     maybe_class_from_module(
