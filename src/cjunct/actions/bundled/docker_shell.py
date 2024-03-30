@@ -2,19 +2,20 @@
 
 import asyncio
 import contextlib
+import functools
 import tempfile
 import typing as t
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-import functools
 
 import aiodocker
 from aiodocker.containers import DockerContainer
 
 from ..base import EmissionScannerActionBase, ArgsBase
 from ..types import StringTemplate, Stderr
+from ...config.constants import C
 
 __all__ = [
     "DockerShellArgs",
@@ -100,9 +101,10 @@ class DockerShellAction(EmissionScannerActionBase):
             script_container_directory: str = f"{self._CONTAINER_TMP_DIRECTORY}/{container_name}-exec-source"
             script_container_file: Path = tmp_dir_path / self._ENTRY_SCRIPT_FILE_NAME
             script_container_file_clauses: t.List[str] = [
-                self._YIELD_SHELL_FUNCTION_DEFINITION,
                 self.args.command,
             ]
+            if C.SHELL_INJECT_YIELD_FUNCTION:
+                script_container_file_clauses.insert(0, self._YIELD_SHELL_FUNCTION_DEFINITION)
             script_container_file.write_text(
                 data="\n".join(script_container_file_clauses),
                 encoding="utf-8",
