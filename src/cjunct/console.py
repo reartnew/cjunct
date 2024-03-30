@@ -50,7 +50,7 @@ def wrap_cli_command(func):
     @cliargs_receiver
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        dotenv_path: Path = Path().resolve() / ".env"
+        dotenv_path: Path = C.ENV_FILE
         dotenv_loaded: bool = dotenv.load_dotenv(dotenv_path=dotenv_path)
         classlogging.configure_logging(level=C.LOG_LEVEL, colorize=C.USE_COLOR)
         if dotenv_loaded:
