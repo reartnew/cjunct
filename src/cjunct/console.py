@@ -12,7 +12,6 @@ import cjunct
 from cjunct.config.constants import C, LOG_LEVELS
 from cjunct.config.constants.cli import cliargs_receiver
 from cjunct.config.environment import Env
-from cjunct.config.loaders.inspect import get_class_annotations
 from cjunct.exceptions import BaseError, ExecutionFailed
 from cjunct.strategy import KNOWN_STRATEGIES
 
@@ -51,11 +50,16 @@ def wrap_cli_command(func):
     @cliargs_receiver
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        dotenv_path: Path = Path().resolve() / ".env"
+        dotenv_path: Path = C.ENV_FILE
         dotenv_loaded: bool = dotenv.load_dotenv(dotenv_path=dotenv_path)
-        classlogging.configure_logging(level=C.LOG_LEVEL, colorize=C.USE_COLOR)
+        classlogging.configure_logging(
+            level=C.LOG_LEVEL,
+            colorize=C.USE_COLOR and not C.LOG_FILE,
+            main_file=C.LOG_FILE,
+            stream=None if C.LOG_FILE else classlogging.LogStream.STDERR,
+        )
         if dotenv_loaded:
-            logger.info(f"Loaded environment variables from {dotenv_path!r}")
+            logger.info(f"Loaded environment variables from {str(dotenv_path)!r}")
         else:
             logger.debug(f"Dotenv not found: {dotenv_path!r}")
         try:
@@ -117,5 +121,4 @@ def version() -> None:
 @info.command
 def env_vars() -> None:
     """Show environment variables that are taken into account."""
-    for env_var in get_class_annotations(Env):
-        print(env_var)
+    print(Env.__doc__)

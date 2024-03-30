@@ -16,9 +16,53 @@ __all__ = [
 
 
 class Env(EnvironmentNamespace):
-    """Environment variables"""
+    """
+    CJUNCT_LOG_LEVEL:
+        Specifies the log level.
+        Default is ERROR.
+    CJUNCT_LOG_FILE:
+        Specifies the log file.
+        Defaults to the standard error stream.
+    CJUNCT_ENV_FILE:
+        Which file to load environment variables from. Expected format is k=v.
+        Default is .env in the current directory.
+    CJUNCT_CONTEXT_DIRECTORY:
+        [DEPRECATED]
+        Where to look default workflow files for.
+        Default is the current directory.
+    CJUNCT_ACTIONS_SOURCE_FILE:
+        [DEPRECATED]
+        See CJUNCT_WORKFLOW_FILE.
+    CJUNCT_WORKFLOW_FILE:
+        Workflow file to use.
+        Default behaviour is scan the current working directory.
+    CJUNCT_CONFIG_LOADER_SOURCE_FILE:
+        May point a file containing a ConfigLoader class definition, which will replace the default implementation.
+    CJUNCT_DISPLAY_SOURCE_FILE:
+        May point a file containing a Display class definition, which will replace the default implementation.
+    CJUNCT_STRATEGY_NAME:
+        Specifies the execution strategy.
+        Default is 'loose'.
+    CJUNCT_FORCE_COLOR:
+        When specified, this will force the colored or non-coloured output, according to the setting.
+    CJUNCT_SHELL_INJECT_YIELD_FUNCTION:
+        When set to True, all shell-related actions will inject the yield_outcome function definition.
+        Default is True.
+    CJUNCT_EXTERNAL_MODULES_PATHS:
+        A comma-separated list of local directories, which are added to the sys.path while loading any external modules.
+        Default is an empty list.
+    CJUNCT_ACTIONS_CLASS_DEFINITIONS_DIRECTORY:
+        A comma-separated list of local directories, from which all `*.py` files will be considered action definitions.
+        Each loaded definition is named after the filename stem and must contain an `Action` class.
+        e.g. foo-bar.py may be referenced in a YAML workflow as `type: foo-bar`.
+    CJUNCT_STRICT_OUTCOMES_RENDERING:
+        When set to False, rendering a missing outcome key will result in an empty string instead of an error.
+        Default is True.
+    """
 
     CJUNCT_LOG_LEVEL: str = OptionalString("")
+    CJUNCT_LOG_FILE: str = OptionalString("")
+    CJUNCT_ENV_FILE: str = OptionalString("")
     CJUNCT_CONTEXT_DIRECTORY: str = OptionalString("")  # Will be dropped next major release.
     CJUNCT_ACTIONS_SOURCE_FILE: str = OptionalString("")  # Will be dropped next major release.
     CJUNCT_WORKFLOW_FILE: str = OptionalString("")  # Replaces CJUNCT_ACTIONS_SOURCE_FILE

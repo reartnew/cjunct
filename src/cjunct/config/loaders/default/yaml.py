@@ -137,7 +137,7 @@ class DefaultYAMLConfigLoader(DefaultRootConfigLoader):
             if not isinstance(context_value, str):
                 self._throw(f"Context values should be strings (got {type(context_value)!r} for {context_value!r})")
             if context_key in self._gathered_context:
-                self.logger.info(f"Context key redefined: {context_key}")
+                self.logger.debug(f"Context key redefined: {context_key}")
             else:
-                self.logger.info(f"Context key added: {context_key}")
+                self.logger.debug(f"Context key added: {context_key}")
             self._gathered_context[context_key] = context_value
