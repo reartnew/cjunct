@@ -52,7 +52,12 @@ def wrap_cli_command(func):
     def wrapped(*args, **kwargs):
         dotenv_path: Path = C.ENV_FILE
         dotenv_loaded: bool = dotenv.load_dotenv(dotenv_path=dotenv_path)
-        classlogging.configure_logging(level=C.LOG_LEVEL, colorize=C.USE_COLOR)
+        classlogging.configure_logging(
+            level=C.LOG_LEVEL,
+            colorize=C.USE_COLOR and not C.LOG_FILE,
+            main_file=C.LOG_FILE,
+            stream=None if C.LOG_FILE else classlogging.LogStream.STDERR,
+        )
         if dotenv_loaded:
             logger.info(f"Loaded environment variables from {dotenv_path!r}")
         else:

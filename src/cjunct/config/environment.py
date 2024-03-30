@@ -20,6 +20,9 @@ class Env(EnvironmentNamespace):
     CJUNCT_LOG_LEVEL:
         Specifies the log level.
         Default is ERROR.
+    CJUNCT_LOG_FILE:
+        Specifies the log file.
+        Defaults to the standard error stream.
     CJUNCT_ENV_FILE:
         Which file to load environment variables from. Expected format is k=v.
         Default is .env in the current directory.
@@ -58,6 +61,7 @@ class Env(EnvironmentNamespace):
     """
 
     CJUNCT_LOG_LEVEL: str = OptionalString("")
+    CJUNCT_LOG_FILE: str = OptionalString("")
     CJUNCT_ENV_FILE: str = OptionalString("")
     CJUNCT_CONTEXT_DIRECTORY: str = OptionalString("")  # Will be dropped next major release.
     CJUNCT_ACTIONS_SOURCE_FILE: str = OptionalString("")  # Will be dropped next major release.
