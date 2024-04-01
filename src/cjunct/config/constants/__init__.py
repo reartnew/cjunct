@@ -94,6 +94,7 @@ class C:
         lambda: False,
     )
     ACTIONS_SOURCE_FILE: Optional[Path] = Optional(
+        lambda: maybe_path(get_cli_arg("workflow")),
         lambda: maybe_path(get_cli_arg("file")),
         lambda: maybe_path(Env.CJUNCT_WORKFLOW_FILE),
         lambda: maybe_path(Env.CJUNCT_ACTIONS_SOURCE_FILE),

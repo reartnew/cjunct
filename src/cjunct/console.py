@@ -2,6 +2,7 @@
 
 import functools
 import sys
+import typing as t
 from pathlib import Path
 
 import classlogging
@@ -16,6 +17,38 @@ from cjunct.exceptions import BaseError, ExecutionFailed
 from cjunct.strategy import KNOWN_STRATEGIES
 
 logger = classlogging.get_module_logger()
+
+
+class WorkflowPositionalArgument(click.Argument):
+    """Optional positional argument for the workflow source"""
+
+    NAME: str = "WORKFLOW"
+
+    def __init__(self, param_decls: t.Sequence[str], required: t.Optional[bool] = None, **attrs: t.Any) -> None:
+        if attrs or required is not None:
+            self._throw("Cannot apply any attributes")
+        super().__init__(param_decls, required=False, nargs=-1)
+
+    def get_help_record(self, ctx: click.Context) -> t.Optional[t.Tuple[str, str]]:
+        return self.make_metavar(), (
+            "Workflow source file. When not given, will look for one of cjunct.yml/cjunct.yaml "
+            "files in the context directory. Use the '-' value to read yaml configuration from the standard input. "
+            "Also configurable via the CJUNCT_WORKFLOW_FILE environment variable."
+        )
+
+    def process_value(self, ctx: click.Context, value: t.Any) -> t.Optional[str]:
+        """Check that there is not more than one argument for the workflow source"""
+        vanilla_value: t.Tuple[str, ...] = super().process_value(ctx, value)
+        if len(vanilla_value) > 1:
+            raise click.BadParameter("Cannot apply more than one value", param=self)
+        return vanilla_value[0] if vanilla_value else None
+
+    def _throw(self, message: str) -> t.NoReturn:
+        raise click.BadParameter(message, param=self)
+
+    def make_metavar(self) -> str:
+        """Fixed representation"""
+        return f"[{self.NAME}]"
 
 
 @click.group
@@ -34,9 +67,7 @@ logger = classlogging.get_module_logger()
 @click.option(
     "-f",
     "--file",
-    help="Workflow file. Use '-' value to read yaml configuration from the standard input. "
-    "When not given, will look for one of cjunct.yml/cjunct.yaml files in the context directory. "
-    "Also configurable via the CJUNCT_WORKFLOW_FILE environment variable.",
+    help="[DEPRECATED] Workflow file. It is recommended to use the positional argument instead.",
 )
 @cliargs_receiver
 def main() -> None:
@@ -87,6 +118,7 @@ def wrap_cli_command(func):
     type=click.Choice(list(KNOWN_STRATEGIES)),
 )
 @click.option("-i", "--interactive", help="Run in dialog mode.", is_flag=True, default=False)
+@click.argument("workflow", cls=WorkflowPositionalArgument)
 def run() -> None:
     """Run pipeline immediately."""
     cjunct.Runner(
@@ -96,6 +128,7 @@ def run() -> None:
 
 
 @wrap_cli_command
+@click.argument("workflow", cls=WorkflowPositionalArgument)
 def validate() -> None:
     """Check configuration validity."""
     action_num: int = len(
