@@ -39,6 +39,10 @@ class LexerDataSuite(DataSuite):
         source="@{ x-y.z-w }",
         result=[(1, "x-y.z-w")],
     )
+    at_in_the_scalar = LexerTestCase(
+        source='"@{ a.b }"',
+        result=[(0, '"'), (1, "a.b"), (0, '"')],
+    )
 
 
 @LexerDataSuite.parametrize
