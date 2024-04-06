@@ -19,61 +19,68 @@ __all__ = [
 ]
 
 
-class Lexer:
-    TEXT: int = 0
-    EXPRESSION: int = 1
+class Tokenizer:
 
     def __init__(self, data: str) -> None:
         self._bytes: bytes = data.encode()
         self._stream: io.BytesIO = io.BytesIO(self._bytes)
-        self._token_generator: t.Iterator[tokenize.TokenInfo] = self._ignorant_tokenize()
+        self._token_generator: t.Iterator[tokenize.TokenInfo] = self._careless_tokenize()
         self._scanned_lines_length_sum: int = 0
         self._prev_line_length: int = 0
-        self._position: int = 0
+        self.position: int = 0
 
     def _readline(self) -> bytes:
+        """Memorize read lines length sum"""
         line: bytes = self._stream.readline()
         self._scanned_lines_length_sum += self._prev_line_length
         self._prev_line_length = len(line)
         return line
 
-    def _get_token(self) -> tokenize.TokenInfo:
-        token: tokenize.TokenInfo = next(self._token_generator)
-        self._position = self._scanned_lines_length_sum + token.start[1]
-        return token
-
-    def _ignorant_tokenize(self) -> t.Generator[tokenize.TokenInfo, None, None]:
+    def _careless_tokenize(self) -> t.Generator[tokenize.TokenInfo, None, None]:
+        """Tokenize the stream, while ignoring all `TokenError`s"""
         try:
             for token_info in tokenize.tokenize(self._readline):  # type: tokenize.TokenInfo
                 yield token_info
         except tokenize.TokenError:
             pass
 
+    def get_token(self) -> tokenize.TokenInfo:
+        """Yield a token and memorize its original position"""
+        token: tokenize.TokenInfo = next(self._token_generator)
+        self.position = self._scanned_lines_length_sum + token.start[1]
+        return token
+
+
+class Lexer(Tokenizer):
+    TEXT: int = 0
+    EXPRESSION: int = 1
+    _IGNORED_TOKENS_TYPES = [tokenize.NL]
+
     def __iter__(self) -> t.Iterator[t.Tuple[int, str]]:
         armed_at: bool = False
-        text_start: int = self._position
+        text_start: int = self.position
         while True:
             try:
-                token_info = self._get_token()
+                token_info = self.get_token()
                 if token_info.exact_type == tokenize.AT:
                     armed_at = not armed_at
+                    continue
                 if token_info.exact_type == tokenize.LBRACE and armed_at:
-                    armed_at = False
-                    if maybe_text := self._bytes[text_start : self._position - 1]:
+                    if maybe_text := self._bytes[text_start : self.position - 1]:
                         yield self.TEXT, maybe_text.decode()
                     yield self.EXPRESSION, self._read_expression()
-                    text_start: int = self._position + 1
+                    text_start: int = self.position + 1  # Right after the opening brace
+                armed_at = False
             except StopIteration:
                 if maybe_text := self._bytes[text_start:]:
                     yield self.TEXT, maybe_text.decode()
                 break
 
     def _read_expression(self) -> str:
-        ignored_tokens_types = [tokenize.NL]
         brace_depth: int = 0
         collected_tokens = []
         while True:
-            token_info = self._get_token()
+            token_info = self.get_token()
             if token_info.exact_type == tokenize.LBRACE:
                 brace_depth += 1
             elif token_info.exact_type == tokenize.RBRACE:
@@ -81,7 +88,7 @@ class Lexer:
                 if brace_depth < 0:
                     clean_expression: str = tokenize.untokenize(collected_tokens)
                     return clean_expression
-            if token_info.exact_type not in ignored_tokens_types:
+            if token_info.exact_type not in self._IGNORED_TOKENS_TYPES:
                 collected_tokens.append((token_info.type, token_info.string))
 
 

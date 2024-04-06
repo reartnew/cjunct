@@ -1070,6 +1070,20 @@ pytest = ">=4.6"
 testing = ["fields", "hunter", "process-tests", "pytest-xdist", "six", "virtualenv"]
 
 [[package]]
+name = "pytest-data-suites"
+version = "1.0.5"
+description = "Class-based pytest parametrization"
+optional = false
+python-versions = "<4.0,>=3.8"
+files = [
+    {file = "pytest_data_suites-1.0.5-py3-none-any.whl", hash = "sha256:f585e47bb813a4bca470c56e367d8e49b60ba34658ee12e4e1e712f36b73b5ed"},
+    {file = "pytest_data_suites-1.0.5.tar.gz", hash = "sha256:65de9db16a98f21086f8faabbade484880218a6bba3a782b43d4dac768053905"},
+]
+
+[package.dependencies]
+pytest = ">=6.0,<9.0"
+
+[[package]]
 name = "pytest-mypy"
 version = "0.10.3"
 description = "Mypy static type checker plugin for Pytest"
@@ -1504,4 +1518,4 @@ docker = ["aiodocker"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8.1, <3.13"
-content-hash = "d4ec26322d37ad2b89750669092b60e2e768972610c6822215cc5fd8be9b0ebd"
+content-hash = "14c8ef52a9335aef949c476246c7b3b5aec2dafe979c1780411b79a1cd05c285"

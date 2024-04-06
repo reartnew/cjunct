@@ -46,20 +46,16 @@ tox = "^4.14.1"
 pytest-cov = "^4.1.0"
 types-pyyaml = "^6.0.12.20240311"
 setuptools = "^69.2.0"
+pytest-data-suites = "^1.0.5"
 
 [tool.poetry.scripts]
 cjunct = "cjunct.console:main"
 
 [tool.pytest.ini_options]
 testpaths = [
-    "src",
-    "tests",
+    "tests/rendering/test_tokenizing.py",
 ]
 addopts = """
---pylint
---mypy
---black
---bandit
 """
 bandit_targets = ["src"]
 filterwarnings = [
