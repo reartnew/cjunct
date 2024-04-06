@@ -24,21 +24,21 @@ class Lexer:
     EXPRESSION: int = 1
 
     def __init__(self, data: str) -> None:
-        self._bytes = data.encode()
-        self._stream = io.BytesIO(self._bytes)
-        self._token_generator = self._ignorant_tokenize()
+        self._bytes: bytes = data.encode()
+        self._stream: io.BytesIO = io.BytesIO(self._bytes)
+        self._token_generator: t.Iterator[tokenize.TokenInfo] = self._ignorant_tokenize()
         self._scanned_lines_length_sum: int = 0
         self._prev_line_length: int = 0
         self._position: int = 0
 
-    def _readline(self):
-        line = self._stream.readline()
+    def _readline(self) -> bytes:
+        line: bytes = self._stream.readline()
         self._scanned_lines_length_sum += self._prev_line_length
         self._prev_line_length = len(line)
         return line
 
     def _get_token(self) -> tokenize.TokenInfo:
-        token = next(self._token_generator)
+        token: tokenize.TokenInfo = next(self._token_generator)
         self._position = self._scanned_lines_length_sum + token.start[1]
         return token
 
@@ -55,9 +55,9 @@ class Lexer:
         while True:
             try:
                 token_info = self._get_token()
-                if token_info.type == tokenize.OP and token_info.exact_type == tokenize.AT:
+                if token_info.exact_type == tokenize.AT:
                     armed_at = not armed_at
-                if token_info.type == tokenize.OP and token_info.exact_type == tokenize.LBRACE and armed_at:
+                if token_info.exact_type == tokenize.LBRACE and armed_at:
                     armed_at = False
                     if maybe_text := self._bytes[text_start : self._position - 1]:
                         yield self.TEXT, maybe_text.decode()
@@ -69,18 +69,19 @@ class Lexer:
                 break
 
     def _read_expression(self) -> str:
+        ignored_tokens_types = [tokenize.NL]
         brace_depth: int = 0
         collected_tokens = []
         while True:
             token_info = self._get_token()
-            if token_info.type == tokenize.OP and token_info.exact_type == tokenize.LBRACE:
+            if token_info.exact_type == tokenize.LBRACE:
                 brace_depth += 1
-            elif token_info.type == tokenize.OP and token_info.exact_type == tokenize.RBRACE:
+            elif token_info.exact_type == tokenize.RBRACE:
                 brace_depth -= 1
                 if brace_depth < 0:
                     clean_expression: str = tokenize.untokenize(collected_tokens)
                     return clean_expression
-            if token_info.exact_type not in (tokenize.NL,):
+            if token_info.exact_type not in ignored_tokens_types:
                 collected_tokens.append((token_info.type, token_info.string))
 
 
