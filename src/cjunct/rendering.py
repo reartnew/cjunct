@@ -3,9 +3,11 @@ Runner has too many dependencies,
 thus placed to a separate module.
 """
 
+import io
 import os
 import re
 import shlex
+import tokenize
 import typing as t
 
 from classlogging import LoggerMixin
@@ -15,8 +17,74 @@ from .config.constants import C
 from .exceptions import ActionRenderError
 
 __all__ = [
+    "Lexer",
     "Templar",
 ]
+
+
+class Lexer:
+    TEXT: int = 0
+    EXPRESSION: int = 1
+
+    def __init__(self, data: str) -> None:
+        self._bytes = data.encode()
+        self._stream = io.BytesIO(self._bytes)
+        self._token_generator = self._ignorant_tokenize()
+        self._scanned_lines_length_sum: int = 0
+        self._prev_line_length: int = 0
+        self._position: int = 0
+
+    def _readline(self):
+        line = self._stream.readline()
+        self._scanned_lines_length_sum += self._prev_line_length
+        self._prev_line_length = len(line)
+        return line
+
+    def _get_token(self) -> tokenize.TokenInfo:
+        token = next(self._token_generator)
+        self._position = self._scanned_lines_length_sum + token.start[1]
+        return token
+
+    def _ignorant_tokenize(self) -> t.Generator[tokenize.TokenInfo, None, None]:
+        try:
+            for token_info in tokenize.tokenize(self._readline):  # type: tokenize.TokenInfo
+                yield token_info
+        except tokenize.TokenError:
+            pass
+
+    def _lex(self):
+        armed_at: bool = False
+        text_start: int = self._position
+        while True:
+            try:
+                token_info = self._get_token()
+                if token_info.type == tokenize.OP and token_info.exact_type == tokenize.AT:
+                    armed_at = not armed_at
+                if token_info.type == tokenize.OP and token_info.exact_type == tokenize.LBRACE and armed_at:
+                    armed_at = False
+                    if maybe_text := self._bytes[text_start : self._position - 1]:
+                        yield self.TEXT, maybe_text
+                    yield self.EXPRESSION, self._read_expression()
+                    text_start: int = self._position + 1
+            except StopIteration:
+                if maybe_text := self._bytes[text_start:]:
+                    yield self.TEXT, maybe_text
+                break
+
+    def _read_expression(self):
+        brace_depth: int = 0
+        expr_start: int = self._position + 1
+        while True:
+            token_info = self._get_token()
+            if token_info.type == tokenize.OP and token_info.exact_type == tokenize.LBRACE:
+                brace_depth += 1
+            elif token_info.type == tokenize.OP and token_info.exact_type == tokenize.RBRACE:
+                brace_depth -= 1
+            if brace_depth < 0:
+                return self._bytes[expr_start : self._position]
+
+    def __iter__(self):
+        return self._lex()
 
 
 class Templar(LoggerMixin):
