@@ -53,10 +53,16 @@ cjunct = "cjunct.console:main"
 
 [tool.pytest.ini_options]
 testpaths = [
-    "tests/rendering/test_tokenizing.py",
+    "src",
+    "tests",
 ]
 addopts = """
+--pylint
+--mypy
+--black
+--bandit
 """
+
 bandit_targets = ["src"]
 filterwarnings = [
     "error",

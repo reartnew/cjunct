@@ -54,7 +54,14 @@ class Tokenizer:
 class Lexer(Tokenizer):
     TEXT: int = 0
     EXPRESSION: int = 1
-    _IGNORED_TOKENS_TYPES = [tokenize.NL]
+    _IGNORED_TOKENS_TYPES = [
+        tokenize.NL,
+        tokenize.NEWLINE,
+        tokenize.ENCODING,
+        tokenize.INDENT,
+        tokenize.DEDENT,
+        tokenize.ENDMARKER,
+    ]
 
     def __iter__(self) -> t.Iterator[t.Tuple[int, str]]:
         armed_at: bool = False
@@ -89,7 +96,7 @@ class Lexer(Tokenizer):
                     clean_expression: str = tokenize.untokenize(collected_tokens)
                     return clean_expression
             if token_info.exact_type not in self._IGNORED_TOKENS_TYPES:
-                collected_tokens.append((token_info.type, token_info.string))
+                collected_tokens.append((-1, token_info.string))
 
 
 class Templar(LoggerMixin):
