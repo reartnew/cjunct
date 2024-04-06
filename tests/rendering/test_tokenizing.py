@@ -60,7 +60,11 @@ def test_lexer(source: str, result: t.List[t.Tuple[int, str]]) -> None:
 
 def test_tokenizer_eof() -> None:
     """Validate tokenizer EOF suppression"""
-    assert [token.string for token in ExpressionTokenizer("{ foo.bar }{") if token.type != tokenize.ENCODING] == [
+    assert [
+        token.string
+        for token in ExpressionTokenizer("{ foo.bar }{")
+        if token.string and token.type != tokenize.ENCODING
+    ] == [
         "{",
         "foo",
         ".",
