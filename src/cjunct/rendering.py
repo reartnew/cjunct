@@ -50,6 +50,12 @@ class ExpressionTokenizer:
         self.position = self._scanned_lines_length_sum + token.start[1]
         return token
 
+    def __iter__(self) -> t.Iterator[tokenize.TokenInfo]:
+        return self
+
+    def __next__(self) -> tokenize.TokenInfo:
+        return self.get_token()
+
 
 class TemplarStringLexer:
     """Emit raw text and expressions separately"""

@@ -1,10 +1,11 @@
-"""Lexer tests"""
+"""Tokenizer+lexer tests"""
 
+import tokenize
 import typing as t
 
 from pytest_data_suites import DataSuite
 
-from cjunct.rendering import TemplarStringLexer
+from cjunct.rendering import ExpressionTokenizer, TemplarStringLexer
 
 
 class LexerTestCase(t.TypedDict):
@@ -55,3 +56,15 @@ class LexerDataSuite(DataSuite):
 def test_lexer(source: str, result: t.List[t.Tuple[int, str]]) -> None:
     """Check lexer result validity"""
     assert list(TemplarStringLexer(source)) == result
+
+
+def test_tokenizer_eof() -> None:
+    """Validate tokenizer EOF suppression"""
+    assert [token.string for token in ExpressionTokenizer("{ foo.bar }{") if token.type != tokenize.ENCODING] == [
+        "{",
+        "foo",
+        ".",
+        "bar",
+        "}",
+        "{",
+    ]
