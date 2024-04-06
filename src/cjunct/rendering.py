@@ -1,7 +1,4 @@
-"""
-Runner has too many dependencies,
-thus placed to a separate module.
-"""
+"""All the templating stuff."""
 
 import io
 import os
