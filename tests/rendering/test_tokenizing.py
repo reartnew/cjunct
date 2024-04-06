@@ -4,7 +4,7 @@ import typing as t
 
 from pytest_data_suites import DataSuite
 
-from cjunct.rendering import Lexer
+from cjunct.rendering import TemplarStringLexer
 
 
 class LexerTestCase(t.TypedDict):
@@ -54,4 +54,4 @@ class LexerDataSuite(DataSuite):
 @LexerDataSuite.parametrize
 def test_lexer(source: str, result: t.List[t.Tuple[int, str]]) -> None:
     """Check lexer result validity"""
-    assert list(Lexer(source)) == result
+    assert list(TemplarStringLexer(source)) == result

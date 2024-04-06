@@ -2,7 +2,6 @@
 
 import io
 import os
-import re
 import shlex
 import tokenize
 import typing as t
@@ -14,12 +13,13 @@ from .config.constants import C
 from .exceptions import ActionRenderError
 
 __all__ = [
-    "Lexer",
+    "ExpressionTokenizer",
+    "TemplarStringLexer",
     "Templar",
 ]
 
 
-class Tokenizer:
+class ExpressionTokenizer:
     """Utilize tokenize.tokenize while simultaneously tracking the caret position"""
 
     def __init__(self, data: str) -> None:
@@ -51,7 +51,7 @@ class Tokenizer:
         return token
 
 
-class Lexer:
+class TemplarStringLexer:
     """Emit raw text and expressions separately"""
 
     TEXT: int = 0
@@ -71,26 +71,29 @@ class Lexer:
         self._caret: int = 0
 
     def _get_symbol(self) -> str:
+        """Read the next symbol of the input data"""
         if self._caret >= self._len:
             raise EOFError
         self._caret += 1
         return self._data[self._caret - 1]
 
     def __iter__(self) -> t.Iterator[t.Tuple[int, str]]:
+        """Alternately yield raw text to leave as is and expressions to evaluate"""
         armed_at: bool = False
         text_start: int = self._caret
         while True:
             try:
-                symbol: str = self._get_symbol()
-                if symbol == "@":
+                # Each expression starts with an "@{" pair, which can be escaped by doubling the "@" down,
+                # thus each second "@" disengages the expression scanning readiness
+                if (symbol := self._get_symbol()) == "@":
                     armed_at = not armed_at
                     continue
                 if symbol == "{" and armed_at:
-                    if maybe_text := self._data[text_start : self._caret - 2]:
+                    if maybe_text := self._data[text_start : self._caret - 2]:  # -2 stands for the "@{"
                         yield self.TEXT, maybe_text
                     expression_source_length, expression = self._read_expression()
                     yield self.EXPRESSION, expression
-                    text_start = self._caret + expression_source_length + 1  # Right after the opening brace
+                    text_start = self._caret + expression_source_length + 1  # Start again right after the closing brace
                 armed_at = False
             except (StopIteration, EOFError):
                 if maybe_text := self._data[text_start:]:
@@ -98,9 +101,10 @@ class Lexer:
                 break
 
     def _read_expression(self) -> t.Tuple[int, str]:
+        """Use a tokenizer to detect the closing brace"""
         brace_depth: int = 0
-        collected_tokens: t.List[t.Tuple[int, str]] = []
-        tokenizer = Tokenizer(data=self._data[self._caret :])
+        collected_tokens: t.List[str] = []
+        tokenizer = ExpressionTokenizer(data=self._data[self._caret :])
         while True:
             token_info = tokenizer.get_token()
             if token_info.exact_type == tokenize.LBRACE:
@@ -108,27 +112,16 @@ class Lexer:
             elif token_info.exact_type == tokenize.RBRACE:
                 brace_depth -= 1
                 if brace_depth < 0:
-                    clean_expression: str = tokenize.untokenize(collected_tokens)
+                    clean_expression: str = "".join(collected_tokens)
                     return tokenizer.position, clean_expression
             if token_info.exact_type not in self._IGNORED_TOKENS_TYPES:
-                collected_tokens.append((-1, token_info.string))
+                collected_tokens.append(token_info.string)
 
 
 class Templar(LoggerMixin):
     """Expression renderer"""
 
     _LOOSE_OUTCOMES_RENDERING_DEFAULT_VALUE: str = ""
-    _TEMPLATE_SUBST_PATTERN: t.Pattern = re.compile(
-        r"""
-        (?P<prior>
-            (?:^|[^@])  # Ensure that match starts from the first @ sign
-            (?:@@)*  # Possibly escaped @ signs
-        )
-        @\{
-          (?P<expression>.*?)
-        }""",
-        re.VERBOSE,
-    )
 
     def __init__(
         self,
@@ -143,8 +136,12 @@ class Templar(LoggerMixin):
 
     def render(self, value: str) -> RenderedStringTemplate:
         """Process string data, replacing all @{} occurrences"""
-        replaced_value: str = self._TEMPLATE_SUBST_PATTERN.sub(self._string_template_replace_match, value)
-        return RenderedStringTemplate(replaced_value)
+        chunks: t.List[str] = []
+        for lexeme_type, lexeme_value in TemplarStringLexer(value):
+            if lexeme_type == TemplarStringLexer.EXPRESSION:
+                lexeme_value = self._string_template_process_expression(expression=lexeme_value)
+            chunks.append(lexeme_value)
+        return RenderedStringTemplate("".join(chunks))
 
     @classmethod
     def _string_template_expression_split(cls, string: str) -> t.List[str]:
@@ -153,13 +150,6 @@ class Templar(LoggerMixin):
         dot_lexer.whitespace = "."
         # Extra split to unquote quoted values
         return ["".join(shlex.split(token)) for token in dot_lexer]
-
-    def _string_template_replace_match(self, match: t.Match) -> str:
-        """Helper function for template substitution using re.sub"""
-        prior: str = match.groupdict()["prior"]
-        expression: str = match.groupdict()["expression"]
-        expression_substitution_result: str = self._string_template_process_expression(expression)
-        return f"{prior}{expression_substitution_result}"
 
     def _string_template_process_expression(self, expression: str) -> str:
         """Split the expression into parts and process according to the part name"""
