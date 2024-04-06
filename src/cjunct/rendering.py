@@ -49,7 +49,7 @@ class Lexer:
         except tokenize.TokenError:
             pass
 
-    def _lex(self):
+    def __iter__(self) -> t.Iterator[t.Tuple[int, str]]:
         armed_at: bool = False
         text_start: int = self._position
         while True:
@@ -60,28 +60,28 @@ class Lexer:
                 if token_info.type == tokenize.OP and token_info.exact_type == tokenize.LBRACE and armed_at:
                     armed_at = False
                     if maybe_text := self._bytes[text_start : self._position - 1]:
-                        yield self.TEXT, maybe_text
+                        yield self.TEXT, maybe_text.decode()
                     yield self.EXPRESSION, self._read_expression()
                     text_start: int = self._position + 1
             except StopIteration:
                 if maybe_text := self._bytes[text_start:]:
-                    yield self.TEXT, maybe_text
+                    yield self.TEXT, maybe_text.decode()
                 break
 
-    def _read_expression(self):
+    def _read_expression(self) -> str:
         brace_depth: int = 0
-        expr_start: int = self._position + 1
+        collected_tokens = []
         while True:
             token_info = self._get_token()
             if token_info.type == tokenize.OP and token_info.exact_type == tokenize.LBRACE:
                 brace_depth += 1
             elif token_info.type == tokenize.OP and token_info.exact_type == tokenize.RBRACE:
                 brace_depth -= 1
-            if brace_depth < 0:
-                return self._bytes[expr_start : self._position]
-
-    def __iter__(self):
-        return self._lex()
+                if brace_depth < 0:
+                    clean_expression: str = tokenize.untokenize(collected_tokens)
+                    return clean_expression
+            if token_info.exact_type not in (tokenize.NL,):
+                collected_tokens.append((token_info.type, token_info.string))
 
 
 class Templar(LoggerMixin):
