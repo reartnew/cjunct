@@ -1,3 +1,5 @@
+"""Lexer tests"""
+
 import typing as t
 
 from pytest_data_suites import DataSuite
@@ -6,11 +8,15 @@ from cjunct.rendering import Lexer
 
 
 class LexerTestCase(t.TypedDict):
+    """Lexer test case variables"""
+
     source: str
     result: t.List[t.Tuple[int, str]]
 
 
 class LexerDataSuite(DataSuite):
+    """Lexer test cases"""
+
     plain = LexerTestCase(
         source="foobar",
         result=[(0, "foobar")],
@@ -47,4 +53,5 @@ class LexerDataSuite(DataSuite):
 
 @LexerDataSuite.parametrize
 def test_lexer(source: str, result: t.List[t.Tuple[int, str]]) -> None:
+    """Check lexer result validity"""
     assert list(Lexer(source)) == result
