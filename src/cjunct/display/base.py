@@ -1,7 +1,7 @@
 """Runner output processor base"""
 
 from ..actions.base import ActionBase
-from ..actions.net import ActionNet
+from ..actions.workflow import Workflow
 from ..exceptions import InteractionError
 
 __all__ = [
@@ -12,8 +12,8 @@ __all__ = [
 class BaseDisplay:
     """Base class for possible customizations"""
 
-    def __init__(self, net: ActionNet) -> None:
-        self._actions: ActionNet = net
+    def __init__(self, net: Workflow) -> None:
+        self._actions: Workflow = net
 
     # pylint: disable=unused-argument
     def emit_action_message(self, source: ActionBase, message: str) -> None:
@@ -28,7 +28,7 @@ class BaseDisplay:
     def on_finish(self) -> None:
         """Runner finish handler"""
 
-    def on_plan_interaction(self, net: ActionNet) -> None:
+    def on_plan_interaction(self, net: Workflow) -> None:
         """Execution plan approval handler"""
         raise InteractionError  # pragma: no cover
 

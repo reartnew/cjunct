@@ -1,4 +1,4 @@
-"""ActionNet dedicated module"""
+"""Workflow-related module"""
 
 from __future__ import annotations
 
@@ -11,11 +11,11 @@ from .base import ActionBase, ActionDependency
 from ..exceptions import IntegrityError
 
 __all__ = [
-    "ActionNet",
+    "Workflow",
 ]
 
 
-class ActionNet(t.Dict[str, ActionBase], LoggerMixin):
+class Workflow(t.Dict[str, ActionBase], LoggerMixin):
     """Action relations map"""
 
     def __init__(
@@ -57,7 +57,7 @@ class ActionNet(t.Dict[str, ActionBase], LoggerMixin):
             raise IntegrityError(f"Missing actions among dependencies: {sorted(missing_non_external_deps)}")
         # Check entrypoints presence
         if not self._entrypoints:
-            raise IntegrityError("No entrypoints for the graph")
+            raise IntegrityError("No entrypoints for the workflow")
 
     def _allocate_tiers(self) -> None:
         """Use Dijkstra algorithm to introduce partial order.

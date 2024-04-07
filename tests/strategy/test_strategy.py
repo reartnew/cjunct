@@ -7,12 +7,12 @@ import pytest
 
 from cjunct import ActionBase, LooseStrategy, StrictSequentialStrategy
 from cjunct.actions.base import ActionStatus
-from cjunct.actions.net import ActionNet
+from cjunct.actions.workflow import Workflow
 from cjunct.strategy import BaseStrategy
 
 
 @pytest.mark.asyncio
-async def test_chain_success(strict_successful_net: ActionNet) -> None:
+async def test_chain_success(strict_successful_net: Workflow) -> None:
     """Chain successful execution"""
     result: t.List[ActionBase] = []
     strategy: t.AsyncIterable[ActionBase] = LooseStrategy(strict_successful_net)
@@ -25,7 +25,7 @@ async def test_chain_success(strict_successful_net: ActionNet) -> None:
 
 @pytest.mark.parametrize("strategy_class", [LooseStrategy, StrictSequentialStrategy])
 @pytest.mark.asyncio
-async def test_chain_failure(strict_failing_net: ActionNet, strategy_class: t.Type[BaseStrategy]) -> None:
+async def test_chain_failure(strict_failing_net: Workflow, strategy_class: t.Type[BaseStrategy]) -> None:
     """Chain failing execution"""
     result: t.List[ActionBase] = []
     strategy: t.AsyncIterable[ActionBase] = strategy_class(strict_failing_net)
@@ -43,7 +43,7 @@ async def test_chain_failure(strict_failing_net: ActionNet, strategy_class: t.Ty
 
 
 @pytest.mark.asyncio
-async def test_chain_skip(strict_skipping_net: ActionNet) -> None:
+async def test_chain_skip(strict_skipping_net: Workflow) -> None:
     """Chain skipping execution"""
     result: t.List[ActionBase] = []
     strategy: t.AsyncIterable[ActionBase] = LooseStrategy(strict_skipping_net)

@@ -12,8 +12,8 @@ from classlogging import LoggerMixin
 
 from .inspect import get_class_annotations
 from ...actions.base import ActionBase, ArgsBase, ActionDependency
-from ...actions.net import ActionNet
 from ...actions.types import StringTemplate
+from ...actions.workflow import Workflow
 from ...exceptions import LoadError
 
 __all__ = [
@@ -80,15 +80,15 @@ class AbstractBaseConfigLoader(LoggerMixin):
             self._throw(f"Unknown dispatched type: {action_type}")
         return self.STATIC_ACTION_FACTORIES[action_type]
 
-    def loads(self, data: t.Union[str, bytes]) -> ActionNet:
+    def loads(self, data: t.Union[str, bytes]) -> Workflow:
         """Load config from text"""
         self._internal_loads(data=data)
-        return ActionNet(self._actions, context=self._gathered_context)
+        return Workflow(self._actions, context=self._gathered_context)
 
-    def load(self, source_file: t.Union[str, Path]) -> ActionNet:
+    def load(self, source_file: t.Union[str, Path]) -> Workflow:
         """Load config from file"""
         self._internal_load(source_file=source_file)
-        return ActionNet(self._actions, context=self._gathered_context)
+        return Workflow(self._actions, context=self._gathered_context)
 
     def build_dependency_from_node(self, dep_node: t.Union[str, dict]) -> t.Tuple[str, ActionDependency]:
         """Unified method to process transform dependency source data"""

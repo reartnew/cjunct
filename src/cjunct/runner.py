@@ -17,8 +17,8 @@ import dacite
 
 from . import types
 from .actions.base import ActionBase, ArgsBase
-from .actions.net import ActionNet
 from .actions.types import StringTemplate, RenderedStringTemplate
+from .actions.workflow import Workflow
 from .config.constants import C
 from .config.loaders.base import AbstractBaseConfigLoader
 from .config.loaders.helpers import get_default_loader_class_for_source
@@ -61,7 +61,7 @@ class Runner(classlogging.LoggerMixin):
         self._had_failed_actions: bool = False
 
     @functools.cached_property
-    def actions(self) -> ActionNet:
+    def actions(self) -> Workflow:
         """Calculated actions net"""
         loader: AbstractBaseConfigLoader = self._loader_class()
         return (

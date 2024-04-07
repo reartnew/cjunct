@@ -8,8 +8,8 @@ import inquirer  # type: ignore
 from .base import BaseDisplay
 from .color import Color
 from ..actions.base import ActionBase, ActionStatus
-from ..actions.net import ActionNet
 from ..actions.types import Stderr
+from ..actions.workflow import Workflow
 from ..exceptions import InteractionError
 
 __all__ = [
@@ -29,7 +29,7 @@ class NetPrefixDisplay(BaseDisplay):
         ActionStatus.OMITTED: Color.gray,
     }
 
-    def __init__(self, net: ActionNet) -> None:
+    def __init__(self, net: Workflow) -> None:
         super().__init__(net)
         self._action_names_max_len = max(map(len, self._actions))
         self._last_displayed_name: str = ""
@@ -73,7 +73,7 @@ class NetPrefixDisplay(BaseDisplay):
     def on_finish(self) -> None:
         self._display_status_banner()
 
-    def on_plan_interaction(self, net: ActionNet) -> None:
+    def on_plan_interaction(self, net: Workflow) -> None:
         displayed_action_names: t.List[str] = []
         default_selected_action_names: t.List[str] = []
         for _, action in net.iter_actions_by_tier():

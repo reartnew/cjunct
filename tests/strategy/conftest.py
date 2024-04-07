@@ -7,10 +7,10 @@ import typing as t
 import pytest
 
 from cjunct.actions.base import ActionBase, ActionDependency
-from cjunct.actions.net import ActionNet
+from cjunct.actions.workflow import Workflow
 
 
-def _make_chained_net(action_class: t.Type[ActionBase]) -> ActionNet:
+def _make_chained_net(action_class: t.Type[ActionBase]) -> Workflow:
     step_names: t.List[str] = [
         "foo",
         "bar",
@@ -19,7 +19,7 @@ def _make_chained_net(action_class: t.Type[ActionBase]) -> ActionNet:
         "fred",
         "thud",
     ]
-    return ActionNet(
+    return Workflow(
         {
             step_name: action_class(
                 name=step_name,
@@ -31,7 +31,7 @@ def _make_chained_net(action_class: t.Type[ActionBase]) -> ActionNet:
 
 
 @pytest.fixture
-def strict_successful_net() -> ActionNet:
+def strict_successful_net() -> Workflow:
     """Minimalistic strict chained action net"""
 
     class SuccessAction(ActionBase):
@@ -44,7 +44,7 @@ def strict_successful_net() -> ActionNet:
 
 
 @pytest.fixture
-def strict_failing_net() -> ActionNet:
+def strict_failing_net() -> Workflow:
     """Minimalistic strict chained action net with failures"""
 
     class FailingAction(ActionBase):
@@ -57,7 +57,7 @@ def strict_failing_net() -> ActionNet:
 
 
 @pytest.fixture
-def strict_skipping_net() -> ActionNet:
+def strict_skipping_net() -> Workflow:
     """Minimalistic strict chained action net with explicit skipping"""
 
     class SkippingAction(ActionBase):

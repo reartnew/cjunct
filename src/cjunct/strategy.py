@@ -11,7 +11,7 @@ import typing as t
 import classlogging
 
 from .actions.base import ActionStatus, ActionBase, ActionSkip
-from .actions.net import ActionNet
+from .actions.workflow import Workflow
 
 ST = t.TypeVar("ST", bound="BaseStrategy")
 
@@ -34,7 +34,7 @@ class BaseStrategy(classlogging.LoggerMixin, t.AsyncIterable[ActionBase]):
     NAME: str = ""
     STRICT: bool = False
 
-    def __init__(self, net: ActionNet) -> None:
+    def __init__(self, net: Workflow) -> None:
         self._actions = net
 
     def __aiter__(self: ST) -> ST:
@@ -62,7 +62,7 @@ class FreeStrategy(BaseStrategy):
 
     NAME = "free"
 
-    def __init__(self, net: ActionNet) -> None:
+    def __init__(self, net: Workflow) -> None:
         super().__init__(net)
         self._unprocessed: t.List[ActionBase] = list(net.values())
 
@@ -77,7 +77,7 @@ class SequentialStrategy(FreeStrategy):
 
     NAME = "sequential"
 
-    def __init__(self, net: ActionNet) -> None:
+    def __init__(self, net: Workflow) -> None:
         super().__init__(net)
         self._current: t.Optional[ActionBase] = None
 
@@ -99,7 +99,7 @@ class LooseStrategy(BaseStrategy):
 
     NAME = "loose"
 
-    def __init__(self, net: ActionNet) -> None:
+    def __init__(self, net: Workflow) -> None:
         super().__init__(net)
         # Actions that have been emitted by the strategy and not finished yet
         self._active_actions_map: t.Dict[str, ActionBase] = {}
