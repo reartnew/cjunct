@@ -49,7 +49,7 @@ class Runner(classlogging.LoggerMixin):
             self._detect_workflow_source() if source is None else source if isinstance(source, IOType) else Path(source)
         )
         self._loader_class: types.LoaderClassType = (
-            loader_class or C.CONFIG_LOADER_CLASS or get_default_loader_class_for_source(self._workflow_source)
+            loader_class or C.WORKFLOW_LOADER_CLASS or get_default_loader_class_for_source(self._workflow_source)
         )
         self.logger.debug(f"Using workflow loader class: {self._loader_class}")
         self._strategy_class: types.StrategyClassType = strategy_class

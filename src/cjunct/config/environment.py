@@ -29,7 +29,7 @@ class Env(EnvironmentNamespace):
     CJUNCT_WORKFLOW_FILE:
         Workflow file to use.
         Default behaviour is scan the current working directory.
-    CJUNCT_CONFIG_LOADER_SOURCE_FILE:
+    CJUNCT_WORKFLOW_LOADER_SOURCE_FILE:
         May point a file containing a WorkflowLoader class definition, which will replace the default implementation.
     CJUNCT_DISPLAY_SOURCE_FILE:
         May point a file containing a Display class definition, which will replace the default implementation.
@@ -57,7 +57,7 @@ class Env(EnvironmentNamespace):
     CJUNCT_LOG_FILE: str = OptionalString("")
     CJUNCT_ENV_FILE: str = OptionalString("")
     CJUNCT_WORKFLOW_FILE: str = OptionalString("")
-    CJUNCT_CONFIG_LOADER_SOURCE_FILE: str = OptionalString("")
+    CJUNCT_WORKFLOW_LOADER_SOURCE_FILE: str = OptionalString("")
     CJUNCT_DISPLAY_SOURCE_FILE: str = OptionalString("")
     CJUNCT_STRATEGY_NAME: str = OptionalString("")
     CJUNCT_FORCE_COLOR: t.Optional[bool] = OptionalTernary(None)  # type: ignore

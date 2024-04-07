@@ -31,31 +31,31 @@ def test_runner_multiple_run(runner_good_context: None) -> None:
         runner.run_sync()
 
 
-def test_not_found_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_not_found_workflow(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Empty source directory"""
     monkeypatch.chdir(tmp_path)
-    with pytest.raises(exceptions.SourceError, match="No config source detected in"):
+    with pytest.raises(exceptions.SourceError, match="No workflow source detected in"):
         cjunct.Runner().run_sync()
 
 
-def test_multiple_found_configs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_multiple_found_workflows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Ambiguous source directory"""
     monkeypatch.chdir(tmp_path)
     (tmp_path / "cjunct.yml").touch()
     (tmp_path / "cjunct.yaml").touch()
-    with pytest.raises(exceptions.SourceError, match="Multiple config sources detected in"):
+    with pytest.raises(exceptions.SourceError, match="Multiple workflow sources detected in"):
         cjunct.Runner().run_sync()
 
 
-def test_non_existent_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """No config file with given name"""
+def test_non_existent_workflow(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """No workflow file with given name"""
     monkeypatch.chdir(tmp_path)
-    with pytest.raises(exceptions.LoadError, match="Config file not found"):
+    with pytest.raises(exceptions.LoadError, match="Workflow file not found"):
         cjunct.Runner(source=tmp_path / "cjunct.yml").run_sync()
 
 
-def test_unrecognized_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Unknown config file format"""
+def test_unrecognized_workflow(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Unknown workflow file format"""
     monkeypatch.chdir(tmp_path)
     with pytest.raises(exceptions.SourceError, match="Unrecognized source"):
         cjunct.Runner(source=tmp_path / "wf.foo").run_sync()

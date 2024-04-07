@@ -119,7 +119,7 @@ def run() -> None:
 @wrap_cli_command
 @click.argument("workflow", cls=WorkflowPositionalArgument)
 def validate() -> None:
-    """Check configuration validity."""
+    """Check workflow validity."""
     action_num: int = len(
         cjunct.Runner(
             strategy_class=C.STRATEGY_CLASS,

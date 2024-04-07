@@ -11,17 +11,19 @@ from cjunct.loader.default import DefaultYAMLWorkflowLoader
 from cjunct.loader.helpers import get_default_loader_class_for_source
 
 
-def test_config_load_over_sample(sample_config: t.Tuple[Path, t.Optional[t.Type[Exception]], t.Optional[str]]) -> None:
-    """Check different variations of good/bad configurations"""
-    config_path, maybe_exception, maybe_match = sample_config
-    loader_class: t.Type[AbstractBaseWorkflowLoader] = get_default_loader_class_for_source(config_path)
-    # Check good configuration
+def test_workflow_load_over_sample(
+    sample_workflow: t.Tuple[Path, t.Optional[t.Type[Exception]], t.Optional[str]]
+) -> None:
+    """Check different variations of good/bad workflows"""
+    workflow_path, maybe_exception, maybe_match = sample_workflow
+    loader_class: t.Type[AbstractBaseWorkflowLoader] = get_default_loader_class_for_source(workflow_path)
+    # Check good workflow
     if maybe_exception is None:
-        loader_class().load(config_path)
+        loader_class().load(workflow_path)
         return
-    # Check bad configuration
+    # Check bad workflow
     with pytest.raises(maybe_exception, match=maybe_match):
-        loader_class().load(config_path)
+        loader_class().load(workflow_path)
 
 
 def test_yaml_loads() -> None:

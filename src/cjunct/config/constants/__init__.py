@@ -95,11 +95,11 @@ class C:
         lambda: maybe_path(get_cli_arg("workflow")),
         lambda: maybe_path(Env.CJUNCT_WORKFLOW_FILE),
     )
-    CONFIG_LOADER_CLASS: Optional[LoaderClassType] = Optional(
+    WORKFLOW_LOADER_CLASS: Optional[LoaderClassType] = Optional(
         lambda: maybe_class_from_module(
-            path_str=Env.CJUNCT_CONFIG_LOADER_SOURCE_FILE,
+            path_str=Env.CJUNCT_WORKFLOW_LOADER_SOURCE_FILE,
             class_name="WorkflowLoader",
-            submodule_name="config.loader",
+            submodule_name="workflow.loader",
         )
     )
     ACTION_CLASSES_DIRECTORIES: Mandatory[t.List[str]] = Mandatory(

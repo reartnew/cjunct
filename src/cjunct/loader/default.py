@@ -1,4 +1,4 @@
-"""YAML-based configuration load routines"""
+"""YAML-based workflow load routines"""
 
 from __future__ import annotations
 

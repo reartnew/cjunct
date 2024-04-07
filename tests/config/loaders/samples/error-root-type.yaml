@@ -1,4 +1,4 @@
 # exception: LoadError
-# match: Unknown config structure
+# match: Unknown workflow structure
 ---
 - test

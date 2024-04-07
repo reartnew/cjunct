@@ -47,7 +47,7 @@ class LoadError(BaseError):
         self.stack: t.List[str] = stack
         text: str = message
         if stack:
-            text += f"\n  Current config stack: {' -> '.join(stack)}"
+            text += f"\n  Sources stack: {' -> '.join(stack)}"
         super().__init__(text)
 
 

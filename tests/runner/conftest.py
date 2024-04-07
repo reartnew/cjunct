@@ -72,7 +72,7 @@ def actions_definitions_directory(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.fixture(params=["chdir", "env_workflow"])
 def runner_good_context(ctx_from_text: CtxFactoryType, request: SubRequest, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Prepare a directory with good sample config files"""
+    """Prepare a directory with good sample workflow files"""
     actions_source_path: Path = ctx_from_text(
         """
         actions:
@@ -96,7 +96,7 @@ def runner_good_context(ctx_from_text: CtxFactoryType, request: SubRequest, monk
 
 @pytest.fixture(params=["chdir", "env_workflow"])
 def runner_shell_yield_good_context(request: SubRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Prepare a directory with good sample config files using shell yield feature"""
+    """Prepare a directory with good sample workflow files using shell yield feature"""
 
     def _str_to_b64(s: str) -> str:
         return base64.b64encode(s.encode()).decode()
@@ -132,7 +132,7 @@ actions:
 
 @pytest.fixture
 def runner_failing_action_context(ctx_from_text: CtxFactoryType) -> None:
-    """Prepare a directory with sample config files of a failing action"""
+    """Prepare a directory with sample workflow files of a failing action"""
     ctx_from_text(
         """
         actions:
@@ -145,7 +145,7 @@ def runner_failing_action_context(ctx_from_text: CtxFactoryType) -> None:
 
 @pytest.fixture
 def runner_failing_render_context(ctx_from_text: CtxFactoryType) -> None:
-    """Prepare a directory with sample config files of a failing render"""
+    """Prepare a directory with sample workflow files of a failing render"""
     ctx_from_text(
         """
         actions:
@@ -167,7 +167,7 @@ def runner_failing_render_context(ctx_from_text: CtxFactoryType) -> None:
 
 @pytest.fixture
 def runner_external_actions_context(ctx_from_text: CtxFactoryType, actions_definitions_directory: None) -> None:
-    """Prepare a directory with sample config files using external actions from directories"""
+    """Prepare a directory with sample workflow files using external actions from directories"""
     ctx_from_text(
         """
         actions:
@@ -180,7 +180,7 @@ def runner_external_actions_context(ctx_from_text: CtxFactoryType, actions_defin
 
 @pytest.fixture
 def runner_status_substitution_good_context(ctx_from_text: CtxFactoryType) -> None:
-    """Prepare a directory with sample config files testing status good substitution"""
+    """Prepare a directory with sample workflow files testing status good substitution"""
     ctx_from_text(
         """
         actions:
@@ -194,7 +194,7 @@ def runner_status_substitution_good_context(ctx_from_text: CtxFactoryType) -> No
 
 @pytest.fixture
 def runner_status_substitution_bad_context(ctx_from_text: CtxFactoryType) -> None:
-    """Prepare a directory with sample config files testing status bad substitution"""
+    """Prepare a directory with sample workflow files testing status bad substitution"""
     ctx_from_text(
         """
         actions:
@@ -207,7 +207,7 @@ def runner_status_substitution_bad_context(ctx_from_text: CtxFactoryType) -> Non
 
 @pytest.fixture
 def runner_failing_union_render_context(ctx_from_text: CtxFactoryType, actions_definitions_directory: None) -> None:
-    """Prepare a directory with sample config files using external actions from directories with union render types"""
+    """Prepare a directory with sample workflow files using external actions from directories with union render types"""
     ctx_from_text(
         """
         actions:
