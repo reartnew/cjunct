@@ -6,7 +6,7 @@ from pathlib import Path
 
 from .base import AbstractBaseConfigLoader
 from .default.yaml import DefaultYAMLConfigLoader
-from ...exceptions import SourceError
+from ..exceptions import SourceError
 
 __all__ = [
     "get_default_loader_class_for_source",

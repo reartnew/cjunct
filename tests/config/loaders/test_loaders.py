@@ -5,10 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from cjunct.config.loaders.base import AbstractBaseConfigLoader
-from cjunct.config.loaders.default.yaml import DefaultYAMLConfigLoader
-from cjunct.config.loaders.helpers import get_default_loader_class_for_source
 from cjunct.exceptions import LoadError
+from cjunct.loader.base import AbstractBaseConfigLoader
+from cjunct.loader.default.yaml import DefaultYAMLConfigLoader
+from cjunct.loader.helpers import get_default_loader_class_for_source
 
 
 def test_config_load_over_sample(sample_config: t.Tuple[Path, t.Optional[t.Type[Exception]], t.Optional[str]]) -> None:

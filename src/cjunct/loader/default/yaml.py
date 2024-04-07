@@ -7,7 +7,7 @@ import typing as t
 import yaml
 
 from .root import DefaultRootConfigLoader
-from ....actions.base import ActionBase
+from ...actions.base import ActionBase
 
 __all__ = [
     "DefaultYAMLConfigLoader",

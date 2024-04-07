@@ -20,11 +20,11 @@ from .actions.base import ActionBase, ArgsBase
 from .actions.types import StringTemplate, RenderedStringTemplate
 from .actions.workflow import Workflow
 from .config.constants import C
-from .config.loaders.base import AbstractBaseConfigLoader
-from .config.loaders.helpers import get_default_loader_class_for_source
 from .display.base import BaseDisplay
 from .display.default import DefaultDisplay
 from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError, ActionUnionRenderError
+from .loader.base import AbstractBaseConfigLoader
+from .loader.helpers import get_default_loader_class_for_source
 from .rendering import Templar
 from .strategy import BaseStrategy, LooseStrategy
 
