@@ -53,12 +53,6 @@ class WorkflowPositionalArgument(click.Argument):
 
 @click.group
 @click.option(
-    "-d",
-    "--directory",
-    help="Context directory. Defaults to current working directory. "
-    "Also configurable via the CJUNCT_CONTEXT_DIRECTORY environment variable.",
-)
-@click.option(
     "-l",
     "--log-level",
     help="Logging level. Defaults to ERROR. Also configurable via the CJUNCT_LOG_LEVEL environment variable.",

@@ -85,8 +85,6 @@ class C:
         lambda: Path().resolve() / ".env",
     )
     CONTEXT_DIRECTORY: Mandatory[Path] = Mandatory(
-        lambda: get_cli_arg("directory"),
-        lambda: maybe_path(Env.CJUNCT_CONTEXT_DIRECTORY),
         lambda: Path().resolve(),
     )
     INTERACTIVE_MODE: Mandatory[bool] = Mandatory(
