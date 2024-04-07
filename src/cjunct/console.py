@@ -64,11 +64,6 @@ class WorkflowPositionalArgument(click.Argument):
     help="Logging level. Defaults to ERROR. Also configurable via the CJUNCT_LOG_LEVEL environment variable.",
     type=click.Choice(list(LOG_LEVELS)),
 )
-@click.option(
-    "-f",
-    "--file",
-    help="[DEPRECATED] Workflow file. It is recommended to use the positional argument instead.",
-)
 @cliargs_receiver
 def main() -> None:
     """Declarative task runner"""
