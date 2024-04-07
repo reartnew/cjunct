@@ -23,7 +23,7 @@ from .config.constants import C
 from .config.loaders.base import AbstractBaseConfigLoader
 from .config.loaders.helpers import get_default_loader_class_for_source
 from .display.base import BaseDisplay
-from .display.default import NetPrefixDisplay
+from .display.default import DefaultDisplay
 from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError, ActionUnionRenderError
 from .rendering import Templar
 from .strategy import BaseStrategy, LooseStrategy
@@ -43,7 +43,7 @@ class Runner(classlogging.LoggerMixin):
         config: t.Union[str, Path, IOType, None] = None,
         loader_class: t.Optional[types.LoaderClassType] = None,
         strategy_class: types.StrategyClassType = LooseStrategy,
-        display_class: types.DisplayClassType = NetPrefixDisplay,
+        display_class: types.DisplayClassType = DefaultDisplay,
     ) -> None:
         self._config_source: t.Union[Path, IOType] = (
             self._detect_config_source() if config is None else config if isinstance(config, IOType) else Path(config)
@@ -61,8 +61,8 @@ class Runner(classlogging.LoggerMixin):
         self._had_failed_actions: bool = False
 
     @functools.cached_property
-    def actions(self) -> Workflow:
-        """Calculated actions net"""
+    def workflow(self) -> Workflow:
+        """Calculated workflow"""
         loader: AbstractBaseConfigLoader = self._loader_class()
         return (
             loader.loads(self._config_source.read())
@@ -73,7 +73,7 @@ class Runner(classlogging.LoggerMixin):
     @functools.cached_property
     def display(self) -> BaseDisplay:
         """Attached display"""
-        return self._display_class(net=self.actions)
+        return self._display_class(workflow=self.workflow)
 
     @classmethod
     def _detect_config_source(cls) -> t.Union[Path, IOType]:
@@ -107,12 +107,12 @@ class Runner(classlogging.LoggerMixin):
         if self._started:
             raise RuntimeError("Runner has been started more than one time")
         self._started = True
-        strategy: BaseStrategy = self._strategy_class(net=self.actions)
+        strategy: BaseStrategy = self._strategy_class(workflow=self.workflow)
         if C.INTERACTIVE_MODE:
-            self.display.on_plan_interaction(net=self.actions)
+            self.display.on_plan_interaction(workflow=self.workflow)
         background_tasks: t.List[asyncio.Task] = []
         # Prefill outcomes map
-        for action_name in self.actions:
+        for action_name in self.workflow:
             self._outcomes[action_name] = {}
         async for action in strategy:  # type: ActionBase
             if not action.enabled:
@@ -177,8 +177,8 @@ class Runner(classlogging.LoggerMixin):
         def _string_template_render_hook(value: str) -> RenderedStringTemplate:
             templar: Templar = Templar(
                 outcomes_getter=self._outcomes.get,
-                status_getter=lambda name: self.actions[name].status.value if name in self.actions else None,
-                raw_context_getter=self.actions.get_context_value,
+                status_getter=lambda name: self.workflow[name].status.value if name in self.workflow else None,
+                raw_context_getter=self.workflow.get_context_value,
             )
             try:
                 return templar.render(value)

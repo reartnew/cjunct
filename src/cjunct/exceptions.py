@@ -52,7 +52,7 @@ class LoadError(BaseError):
 
 
 class IntegrityError(BaseError):
-    """Action net structure error"""
+    """Workflow structure error"""
 
     CODE: int = 103
 

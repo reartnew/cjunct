@@ -13,12 +13,12 @@ from ..actions.workflow import Workflow
 from ..exceptions import InteractionError
 
 __all__ = [
-    "NetPrefixDisplay",
+    "DefaultDisplay",
 ]
 
 
-class NetPrefixDisplay(BaseDisplay):
-    """Prefix-based display for action nets"""
+class DefaultDisplay(BaseDisplay):
+    """Prefix-based default display with colors"""
 
     _STATUS_TO_COLOR: t.Dict[ActionStatus, t.Callable[[str], str]] = {
         ActionStatus.SKIPPED: Color.gray,
@@ -29,9 +29,9 @@ class NetPrefixDisplay(BaseDisplay):
         ActionStatus.OMITTED: Color.gray,
     }
 
-    def __init__(self, net: Workflow) -> None:
-        super().__init__(net)
-        self._action_names_max_len = max(map(len, self._actions))
+    def __init__(self, workflow: Workflow) -> None:
+        super().__init__(workflow)
+        self._action_names_max_len = max(map(len, self._workflow))
         self._last_displayed_name: str = ""
 
     def _make_prefix(self, source_name: str, mark: str = " "):
@@ -66,17 +66,17 @@ class NetPrefixDisplay(BaseDisplay):
         """Show a text banner with the status info"""
         justification_len: int = self._action_names_max_len + 9  # "9" here stands for (e.g.) "SUCCESS: "
         self.display(Color.gray("=" * justification_len))
-        for _, action in self._actions.iter_actions_by_tier():
+        for _, action in self._workflow.iter_actions_by_tier():
             color_wrapper: t.Callable[[str], str] = self._STATUS_TO_COLOR[action.status]
             self.display(f"{color_wrapper(action.status.value)}: {action.name}")
 
     def on_finish(self) -> None:
         self._display_status_banner()
 
-    def on_plan_interaction(self, net: Workflow) -> None:
+    def on_plan_interaction(self, workflow: Workflow) -> None:
         displayed_action_names: t.List[str] = []
         default_selected_action_names: t.List[str] = []
-        for _, action in net.iter_actions_by_tier():
+        for _, action in workflow.iter_actions_by_tier():
             if action.selectable:
                 displayed_action_names.append(action.name)
                 default_selected_action_names.append(action.name)
@@ -84,7 +84,7 @@ class NetPrefixDisplay(BaseDisplay):
             displayed_action_names=displayed_action_names,
             default_selected_action_names=default_selected_action_names,
         )
-        for action_name, action in net.items():
+        for action_name, action in workflow.items():
             if action_name not in selected_action_names:
                 action.disable()
 

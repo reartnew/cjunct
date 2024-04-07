@@ -58,7 +58,7 @@ def test_unrecognized_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
     """Unknown config file format"""
     monkeypatch.chdir(tmp_path)
     with pytest.raises(exceptions.SourceError, match="Unrecognized source"):
-        cjunct.Runner(config=tmp_path / "network.foo").run_sync()
+        cjunct.Runner(config=tmp_path / "wf.foo").run_sync()
 
 
 @pytest.mark.parametrize(

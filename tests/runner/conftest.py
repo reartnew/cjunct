@@ -14,7 +14,7 @@ from _pytest.fixtures import SubRequest
 
 from cjunct.config.environment import Env
 from cjunct.config.constants import C
-from cjunct.display.default import NetPrefixDisplay
+from cjunct.display.default import DefaultDisplay
 
 CtxFactoryType = t.Callable[[str], Path]
 
@@ -42,8 +42,8 @@ def display_collector(monkeypatch: pytest.MonkeyPatch) -> t.List[str]:
     ) -> t.List[str]:
         return default_selected_action_names[:1]
 
-    monkeypatch.setattr(NetPrefixDisplay, "display", display)
-    monkeypatch.setattr(NetPrefixDisplay, "_run_dialog", _run_dialog)
+    monkeypatch.setattr(DefaultDisplay, "display", display)
+    monkeypatch.setattr(DefaultDisplay, "_run_dialog", _run_dialog)
     return results
 
 

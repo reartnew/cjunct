@@ -7,7 +7,7 @@ import pytest
 from cjunct.config.constants import C
 from cjunct.config.environment import Env
 from cjunct.strategy import LooseStrategy, FreeStrategy
-from cjunct.display.default import NetPrefixDisplay
+from cjunct.display.default import DefaultDisplay
 
 
 def test_invalid_strategy_cli_arg(invalid_strategy_cli_arg: None) -> None:
@@ -36,6 +36,6 @@ def test_invalid_strategy_env_var() -> None:
 
 
 def test_default_display() -> None:
-    """Check that default display is net-prefix"""
+    """Check that default display is the DefaultDisplay"""
     Env.CJUNCT_DISPLAY_SOURCE_FILE = ""
-    assert C.DISPLAY_CLASS is NetPrefixDisplay
+    assert C.DISPLAY_CLASS is DefaultDisplay

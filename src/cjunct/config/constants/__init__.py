@@ -52,9 +52,9 @@ def _maybe_strategy(name: t.Optional[str]) -> t.Optional[StrategyClassType]:
 
 
 def _get_default_display_class() -> DisplayClassType:
-    from ...display.default import NetPrefixDisplay
+    from ...display.default import DefaultDisplay
 
-    return NetPrefixDisplay
+    return DefaultDisplay
 
 
 def _get_strategy_class_from_cli_arg() -> t.Optional[StrategyClassType]:

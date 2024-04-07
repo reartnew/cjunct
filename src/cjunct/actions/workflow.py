@@ -20,10 +20,10 @@ class Workflow(t.Dict[str, ActionBase], LoggerMixin):
 
     def __init__(
         self,
-        net: t.Dict[str, ActionBase],
+        actions_map: t.Dict[str, ActionBase],
         context: t.Optional[t.Dict[str, str]] = None,
     ) -> None:
-        super().__init__(net)
+        super().__init__(actions_map)
         self._entrypoints: t.Set[str] = set()
         self._tiers_sequence: t.List[t.List[ActionBase]] = []
         self._descendants_map: t.Dict[str, t.Dict[str, ActionDependency]] = collections.defaultdict(dict)

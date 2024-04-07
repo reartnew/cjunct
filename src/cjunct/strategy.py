@@ -34,8 +34,8 @@ class BaseStrategy(classlogging.LoggerMixin, t.AsyncIterable[ActionBase]):
     NAME: str = ""
     STRICT: bool = False
 
-    def __init__(self, net: Workflow) -> None:
-        self._actions = net
+    def __init__(self, workflow: Workflow) -> None:
+        self._workflow = workflow
 
     def __aiter__(self: ST) -> ST:
         return self
@@ -62,9 +62,9 @@ class FreeStrategy(BaseStrategy):
 
     NAME = "free"
 
-    def __init__(self, net: Workflow) -> None:
-        super().__init__(net)
-        self._unprocessed: t.List[ActionBase] = list(net.values())
+    def __init__(self, workflow: Workflow) -> None:
+        super().__init__(workflow)
+        self._unprocessed: t.List[ActionBase] = list(workflow.values())
 
     async def __anext__(self) -> ActionBase:
         if not self._unprocessed:
@@ -77,8 +77,8 @@ class SequentialStrategy(FreeStrategy):
 
     NAME = "sequential"
 
-    def __init__(self, net: Workflow) -> None:
-        super().__init__(net)
+    def __init__(self, workflow: Workflow) -> None:
+        super().__init__(workflow)
         self._current: t.Optional[ActionBase] = None
 
     async def __anext__(self) -> ActionBase:
@@ -99,12 +99,12 @@ class LooseStrategy(BaseStrategy):
 
     NAME = "loose"
 
-    def __init__(self, net: Workflow) -> None:
-        super().__init__(net)
+    def __init__(self, workflow: Workflow) -> None:
+        super().__init__(workflow)
         # Actions that have been emitted by the strategy and not finished yet
         self._active_actions_map: t.Dict[str, ActionBase] = {}
         # Just a structured mutable copy of the dependency map
-        self._action_blockers: t.Dict[str, t.Set[str]] = {name: set(net[name].ancestors) for name in net}
+        self._action_blockers: t.Dict[str, t.Set[str]] = {name: set(workflow[name].ancestors) for name in workflow}
 
     def _skip_action(self, action: ActionBase) -> None:
         super()._skip_action(action)
@@ -112,14 +112,14 @@ class LooseStrategy(BaseStrategy):
 
     def _get_maybe_next_action(self) -> t.Optional[ActionBase]:
         """Completely non-optimal (always scan all actions), but readable yet"""
-        done_action_names: t.Set[str] = {action.name for action in self._actions.values() if action.done()}
+        done_action_names: t.Set[str] = {action.name for action in self._workflow.values() if action.done()}
         # Copy into a list for further possible pop
         for maybe_next_action_name, maybe_next_action_blockers in list(self._action_blockers.items()):
             maybe_next_action_blockers -= done_action_names
             if not maybe_next_action_blockers:
                 self.logger.debug(f"Action {maybe_next_action_name!r} is ready for scheduling")
                 self._action_blockers.pop(maybe_next_action_name)
-                next_action: ActionBase = self._actions[maybe_next_action_name]
+                next_action: ActionBase = self._workflow[maybe_next_action_name]
                 self._active_actions_map[next_action.name] = next_action
                 return next_action
         return None
@@ -130,7 +130,7 @@ class LooseStrategy(BaseStrategy):
             next_action: ActionBase = await self._next_action()
             self.logger.debug(f"The next action is: {next_action}")
             for ancestor_name, ancestor_dependency in next_action.ancestors.items():
-                ancestor: ActionBase = self._actions[ancestor_name]
+                ancestor: ActionBase = self._workflow[ancestor_name]
                 if ancestor.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED) and (
                     ancestor_dependency.strict or self.STRICT
                 ):

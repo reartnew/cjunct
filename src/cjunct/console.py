@@ -124,7 +124,7 @@ def validate() -> None:
         cjunct.Runner(
             strategy_class=C.STRATEGY_CLASS,
             display_class=C.DISPLAY_CLASS,
-        ).actions
+        ).workflow
     )
     logger.info(f"Located actions number: {action_num}")
 
