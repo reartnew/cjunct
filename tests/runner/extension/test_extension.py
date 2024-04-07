@@ -28,7 +28,7 @@ def test_good_ext_loader(echo_context: None, monkeypatch: pytest.MonkeyPatch, di
 def test_ext_loader_missing_attr(echo_context: None, monkeypatch: pytest.MonkeyPatch) -> None:
     """Check incomplete module"""
     monkeypatch.setenv("CJUNCT_CONFIG_LOADER_SOURCE_FILE", str(MODULES_DIR / "empty_loader.py"))
-    with pytest.raises(AttributeError, match="External module contains no class 'ConfigLoader'"):
+    with pytest.raises(AttributeError, match="External module contains no class 'WorkflowLoader'"):
         cjunct.Runner().run_sync()
 
 

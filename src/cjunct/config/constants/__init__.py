@@ -98,7 +98,7 @@ class C:
     CONFIG_LOADER_CLASS: Optional[LoaderClassType] = Optional(
         lambda: maybe_class_from_module(
             path_str=Env.CJUNCT_CONFIG_LOADER_SOURCE_FILE,
-            class_name="ConfigLoader",
+            class_name="WorkflowLoader",
             submodule_name="config.loader",
         )
     )

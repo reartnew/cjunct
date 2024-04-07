@@ -11,7 +11,7 @@ from .actions.types import (
 )
 from .config.constants import C
 from .display.default import DefaultDisplay
-from .loader.default import DefaultYAMLConfigLoader
+from .loader.default import DefaultYAMLWorkflowLoader
 from .runner import Runner
 from .strategy import (
     FreeStrategy,

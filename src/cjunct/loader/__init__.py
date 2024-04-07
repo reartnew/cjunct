@@ -1,1 +1,1 @@
-"""The package contains everything related to configuration loading process"""
+"""The package contains everything related to workflow loading process"""

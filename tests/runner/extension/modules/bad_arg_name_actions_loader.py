@@ -1,7 +1,7 @@
 """Check extension possibilities"""
 
 from cjunct import ArgsBase
-from cjunct.loader.default import DefaultYAMLConfigLoader
+from cjunct.loader.default import DefaultYAMLWorkflowLoader
 
 
 class ReservedArgs(ArgsBase):
@@ -20,10 +20,10 @@ class BadEchoAction:
         return f"I am a string: {self.args.name}"
 
 
-class ConfigLoader(DefaultYAMLConfigLoader):
+class WorkflowLoader(DefaultYAMLWorkflowLoader):
     """Able to build echoes"""
 
     STATIC_ACTION_FACTORIES = {
-        **DefaultYAMLConfigLoader.STATIC_ACTION_FACTORIES,
+        **DefaultYAMLWorkflowLoader.STATIC_ACTION_FACTORIES,
         "echo": BadEchoAction,  # type: ignore
     }

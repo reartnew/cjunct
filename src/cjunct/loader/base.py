@@ -17,11 +17,11 @@ from ..actions.workflow import Workflow
 from ..exceptions import LoadError
 
 __all__ = [
-    "AbstractBaseConfigLoader",
+    "AbstractBaseWorkflowLoader",
 ]
 
 
-class AbstractBaseConfigLoader(LoggerMixin):
+class AbstractBaseWorkflowLoader(LoggerMixin):
     """Loaders base class"""
 
     STATIC_ACTION_FACTORIES: t.Dict[str, t.Type[ActionBase]] = {}
@@ -42,7 +42,7 @@ class AbstractBaseConfigLoader(LoggerMixin):
         raise LoadError(message=message, stack=self._raw_file_names_stack)
 
     def _internal_load(self, source_file: t.Union[str, Path]) -> None:
-        """Load config partially from file (can be called recursively).
+        """Load workflow partially from file (can be called recursively).
         :param source_file: either Path or string object pointing at a file"""
         with self._read_file(source_file) as file_data:
             self._internal_loads(file_data)
@@ -62,17 +62,17 @@ class AbstractBaseConfigLoader(LoggerMixin):
             self._throw("Cyclic load")
         self._raw_file_names_stack.append(str(source_file))
         self._resolved_file_paths_stack.append(source_resolved_file_path)
-        self.logger.debug(f"Loading config file: {source_resolved_file_path}")
+        self.logger.debug(f"Loading workflow file: {source_resolved_file_path}")
         try:
             if not source_resolved_file_path.is_file():
-                self._throw(f"Config file not found: {source_resolved_file_path}")
+                self._throw(f"Workflow file not found: {source_resolved_file_path}")
             yield source_resolved_file_path.read_bytes()
         finally:
             self._raw_file_names_stack.pop()
             self._resolved_file_paths_stack.pop()
 
     def _internal_loads(self, data: t.Union[str, bytes]) -> None:
-        """Load config partially from text (can be called recursively)"""
+        """Load workflow partially from text (can be called recursively)"""
         raise NotImplementedError
 
     def _get_action_factory_by_type(self, action_type: str) -> t.Type[ActionBase]:
@@ -81,12 +81,12 @@ class AbstractBaseConfigLoader(LoggerMixin):
         return self.STATIC_ACTION_FACTORIES[action_type]
 
     def loads(self, data: t.Union[str, bytes]) -> Workflow:
-        """Load config from text"""
+        """Load workflow from text"""
         self._internal_loads(data=data)
         return Workflow(self._actions, context=self._gathered_context)
 
     def load(self, source_file: t.Union[str, Path]) -> Workflow:
-        """Load config from file"""
+        """Load workflow from file"""
         self._internal_load(source_file=source_file)
         return Workflow(self._actions, context=self._gathered_context)
 

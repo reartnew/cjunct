@@ -23,7 +23,7 @@ from .config.constants import C
 from .display.base import BaseDisplay
 from .display.default import DefaultDisplay
 from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError, ActionUnionRenderError
-from .loader.base import AbstractBaseConfigLoader
+from .loader.base import AbstractBaseWorkflowLoader
 from .loader.helpers import get_default_loader_class_for_source
 from .rendering import Templar
 from .strategy import BaseStrategy, LooseStrategy
@@ -40,18 +40,18 @@ class Runner(classlogging.LoggerMixin):
 
     def __init__(
         self,
-        config: t.Union[str, Path, IOType, None] = None,
+        source: t.Union[str, Path, IOType, None] = None,
         loader_class: t.Optional[types.LoaderClassType] = None,
         strategy_class: types.StrategyClassType = LooseStrategy,
         display_class: types.DisplayClassType = DefaultDisplay,
     ) -> None:
-        self._config_source: t.Union[Path, IOType] = (
-            self._detect_config_source() if config is None else config if isinstance(config, IOType) else Path(config)
+        self._workflow_source: t.Union[Path, IOType] = (
+            self._detect_workflow_source() if source is None else source if isinstance(source, IOType) else Path(source)
         )
         self._loader_class: types.LoaderClassType = (
-            loader_class or C.CONFIG_LOADER_CLASS or get_default_loader_class_for_source(self._config_source)
+            loader_class or C.CONFIG_LOADER_CLASS or get_default_loader_class_for_source(self._workflow_source)
         )
-        self.logger.debug(f"Using config loader class: {self._loader_class}")
+        self.logger.debug(f"Using workflow loader class: {self._loader_class}")
         self._strategy_class: types.StrategyClassType = strategy_class
         self.logger.debug(f"Using strategy class: {self._strategy_class}")
         self._display_class: types.DisplayClassType = display_class
@@ -63,11 +63,11 @@ class Runner(classlogging.LoggerMixin):
     @functools.cached_property
     def workflow(self) -> Workflow:
         """Calculated workflow"""
-        loader: AbstractBaseConfigLoader = self._loader_class()
+        loader: AbstractBaseWorkflowLoader = self._loader_class()
         return (
-            loader.loads(self._config_source.read())
-            if isinstance(self._config_source, io.TextIOBase)
-            else loader.load(self._config_source)
+            loader.loads(self._workflow_source.read())
+            if isinstance(self._workflow_source, io.TextIOBase)
+            else loader.load(self._workflow_source)
         )
 
     @functools.cached_property
@@ -76,7 +76,7 @@ class Runner(classlogging.LoggerMixin):
         return self._display_class(workflow=self.workflow)
 
     @classmethod
-    def _detect_config_source(cls) -> t.Union[Path, IOType]:
+    def _detect_workflow_source(cls) -> t.Union[Path, IOType]:
         if C.ACTIONS_SOURCE_FILE is not None:
             source_file: Path = C.ACTIONS_SOURCE_FILE
             if str(source_file) == "-":
@@ -88,19 +88,19 @@ class Runner(classlogging.LoggerMixin):
             return source_file
         scan_path: Path = C.CONTEXT_DIRECTORY
         cls.logger.debug(f"Looking for workflow files at {str(scan_path)!r}")
-        located_config_file: t.Optional[Path] = None
+        located_source_file: t.Optional[Path] = None
         for candidate_file_name in (
             "cjunct.yml",
             "cjunct.yaml",
         ):  # type: str
-            if (maybe_config_file := scan_path / candidate_file_name).exists():
-                cls.logger.info(f"Detected the workflow source: {str(maybe_config_file)!r}")
-                if located_config_file is not None:
-                    raise SourceError(f"Multiple config sources detected in {scan_path}")
-                located_config_file = maybe_config_file
-        if located_config_file is None:
-            raise SourceError(f"No config source detected in {scan_path}")
-        return located_config_file
+            if (maybe_source_file := scan_path / candidate_file_name).exists():
+                cls.logger.info(f"Detected the workflow source: {str(maybe_source_file)!r}")
+                if located_source_file is not None:
+                    raise SourceError(f"Multiple workflow sources detected in {scan_path}")
+                located_source_file = maybe_source_file
+        if located_source_file is None:
+            raise SourceError(f"No workflow source detected in {scan_path}")
+        return located_source_file
 
     async def run_async(self) -> None:
         """Primary coroutine for all further processing"""

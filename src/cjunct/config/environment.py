@@ -30,7 +30,7 @@ class Env(EnvironmentNamespace):
         Workflow file to use.
         Default behaviour is scan the current working directory.
     CJUNCT_CONFIG_LOADER_SOURCE_FILE:
-        May point a file containing a ConfigLoader class definition, which will replace the default implementation.
+        May point a file containing a WorkflowLoader class definition, which will replace the default implementation.
     CJUNCT_DISPLAY_SOURCE_FILE:
         May point a file containing a Display class definition, which will replace the default implementation.
     CJUNCT_STRATEGY_NAME:

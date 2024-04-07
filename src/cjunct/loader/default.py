@@ -8,7 +8,7 @@ from pathlib import Path
 
 import yaml
 
-from .base import AbstractBaseConfigLoader
+from .base import AbstractBaseWorkflowLoader
 from ..actions.base import ActionBase
 from ..actions.bundled import (
     EchoAction,
@@ -20,12 +20,12 @@ from ..config.constants.helpers import maybe_class_from_module
 
 
 # pylint: disable=abstract-method
-class DefaultRootConfigLoader(AbstractBaseConfigLoader):
+class DefaultRootWorkflowLoader(AbstractBaseWorkflowLoader):
     """Bind default actions to abstract base"""
 
 
 __all__ = [
-    "DefaultYAMLConfigLoader",
+    "DefaultYAMLWorkflowLoader",
 ]
 
 
@@ -54,7 +54,7 @@ for extra_tag_class in [ImportTag]:
     YAMLLoader.add_constructor(extra_tag_class.yaml_tag, extra_tag_class.from_yaml)
 
 
-class DefaultYAMLConfigLoader(AbstractBaseConfigLoader):
+class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
     """Default loader for YAML source files"""
 
     ALLOWED_ROOT_TAGS: t.Set[str] = {"actions", "context", "miscellaneous"}
@@ -124,7 +124,7 @@ class DefaultYAMLConfigLoader(AbstractBaseConfigLoader):
             data = data.decode()
         root_node: dict = yaml.load(data, YAMLLoader)  # nosec
         if not isinstance(root_node, dict):
-            self._throw(f"Unknown config structure: {type(root_node)!r} (should be a dict)")
+            self._throw(f"Unknown workflow structure: {type(root_node)!r} (should be a dict)")
         root_keys: t.Set[str] = set(root_node)
         if not root_keys:
             self._throw(f"Empty root dictionary (expected some of: {', '.join(sorted(self.ALLOWED_ROOT_TAGS))}")
