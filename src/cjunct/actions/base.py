@@ -38,7 +38,7 @@ class ActionStatus(enum.Enum):
     SUCCESS = "SUCCESS"  # Finished without errors
     FAILURE = "FAILURE"  # Erroneous action
     SKIPPED = "SKIPPED"  # May be set by action itself
-    OMITTED = "OMITTED"  # Disabled during interaction or via checklists
+    OMITTED = "OMITTED"  # Disabled during interaction
 
     def __repr__(self) -> str:
         return self.name

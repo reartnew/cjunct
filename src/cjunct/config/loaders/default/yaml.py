@@ -31,17 +31,11 @@ class ImportTag(ExtraTag):
     yaml_tag: str = "!import"
 
 
-class ChecklistsDirectoryTag(ExtraTag):
-    """Checklists processing entity"""
-
-    yaml_tag: str = "!checklists-directory"
-
-
 class YAMLLoader(yaml.SafeLoader):
     """Extension loader"""
 
 
-for extra_tag_class in (ImportTag, ChecklistsDirectoryTag):
+for extra_tag_class in [ImportTag]:
     YAMLLoader.add_constructor(extra_tag_class.yaml_tag, extra_tag_class.from_yaml)
 
 
@@ -61,14 +55,6 @@ class DefaultYAMLConfigLoader(DefaultRootConfigLoader):
                 data=file_data,
                 allowed_root_keys=allowed_root_keys,
             )
-
-    def _parse_checklists(self, tag: ChecklistsDirectoryTag) -> None:
-        path: str = tag.data
-        if not isinstance(path, str):
-            self._throw(f"Unrecognized '!checklists-directory' contents type: {type(path)!r} (expected a string)")
-        if not path:
-            self._throw(f"Empty checklists-directory directive: {path!r}")
-        self.load_checklists_from_directory(path)
 
     def _internal_loads(self, data: t.Union[str, bytes]) -> None:
         self._internal_loads_with_filter(
@@ -108,8 +94,6 @@ class DefaultYAMLConfigLoader(DefaultRootConfigLoader):
                         tag=child_node,
                         allowed_root_keys={"actions"},
                     )
-                elif isinstance(child_node, ChecklistsDirectoryTag):
-                    self._parse_checklists(child_node)
                 else:
                     self._throw(f"Unrecognized node type: {type(child_node)!r}")
         if "context" in processable_keys:

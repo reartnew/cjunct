@@ -21,12 +21,10 @@ class ActionNet(t.Dict[str, ActionBase], LoggerMixin):
     def __init__(
         self,
         net: t.Dict[str, ActionBase],
-        checklists: t.Optional[t.Dict[str, t.List[str]]] = None,
         context: t.Optional[t.Dict[str, str]] = None,
     ) -> None:
         super().__init__(net)
         self._entrypoints: t.Set[str] = set()
-        self._checklists: t.Dict[str, t.List[str]] = checklists or {}
         self._tiers_sequence: t.List[t.List[ActionBase]] = []
         self._descendants_map: t.Dict[str, t.Dict[str, ActionDependency]] = collections.defaultdict(dict)
         self._context: t.Dict[str, str] = context or {}

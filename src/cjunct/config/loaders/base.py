@@ -24,14 +24,12 @@ __all__ = [
 class AbstractBaseConfigLoader(LoggerMixin):
     """Loaders base class"""
 
-    _RESERVED_CHECKLISTS_NAMES: t.Set[str] = {"ALL", "NONE"}
     STATIC_ACTION_FACTORIES: t.Dict[str, t.Type[ActionBase]] = {}
 
     def __init__(self) -> None:
         self._actions: t.Dict[str, ActionBase] = {}
         self._raw_file_names_stack: t.List[str] = []
         self._resolved_file_paths_stack: t.List[Path] = []
-        self._checklists: t.Dict[str, t.List[str]] = {}
         self._gathered_context: t.Dict[str, str] = {}
 
     def _register_action(self, action: ActionBase) -> None:
@@ -42,27 +40,6 @@ class AbstractBaseConfigLoader(LoggerMixin):
     def _throw(self, message: str) -> t.NoReturn:
         """Raise loader exception from text"""
         raise LoadError(message=message, stack=self._raw_file_names_stack)
-
-    def load_checklists_from_directory(self, directory: t.Union[str, Path]) -> None:
-        """Parse checklists directory safely"""
-        directory_path: Path = Path(directory)
-        if not directory_path.is_dir():
-            self._throw(f"No such directory: {directory_path}")
-        for checklist_file in directory_path.iterdir():  # type: Path
-            if not checklist_file.is_file():
-                self._throw(f"Checklist is not a file: {checklist_file}")
-            if checklist_file.suffix != ".checklist":
-                self._throw(f"Checklist file has invalid extension: {checklist_file} (should be '.checklist')")
-            checklist_name: str = checklist_file.stem
-            if checklist_name in self._checklists:
-                self._throw(f"Checklist defined twice: {checklist_name!r}")
-            if checklist_name in self._RESERVED_CHECKLISTS_NAMES:
-                self._throw(f"Reserved checklist name used: {checklist_name!r}")
-            self._checklists[checklist_name] = [
-                action_name.strip()
-                for action_name in checklist_file.read_text(encoding="utf-8").splitlines()
-                if action_name.strip()
-            ]
 
     def _internal_load(self, source_file: t.Union[str, Path]) -> None:
         """Load config partially from file (can be called recursively).

@@ -1,5 +1,0 @@
-# exception: LoadError
-# match: Checklist is not a file
----
-actions:
-  - !checklists-directory "./non-file-checklists"

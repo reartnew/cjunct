@@ -1,5 +1,0 @@
-# exception: LoadError
-# match: Unrecognized '!checklists-directory' contents type
----
-actions:
-  - !checklists-directory { }
