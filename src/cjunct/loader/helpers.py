@@ -5,7 +5,7 @@ import typing as t
 from pathlib import Path
 
 from .base import AbstractBaseConfigLoader
-from .default.yaml import DefaultYAMLConfigLoader
+from .default import DefaultYAMLConfigLoader
 from ..exceptions import SourceError
 
 __all__ = [

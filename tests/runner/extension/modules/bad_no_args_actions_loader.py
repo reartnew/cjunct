@@ -1,6 +1,6 @@
 """Check extension possibilities"""
 
-from cjunct.loader.default.yaml import DefaultYAMLConfigLoader
+from cjunct.loader.default import DefaultYAMLConfigLoader
 
 
 class BadEchoAction:

@@ -1,7 +1,7 @@
 """Check extension possibilities"""
 
 from cjunct import ArgsBase
-from cjunct.loader.default.yaml import DefaultYAMLConfigLoader
+from cjunct.loader.default import DefaultYAMLConfigLoader
 
 
 class ReservedArgs(ArgsBase):

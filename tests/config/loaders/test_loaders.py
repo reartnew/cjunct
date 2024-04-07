@@ -7,7 +7,7 @@ import pytest
 
 from cjunct.exceptions import LoadError
 from cjunct.loader.base import AbstractBaseConfigLoader
-from cjunct.loader.default.yaml import DefaultYAMLConfigLoader
+from cjunct.loader.default import DefaultYAMLConfigLoader
 from cjunct.loader.helpers import get_default_loader_class_for_source
 
 
