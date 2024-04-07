@@ -111,9 +111,9 @@ def test_external_actions(runner_external_actions_context: None) -> None:
 
 
 def test_invalid_action_source_file_via_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Check raising SourceError for absent file via CJUNCT_ACTIONS_SOURCE_FILE"""
-    monkeypatch.setenv("CJUNCT_ACTIONS_SOURCE_FILE", str(tmp_path / "missing.yaml"))
-    with pytest.raises(exceptions.SourceError, match="Pre-configured actions source file does not exist"):
+    """Check raising SourceError for absent file via CJUNCT_WORKFLOW_FILE"""
+    monkeypatch.setenv("CJUNCT_WORKFLOW_FILE", str(tmp_path / "missing.yaml"))
+    with pytest.raises(exceptions.SourceError, match="Given workflow file does not exist"):
         cjunct.Runner().run_sync()
 
 
@@ -141,7 +141,7 @@ actions:
 """
         ),
     )
-    monkeypatch.setenv("CJUNCT_ACTIONS_SOURCE_FILE", "-")
+    monkeypatch.setenv("CJUNCT_WORKFLOW_FILE", "-")
     cjunct.Runner().run_sync()
 
 

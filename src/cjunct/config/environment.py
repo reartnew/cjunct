@@ -26,9 +26,6 @@ class Env(EnvironmentNamespace):
     CJUNCT_ENV_FILE:
         Which file to load environment variables from. Expected format is k=v.
         Default is .env in the current directory.
-    CJUNCT_ACTIONS_SOURCE_FILE:
-        [DEPRECATED]
-        See CJUNCT_WORKFLOW_FILE.
     CJUNCT_WORKFLOW_FILE:
         Workflow file to use.
         Default behaviour is scan the current working directory.
@@ -59,8 +56,7 @@ class Env(EnvironmentNamespace):
     CJUNCT_LOG_LEVEL: str = OptionalString("")
     CJUNCT_LOG_FILE: str = OptionalString("")
     CJUNCT_ENV_FILE: str = OptionalString("")
-    CJUNCT_ACTIONS_SOURCE_FILE: str = OptionalString("")  # Will be dropped next major release.
-    CJUNCT_WORKFLOW_FILE: str = OptionalString("")  # Replaces CJUNCT_ACTIONS_SOURCE_FILE
+    CJUNCT_WORKFLOW_FILE: str = OptionalString("")
     CJUNCT_CONFIG_LOADER_SOURCE_FILE: str = OptionalString("")
     CJUNCT_DISPLAY_SOURCE_FILE: str = OptionalString("")
     CJUNCT_STRATEGY_NAME: str = OptionalString("")

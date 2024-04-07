@@ -80,11 +80,11 @@ class Runner(classlogging.LoggerMixin):
         if C.ACTIONS_SOURCE_FILE is not None:
             source_file: Path = C.ACTIONS_SOURCE_FILE
             if str(source_file) == "-":
-                cls.logger.info("Using stdin as actions source")
+                cls.logger.info("Using stdin as workflow source")
                 return t.cast(IOType, sys.stdin)
             if not source_file.exists():
-                raise SourceError(f"Pre-configured actions source file does not exist: {source_file}")
-            cls.logger.info(f"Using pre-configured actions source file: {source_file}")
+                raise SourceError(f"Given workflow file does not exist: {source_file}")
+            cls.logger.info(f"Using given workflow file: {source_file}")
             return source_file
         scan_path: Path = C.CONTEXT_DIRECTORY
         cls.logger.debug(f"Looking for workflow files at {str(scan_path)!r}")

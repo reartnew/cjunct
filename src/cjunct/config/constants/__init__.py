@@ -94,7 +94,6 @@ class C:
     ACTIONS_SOURCE_FILE: Optional[Path] = Optional(
         lambda: maybe_path(get_cli_arg("workflow")),
         lambda: maybe_path(Env.CJUNCT_WORKFLOW_FILE),
-        lambda: maybe_path(Env.CJUNCT_ACTIONS_SOURCE_FILE),
     )
     CONFIG_LOADER_CLASS: Optional[LoaderClassType] = Optional(
         lambda: maybe_class_from_module(

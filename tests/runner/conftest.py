@@ -70,7 +70,7 @@ def actions_definitions_directory(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-@pytest.fixture(params=["chdir", "env_actions_source"])
+@pytest.fixture(params=["chdir", "env_workflow"])
 def runner_good_context(ctx_from_text: CtxFactoryType, request: SubRequest, monkeypatch: pytest.MonkeyPatch) -> None:
     """Prepare a directory with good sample config files"""
     actions_source_path: Path = ctx_from_text(
@@ -88,13 +88,13 @@ def runner_good_context(ctx_from_text: CtxFactoryType, request: SubRequest, monk
     )
     if request.param == "chdir":
         monkeypatch.chdir(actions_source_path.parent)
-    elif request.param == "env_actions_source":
-        monkeypatch.setenv("CJUNCT_ACTIONS_SOURCE_FILE", str(actions_source_path))
+    elif request.param == "env_workflow":
+        monkeypatch.setenv("CJUNCT_WORKFLOW_FILE", str(actions_source_path))
     else:
         raise ValueError(request.param)
 
 
-@pytest.fixture(params=["chdir", "env_actions_source"])
+@pytest.fixture(params=["chdir", "env_workflow"])
 def runner_shell_yield_good_context(request: SubRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Prepare a directory with good sample config files using shell yield feature"""
 
@@ -124,8 +124,8 @@ actions:
     )
     if request.param == "chdir":
         monkeypatch.chdir(tmp_path)
-    elif request.param == "env_actions_source":
-        monkeypatch.setenv("CJUNCT_ACTIONS_SOURCE_FILE", str(actions_source_path))
+    elif request.param == "env_workflow":
+        monkeypatch.setenv("CJUNCT_WORKFLOW_FILE", str(actions_source_path))
     else:
         raise ValueError(request.param)
 
