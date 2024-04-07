@@ -13,8 +13,8 @@ from classlogging import LoggerMixin
 from .inspect import get_class_annotations
 from ..actions.base import ActionBase, ArgsBase, ActionDependency
 from ..actions.types import StringTemplate
-from ..actions.workflow import Workflow
 from ..exceptions import LoadError
+from ..workflow import Workflow
 
 __all__ = [
     "AbstractBaseWorkflowLoader",

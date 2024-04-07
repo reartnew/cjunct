@@ -9,8 +9,8 @@ from .base import BaseDisplay
 from .color import Color
 from ..actions.base import ActionBase, ActionStatus
 from ..actions.types import Stderr
-from ..actions.workflow import Workflow
 from ..exceptions import InteractionError
+from ..workflow import Workflow
 
 __all__ = [
     "DefaultDisplay",

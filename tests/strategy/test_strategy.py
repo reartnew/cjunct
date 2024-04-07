@@ -7,8 +7,8 @@ import pytest
 
 from cjunct import ActionBase, LooseStrategy, StrictSequentialStrategy
 from cjunct.actions.base import ActionStatus
-from cjunct.actions.workflow import Workflow
 from cjunct.strategy import BaseStrategy
+from cjunct.workflow import Workflow
 
 
 @pytest.mark.asyncio

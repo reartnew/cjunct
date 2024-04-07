@@ -1,8 +1,8 @@
 """Runner output processor base"""
 
 from ..actions.base import ActionBase
-from ..actions.workflow import Workflow
 from ..exceptions import InteractionError
+from ..workflow import Workflow
 
 __all__ = [
     "BaseDisplay",

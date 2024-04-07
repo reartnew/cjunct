@@ -18,7 +18,6 @@ import dacite
 from . import types
 from .actions.base import ActionBase, ArgsBase
 from .actions.types import StringTemplate, RenderedStringTemplate
-from .actions.workflow import Workflow
 from .config.constants import C
 from .display.base import BaseDisplay
 from .display.default import DefaultDisplay
@@ -27,6 +26,7 @@ from .loader.base import AbstractBaseWorkflowLoader
 from .loader.helpers import get_default_loader_class_for_source
 from .rendering import Templar
 from .strategy import BaseStrategy, LooseStrategy
+from .workflow import Workflow
 
 __all__ = [
     "Runner",

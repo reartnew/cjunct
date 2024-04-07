@@ -7,7 +7,7 @@ import typing as t
 import pytest
 
 from cjunct.actions.base import ActionBase, ActionDependency
-from cjunct.actions.workflow import Workflow
+from cjunct.workflow import Workflow
 
 
 def _make_chained_workflow(action_class: t.Type[ActionBase]) -> Workflow:

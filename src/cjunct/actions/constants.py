@@ -11,6 +11,6 @@ ACTION_RESERVED_FIELD_NAMES: t.Set[str] = {
     "type",
     "description",
     "expects",
+    "selectable",
     "severity",  # planned in future
-    "selectable",  # planned in future
 }

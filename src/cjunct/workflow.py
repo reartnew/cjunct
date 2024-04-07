@@ -7,8 +7,8 @@ import typing as t
 
 from classlogging import LoggerMixin
 
-from .base import ActionBase, ActionDependency
-from ..exceptions import IntegrityError
+from .actions.base import ActionBase, ActionDependency
+from .exceptions import IntegrityError
 
 __all__ = [
     "Workflow",
