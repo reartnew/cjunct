@@ -49,8 +49,8 @@ class Env(EnvironmentNamespace):
         Each loaded definition is named after the filename stem and must contain an `Action` class.
         e.g. foo-bar.py may be referenced in a YAML workflow as `type: foo-bar`.
     CJUNCT_STRICT_OUTCOMES_RENDERING:
-        When set to False, rendering a missing outcome key will result in an empty string instead of an error.
-        Default is True.
+        When set to True, rendering a missing outcome key will result in an error instead of an empty string.
+        Default is False.
     """
 
     CJUNCT_LOG_LEVEL: str = OptionalString("")
@@ -64,4 +64,4 @@ class Env(EnvironmentNamespace):
     CJUNCT_SHELL_INJECT_YIELD_FUNCTION: bool = OptionalBoolean(True)  # type: ignore
     CJUNCT_EXTERNAL_MODULES_PATHS: t.List[str] = OptionalList([])
     CJUNCT_ACTIONS_CLASS_DEFINITIONS_DIRECTORY: t.List[str] = OptionalList([])
-    CJUNCT_STRICT_OUTCOMES_RENDERING: bool = OptionalBoolean(True)  # type: ignore
+    CJUNCT_STRICT_OUTCOMES_RENDERING: bool = OptionalBoolean(False)  # type: ignore
