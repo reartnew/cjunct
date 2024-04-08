@@ -1,34 +1,46 @@
+# pylint: disable=redefined-outer-name
 """Templar fixtures"""
 
-import os
+import typing as t
 
 import pytest
 
-from cjunct.rendering import Templar, containers as c
+from cjunct.config.environment import Env
+from cjunct.rendering import Templar
 
 
 @pytest.fixture
-def templar(monkeypatch: pytest.MonkeyPatch) -> Templar:
+def templar_factory(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[], Templar]:
     """Prepare a standalone templar"""
     monkeypatch.setenv("TEMPLAR_ENVIRONMENT_KEY", "test")
-    return Templar(
-        outcomes=c.ActionContainingDict(
-            {
-                "Foo": c.LooseOutcomeDict(
-                    {
-                        "bar": "ok",
-                        "baz qux.fred": "also ok",
-                    }
-                ),
-            }
-        ),
-        status=c.ActionContainingDict({"Foo": "SUCCESS"}),
-        context=c.ContextDict(
-            {
+
+    def make():
+        return Templar(
+            outcomes_map={
+                "Foo": {
+                    "bar": "ok",
+                    "baz qux.fred": "also ok",
+                },
+            },
+            action_states={"Foo": "SUCCESS"},
+            context_map={
                 "plugh": "xyzzy",
                 "thud": "@{context.waldo}",
                 "waldo": "@{context.thud}",
-            }
-        ),
-        environment=c.AttrDict(os.environ),
-    )
+            },
+        )
+
+    return make
+
+
+@pytest.fixture
+def templar(templar_factory: t.Callable[[], Templar]) -> Templar:
+    """Loose (default) templar"""
+    return templar_factory()
+
+
+@pytest.fixture
+def strict_templar(templar_factory: t.Callable[[], Templar], monkeypatch: pytest.MonkeyPatch) -> Templar:
+    """Strict templar"""
+    monkeypatch.setattr(Env, "CJUNCT_STRICT_OUTCOMES_RENDERING", True)
+    return templar_factory()

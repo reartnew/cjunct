@@ -3,7 +3,6 @@
 import pytest
 
 from cjunct.config.constants import C
-from cjunct.config.environment import Env
 from cjunct.exceptions import ActionRenderError
 from cjunct.rendering import Templar
 
@@ -19,11 +18,10 @@ def test_outcome_missing_action_rendering(templar: Templar) -> None:
         templar.render("@{outcomes.unknown_action.bar}")
 
 
-def test_strict_outcome_missing_key_rendering(templar: Templar, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_strict_outcome_missing_key_rendering(strict_templar: Templar) -> None:
     """Test missing outcome key rendering"""
-    monkeypatch.setattr(Env, "CJUNCT_STRICT_OUTCOMES_RENDERING", True)
     with pytest.raises(ActionRenderError, match="Outcome key 'unknown key' not found"):
-        templar.render("@{outcomes.Foo['unknown key']")
+        strict_templar.render("@{outcomes.Foo['unknown key']}")
 
 
 def test_status_rendering(templar: Templar) -> None:
@@ -40,6 +38,7 @@ def test_status_missing_action_rendering(templar: Templar) -> None:
 def test_environment_rendering(templar: Templar) -> None:
     """Test environment rendering"""
     assert templar.render("@{environment.TEMPLAR_ENVIRONMENT_KEY}") == "test"
+    assert templar.render("@{environment.TEMPLAR_ENVIRONMENT_KEY_UNSET}") == ""
 
 
 def test_context_rendering(templar: Templar) -> None:

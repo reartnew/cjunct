@@ -6,9 +6,10 @@ from ..exceptions import ActionRenderError
 
 __all__ = [
     "AttrDict",
-    "LooseOutcomeDict",
+    "LooseDict",
     "StrictOutcomeDict",
     "ActionContainingDict",
+    "ContextDict",
 ]
 
 
@@ -29,8 +30,8 @@ class AttrDict(dict):
         raise e
 
 
-class LooseOutcomeDict(AttrDict):
-    """A dictionary that allows attribute read access to its keys with a default value fallback"""
+class LooseDict(AttrDict):
+    """A dictionary that allows attribute read access to its keys with a default empty value fallback"""
 
     @classmethod
     def _on_key_error(cls, e: KeyError) -> t.Any:

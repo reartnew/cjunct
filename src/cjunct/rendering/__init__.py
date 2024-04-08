@@ -1,12 +1,15 @@
 """All the templating stuff."""
 
+import os
 import shlex
 import typing as t
 
 from classlogging import LoggerMixin
 
+from . import containers as c
 from .tokenizing import TemplarStringLexer
 from ..actions.types import RenderedStringTemplate
+from ..config.constants import C
 from ..exceptions import ActionRenderError
 
 __all__ = [
@@ -19,8 +22,23 @@ class Templar(LoggerMixin):
 
     DISABLED_GLOBALS: t.List[str] = ["exec", "eval", "compile", "setattr", "delattr"]
 
-    def __init__(self, **kwargs) -> None:
-        self._locals = kwargs
+    def __init__(
+        self,
+        outcomes_map: t.Mapping[str, t.Mapping[str, str]],
+        action_states: t.Mapping[str, str],
+        context_map: t.Mapping[str, str],
+    ) -> None:
+        outcomes_leaf_class: t.Type[dict] = (
+            c.StrictOutcomeDict if C.STRICT_OUTCOMES_RENDERING else c.LooseDict  # type: ignore
+        )
+        self._locals: t.Dict[str, t.Any] = {
+            "outcomes": c.ActionContainingDict(
+                {name: outcomes_leaf_class(outcomes_map.get(name, {})) for name in action_states}
+            ),
+            "status": c.ActionContainingDict(action_states),
+            "context": c.ContextDict(context_map),
+            "environment": c.LooseDict(os.environ),
+        }
 
     def render(self, value: str) -> RenderedStringTemplate:
         """Process string data, replacing all @{} occurrences"""

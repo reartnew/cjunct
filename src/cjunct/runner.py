@@ -6,7 +6,6 @@ thus placed to a separate module.
 import asyncio
 import functools
 import io
-import os
 import sys
 import typing as t
 from dataclasses import asdict
@@ -25,7 +24,7 @@ from .display.default import DefaultDisplay
 from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError, ActionUnionRenderError
 from .loader.base import AbstractBaseWorkflowLoader
 from .loader.helpers import get_default_loader_class_for_source
-from .rendering import Templar, containers as c
+from .rendering import Templar
 from .strategy import BaseStrategy, LooseStrategy
 from .workflow import Workflow
 
@@ -175,16 +174,10 @@ class Runner(classlogging.LoggerMixin):
     def _render_action(self, action: ActionBase) -> None:
         """Prepare action to execution by rendering its template fields"""
         union_render_errors: t.List[str] = []
-        outcomes_leaf_class: t.Type[dict] = (
-            c.StrictOutcomeDict if C.STRICT_OUTCOMES_RENDERING else c.LooseOutcomeDict  # type: ignore
-        )
         templar: Templar = Templar(
-            outcomes=c.ActionContainingDict(
-                {name: outcomes_leaf_class(self._outcomes.get(name, {})) for name in self.workflow}
-            ),
-            status=c.ActionContainingDict({name: self.workflow[name].status.value for name in self.workflow}),
-            context=c.ContextDict(self.workflow.context),
-            environment=c.AttrDict(os.environ),
+            outcomes_map=self._outcomes,
+            action_states={name: self.workflow[name].status.value for name in self.workflow},
+            context_map=self.workflow.context,
         )
 
         def _string_template_render_hook(value: str) -> RenderedStringTemplate:
