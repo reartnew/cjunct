@@ -25,9 +25,11 @@ def templar_factory(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[], Templar]:
             action_states={"Foo": "SUCCESS"},
             context_map={
                 "plugh": "xyzzy",
-                "thud": "@{context.waldo}",
                 "waldo": "@{context.thud}",
+                "thud": "@{environment.TEMPLAR_ENVIRONMENT_KEY}",
                 "intval": 10,
+                "cycle_1": "@{context.cycle_2}",
+                "cycle_2": "@{context.cycle_1}",
             },
         )
 
