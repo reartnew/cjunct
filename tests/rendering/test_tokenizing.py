@@ -24,11 +24,11 @@ class LexerDataSuite(DataSuite):
     )
     clean_expression = LexerTestCase(
         source="@{ a.b.c }",
-        result=[(1, "a.b.c")],
+        result=[(1, "a .b .c ")],
     )
     multiple_expressions = LexerTestCase(
         source="@{ a.b.c } @{ a.b.c }",
-        result=[(1, "a.b.c"), (0, " "), (1, "a.b.c")],
+        result=[(1, "a .b .c "), (0, " "), (1, "a .b .c ")],
     )
     complex_expression = LexerTestCase(
         source="""Hello, @{ {"foo": "world"}["foo"] }!""",
@@ -36,19 +36,19 @@ class LexerDataSuite(DataSuite):
     )
     expression_with_a_newline = LexerTestCase(
         source="@{a.b.c + \n a.b.d}",
-        result=[(1, "a.b.c+a.b.d")],
+        result=[(1, "a .b .c +a .b .d ")],
     )
     shlex_expression = LexerTestCase(
         source='@{ x."y z".w }',
-        result=[(1, 'x."y z".w')],
+        result=[(1, 'x ."y z".w ')],
     )
     dashes_expression = LexerTestCase(
         source="@{ x-y.z-w }",
-        result=[(1, "x-y.z-w")],
+        result=[(1, "x -y .z -w ")],
     )
     at_in_the_scalar = LexerTestCase(
         source='"@{ a.b }"',
-        result=[(0, '"'), (1, "a.b"), (0, '"')],
+        result=[(0, '"'), (1, "a .b "), (0, '"')],
     )
 
 

@@ -100,7 +100,7 @@ class TemplarStringLexer:
     def _read_expression(self) -> t.Tuple[int, str]:
         """Use a tokenizer to detect the closing brace"""
         brace_depth: int = 0
-        collected_tokens: t.List[str] = []
+        collected_tokens: t.List[t.Tuple[int, str]] = []
         tokenizer = ExpressionTokenizer(data=self._data[self._caret :])
         while True:
             token_info = tokenizer.get_token()
@@ -109,7 +109,7 @@ class TemplarStringLexer:
             elif token_info.exact_type == tokenize.RBRACE:
                 brace_depth -= 1
                 if brace_depth < 0:
-                    clean_expression: str = "".join(collected_tokens)
+                    clean_expression: str = tokenize.untokenize(collected_tokens)
                     return tokenizer.position, clean_expression
             if token_info.exact_type not in self._IGNORED_TOKENS_TYPES:
-                collected_tokens.append(token_info.string)
+                collected_tokens.append((token_info.type, token_info.string))
