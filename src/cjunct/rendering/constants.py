@@ -4,4 +4,4 @@ __all__ = [
     "MAX_RECURSION_DEPTH",
 ]
 
-MAX_RECURSION_DEPTH: int = 5
+MAX_RECURSION_DEPTH: int = 100
