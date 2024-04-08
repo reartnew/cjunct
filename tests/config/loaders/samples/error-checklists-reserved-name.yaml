@@ -1,5 +1,0 @@
-# exception: LoadError
-# match: Reserved checklist name used
----
-actions:
-  - !checklists-directory "./reserved-checklists"

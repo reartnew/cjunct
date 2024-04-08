@@ -1,5 +1,0 @@
-# exception: LoadError
-# match: Checklist file has invalid extension
----
-actions:
-  - !checklists-directory "./invalid-extension-checklists"

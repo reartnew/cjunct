@@ -21,11 +21,11 @@ SAMPLES: t.List[Path] = [
 
 
 @pytest.fixture(params=SAMPLES, ids=[item.stem for item in SAMPLES])
-def sample_config(
+def sample_workflow(
     request: SubRequest,
     monkeypatch: pytest.MonkeyPatch,
 ) -> t.Tuple[Path, t.Optional[t.Type[Exception]], t.Optional[str]]:
-    """Return sample config file path with (maybe) exception handling instructions"""
+    """Return sample workflow file path with (maybe) exception handling instructions"""
     file_path: Path = request.param
     # Find exception instructions
     expected_exception_type: t.Optional[t.Type[Exception]] = None

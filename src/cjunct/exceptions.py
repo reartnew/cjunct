@@ -5,6 +5,7 @@ import typing as t
 __all__ = [
     "ExecutionFailed",
     "ActionRenderError",
+    "RestrictedBuiltinError",
     "ActionUnionRenderError",
     "ActionRunError",
     "BaseError",
@@ -21,6 +22,10 @@ class ExecutionFailed(Exception):
 
 class ActionRenderError(Exception):
     """Action rendering failed"""
+
+
+class RestrictedBuiltinError(Exception):
+    """Action rendering access to a restricted builtin function"""
 
 
 class ActionUnionRenderError(ActionRenderError):
@@ -47,12 +52,12 @@ class LoadError(BaseError):
         self.stack: t.List[str] = stack
         text: str = message
         if stack:
-            text += f"\n  Current config stack: {' -> '.join(stack)}"
+            text += f"\n  Sources stack: {' -> '.join(stack)}"
         super().__init__(text)
 
 
 class IntegrityError(BaseError):
-    """Action net structure error"""
+    """Workflow structure error"""
 
     CODE: int = 103
 

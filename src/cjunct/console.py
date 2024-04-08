@@ -53,21 +53,10 @@ class WorkflowPositionalArgument(click.Argument):
 
 @click.group
 @click.option(
-    "-d",
-    "--directory",
-    help="Context directory. Defaults to current working directory. "
-    "Also configurable via the CJUNCT_CONTEXT_DIRECTORY environment variable.",
-)
-@click.option(
     "-l",
     "--log-level",
     help="Logging level. Defaults to ERROR. Also configurable via the CJUNCT_LOG_LEVEL environment variable.",
     type=click.Choice(list(LOG_LEVELS)),
-)
-@click.option(
-    "-f",
-    "--file",
-    help="[DEPRECATED] Workflow file. It is recommended to use the positional argument instead.",
 )
 @cliargs_receiver
 def main() -> None:
@@ -130,12 +119,12 @@ def run() -> None:
 @wrap_cli_command
 @click.argument("workflow", cls=WorkflowPositionalArgument)
 def validate() -> None:
-    """Check configuration validity."""
+    """Check workflow validity."""
     action_num: int = len(
         cjunct.Runner(
             strategy_class=C.STRATEGY_CLASS,
             display_class=C.DISPLAY_CLASS,
-        ).actions
+        ).workflow
     )
     logger.info(f"Located actions number: {action_num}")
 

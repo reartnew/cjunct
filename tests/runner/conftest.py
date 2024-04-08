@@ -14,7 +14,7 @@ from _pytest.fixtures import SubRequest
 
 from cjunct.config.environment import Env
 from cjunct.config.constants import C
-from cjunct.display.default import NetPrefixDisplay
+from cjunct.display.default import DefaultDisplay
 
 CtxFactoryType = t.Callable[[str], Path]
 
@@ -42,8 +42,8 @@ def display_collector(monkeypatch: pytest.MonkeyPatch) -> t.List[str]:
     ) -> t.List[str]:
         return default_selected_action_names[:1]
 
-    monkeypatch.setattr(NetPrefixDisplay, "display", display)
-    monkeypatch.setattr(NetPrefixDisplay, "_run_dialog", _run_dialog)
+    monkeypatch.setattr(DefaultDisplay, "display", display)
+    monkeypatch.setattr(DefaultDisplay, "_run_dialog", _run_dialog)
     return results
 
 
@@ -70,9 +70,9 @@ def actions_definitions_directory(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-@pytest.fixture(params=["chdir", "env_context_dir", "env_actions_source"])
+@pytest.fixture(params=["chdir", "env_workflow"])
 def runner_good_context(ctx_from_text: CtxFactoryType, request: SubRequest, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Prepare a directory with good sample config files"""
+    """Prepare a directory with good sample workflow files"""
     actions_source_path: Path = ctx_from_text(
         """
         actions:
@@ -88,17 +88,15 @@ def runner_good_context(ctx_from_text: CtxFactoryType, request: SubRequest, monk
     )
     if request.param == "chdir":
         monkeypatch.chdir(actions_source_path.parent)
-    elif request.param == "env_context_dir":
-        monkeypatch.setenv("CJUNCT_CONTEXT_DIRECTORY", str(actions_source_path.parent))
-    elif request.param == "env_actions_source":
-        monkeypatch.setenv("CJUNCT_ACTIONS_SOURCE_FILE", str(actions_source_path))
+    elif request.param == "env_workflow":
+        monkeypatch.setenv("CJUNCT_WORKFLOW_FILE", str(actions_source_path))
     else:
         raise ValueError(request.param)
 
 
-@pytest.fixture(params=["chdir", "env_context_dir", "env_actions_source"])
+@pytest.fixture(params=["chdir", "env_workflow"])
 def runner_shell_yield_good_context(request: SubRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Prepare a directory with good sample config files using shell yield feature"""
+    """Prepare a directory with good sample workflow files using shell yield feature"""
 
     def _str_to_b64(s: str) -> str:
         return base64.b64encode(s.encode()).decode()
@@ -107,36 +105,34 @@ def runner_shell_yield_good_context(request: SubRequest, tmp_path: Path, monkeyp
     actions_source_path.write_bytes(
         f"""---
 context:
-    bar-prefix: Prefix
+    bar_prefix: Prefix
 actions:
   - name: Foo
     type: shell
-    command: yield_outcome result-key "I am foo" 
+    command: yield_outcome result_key "I am foo" 
   - name: Bar
     type: shell
     command: |
-     echo "@{{outcomes.Foo.result-key}}"
-     echo "@{{context.bar-prefix}} ##cjunct[yield-outcome-b64 {_str_to_b64('result-key')} {_str_to_b64('bar')}]##"
+     echo "@{{outcomes.Foo.result_key}}"
+     echo "@{{context.bar_prefix}} ##cjunct[yield-outcome-b64 {_str_to_b64('result_key')} {_str_to_b64('bar')}]##"
     expects: Foo
   - name: Baz
     type: shell
-    command: echo "@{{outcomes.Bar.result-key}}"
+    command: echo "@{{outcomes.Bar.result_key}}"
     expects: Bar
 """.encode()
     )
     if request.param == "chdir":
         monkeypatch.chdir(tmp_path)
-    elif request.param == "env_context_dir":
-        monkeypatch.setenv("CJUNCT_CONTEXT_DIRECTORY", str(tmp_path))
-    elif request.param == "env_actions_source":
-        monkeypatch.setenv("CJUNCT_ACTIONS_SOURCE_FILE", str(actions_source_path))
+    elif request.param == "env_workflow":
+        monkeypatch.setenv("CJUNCT_WORKFLOW_FILE", str(actions_source_path))
     else:
         raise ValueError(request.param)
 
 
 @pytest.fixture
 def runner_failing_action_context(ctx_from_text: CtxFactoryType) -> None:
-    """Prepare a directory with sample config files of a failing action"""
+    """Prepare a directory with sample workflow files of a failing action"""
     ctx_from_text(
         """
         actions:
@@ -149,7 +145,7 @@ def runner_failing_action_context(ctx_from_text: CtxFactoryType) -> None:
 
 @pytest.fixture
 def runner_failing_render_context(ctx_from_text: CtxFactoryType) -> None:
-    """Prepare a directory with sample config files of a failing render"""
+    """Prepare a directory with sample workflow files of a failing render"""
     ctx_from_text(
         """
         actions:
@@ -171,7 +167,7 @@ def runner_failing_render_context(ctx_from_text: CtxFactoryType) -> None:
 
 @pytest.fixture
 def runner_external_actions_context(ctx_from_text: CtxFactoryType, actions_definitions_directory: None) -> None:
-    """Prepare a directory with sample config files using external actions from directories"""
+    """Prepare a directory with sample workflow files using external actions from directories"""
     ctx_from_text(
         """
         actions:
@@ -184,7 +180,7 @@ def runner_external_actions_context(ctx_from_text: CtxFactoryType, actions_defin
 
 @pytest.fixture
 def runner_status_substitution_good_context(ctx_from_text: CtxFactoryType) -> None:
-    """Prepare a directory with sample config files testing status good substitution"""
+    """Prepare a directory with sample workflow files testing status good substitution"""
     ctx_from_text(
         """
         actions:
@@ -198,7 +194,7 @@ def runner_status_substitution_good_context(ctx_from_text: CtxFactoryType) -> No
 
 @pytest.fixture
 def runner_status_substitution_bad_context(ctx_from_text: CtxFactoryType) -> None:
-    """Prepare a directory with sample config files testing status bad substitution"""
+    """Prepare a directory with sample workflow files testing status bad substitution"""
     ctx_from_text(
         """
         actions:
@@ -211,7 +207,7 @@ def runner_status_substitution_bad_context(ctx_from_text: CtxFactoryType) -> Non
 
 @pytest.fixture
 def runner_failing_union_render_context(ctx_from_text: CtxFactoryType, actions_definitions_directory: None) -> None:
-    """Prepare a directory with sample config files using external actions from directories with union render types"""
+    """Prepare a directory with sample workflow files using external actions from directories with union render types"""
     ctx_from_text(
         """
         actions:

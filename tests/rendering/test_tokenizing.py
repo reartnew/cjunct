@@ -5,7 +5,7 @@ import typing as t
 
 from pytest_data_suites import DataSuite
 
-from cjunct.rendering import ExpressionTokenizer, TemplarStringLexer
+from cjunct.rendering.tokenizing import ExpressionTokenizer, TemplarStringLexer
 
 
 class LexerTestCase(t.TypedDict):

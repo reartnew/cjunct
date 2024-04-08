@@ -7,15 +7,15 @@ import pytest
 
 from cjunct import ActionBase, LooseStrategy, StrictSequentialStrategy
 from cjunct.actions.base import ActionStatus
-from cjunct.actions.net import ActionNet
 from cjunct.strategy import BaseStrategy
+from cjunct.workflow import Workflow
 
 
 @pytest.mark.asyncio
-async def test_chain_success(strict_successful_net: ActionNet) -> None:
+async def test_chain_success(strict_successful_workflow: Workflow) -> None:
     """Chain successful execution"""
     result: t.List[ActionBase] = []
-    strategy: t.AsyncIterable[ActionBase] = LooseStrategy(strict_successful_net)
+    strategy: t.AsyncIterable[ActionBase] = LooseStrategy(strict_successful_workflow)
     async for action in strategy:  # type: ActionBase
         await action
         result.append(action)
@@ -25,10 +25,10 @@ async def test_chain_success(strict_successful_net: ActionNet) -> None:
 
 @pytest.mark.parametrize("strategy_class", [LooseStrategy, StrictSequentialStrategy])
 @pytest.mark.asyncio
-async def test_chain_failure(strict_failing_net: ActionNet, strategy_class: t.Type[BaseStrategy]) -> None:
+async def test_chain_failure(strict_failing_workflow: Workflow, strategy_class: t.Type[BaseStrategy]) -> None:
     """Chain failing execution"""
     result: t.List[ActionBase] = []
-    strategy: t.AsyncIterable[ActionBase] = strategy_class(strict_failing_net)
+    strategy: t.AsyncIterable[ActionBase] = strategy_class(strict_failing_workflow)
     async for action in strategy:  # type: ActionBase
         with pytest.raises(RuntimeError):
             await action
@@ -36,24 +36,24 @@ async def test_chain_failure(strict_failing_net: ActionNet, strategy_class: t.Ty
     assert len(result) == 1  # Should not emit more than one action
     assert result[0].status == ActionStatus.FAILURE
     # Check final states now
-    assert collections.Counter(a.status for a in strict_failing_net.values()) == {
+    assert collections.Counter(a.status for a in strict_failing_workflow.values()) == {
         ActionStatus.FAILURE: 1,
         ActionStatus.SKIPPED: 5,
     }
 
 
 @pytest.mark.asyncio
-async def test_chain_skip(strict_skipping_net: ActionNet) -> None:
+async def test_chain_skip(strict_skipping_workflow: Workflow) -> None:
     """Chain skipping execution"""
     result: t.List[ActionBase] = []
-    strategy: t.AsyncIterable[ActionBase] = LooseStrategy(strict_skipping_net)
+    strategy: t.AsyncIterable[ActionBase] = LooseStrategy(strict_skipping_workflow)
     async for action in strategy:  # type: ActionBase
         await action
         result.append(action)
     assert len(result) == 1  # Should not emit more than one action
     assert result[0].status == ActionStatus.SKIPPED
     # Check final states now
-    assert all(a.status == ActionStatus.SKIPPED for a in strict_skipping_net.values())
+    assert all(a.status == ActionStatus.SKIPPED for a in strict_skipping_workflow.values())
 
 
 def test_non_redefined_name() -> None:

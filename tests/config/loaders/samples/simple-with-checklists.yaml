@@ -1,9 +1,0 @@
----
-actions:
-
-  - name: RunAnsible
-    description: Run ansible
-    type: shell
-    command: playbooks/Dummy.yml
-
-  - !checklists-directory ./ansible-checklists

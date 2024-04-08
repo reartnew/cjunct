@@ -1,4 +1,4 @@
-"""ActionNet dedicated module"""
+"""Workflow-related module"""
 
 from __future__ import annotations
 
@@ -7,37 +7,31 @@ import typing as t
 
 from classlogging import LoggerMixin
 
-from .base import ActionBase, ActionDependency
-from ..exceptions import IntegrityError
+from .actions.base import ActionBase, ActionDependency
+from .exceptions import IntegrityError
 
 __all__ = [
-    "ActionNet",
+    "Workflow",
 ]
 
 
-class ActionNet(t.Dict[str, ActionBase], LoggerMixin):
+class Workflow(t.Dict[str, ActionBase], LoggerMixin):
     """Action relations map"""
 
     def __init__(
         self,
-        net: t.Dict[str, ActionBase],
-        checklists: t.Optional[t.Dict[str, t.List[str]]] = None,
+        actions_map: t.Dict[str, ActionBase],
         context: t.Optional[t.Dict[str, str]] = None,
     ) -> None:
-        super().__init__(net)
+        super().__init__(actions_map)
         self._entrypoints: t.Set[str] = set()
-        self._checklists: t.Dict[str, t.List[str]] = checklists or {}
         self._tiers_sequence: t.List[t.List[ActionBase]] = []
         self._descendants_map: t.Dict[str, t.Dict[str, ActionDependency]] = collections.defaultdict(dict)
-        self._context: t.Dict[str, str] = context or {}
+        self.context: t.Dict[str, str] = context or {}
         # Check dependencies integrity
         self._establish_descendants()
         # Create order map to check all actions are reachable
         self._allocate_tiers()
-
-    def get_context_value(self, key: str) -> t.Optional[str]:
-        """Obtain raw value of the context key"""
-        return self._context.get(key)
 
     def _establish_descendants(self) -> None:
         missing_non_external_deps: t.Set[str] = set()
@@ -59,7 +53,7 @@ class ActionNet(t.Dict[str, ActionBase], LoggerMixin):
             raise IntegrityError(f"Missing actions among dependencies: {sorted(missing_non_external_deps)}")
         # Check entrypoints presence
         if not self._entrypoints:
-            raise IntegrityError("No entrypoints for the graph")
+            raise IntegrityError("No entrypoints for the workflow")
 
     def _allocate_tiers(self) -> None:
         """Use Dijkstra algorithm to introduce partial order.

@@ -11,27 +11,25 @@ import dacite
 from classlogging import LoggerMixin
 
 from .inspect import get_class_annotations
-from ...actions.base import ActionBase, ArgsBase, ActionDependency
-from ...actions.net import ActionNet
-from ...actions.types import StringTemplate
-from ...exceptions import LoadError
+from ..actions.base import ActionBase, ArgsBase, ActionDependency
+from ..actions.types import StringTemplate
+from ..exceptions import LoadError
+from ..workflow import Workflow
 
 __all__ = [
-    "AbstractBaseConfigLoader",
+    "AbstractBaseWorkflowLoader",
 ]
 
 
-class AbstractBaseConfigLoader(LoggerMixin):
+class AbstractBaseWorkflowLoader(LoggerMixin):
     """Loaders base class"""
 
-    _RESERVED_CHECKLISTS_NAMES: t.Set[str] = {"ALL", "NONE"}
     STATIC_ACTION_FACTORIES: t.Dict[str, t.Type[ActionBase]] = {}
 
     def __init__(self) -> None:
         self._actions: t.Dict[str, ActionBase] = {}
         self._raw_file_names_stack: t.List[str] = []
         self._resolved_file_paths_stack: t.List[Path] = []
-        self._checklists: t.Dict[str, t.List[str]] = {}
         self._gathered_context: t.Dict[str, str] = {}
 
     def _register_action(self, action: ActionBase) -> None:
@@ -43,29 +41,8 @@ class AbstractBaseConfigLoader(LoggerMixin):
         """Raise loader exception from text"""
         raise LoadError(message=message, stack=self._raw_file_names_stack)
 
-    def load_checklists_from_directory(self, directory: t.Union[str, Path]) -> None:
-        """Parse checklists directory safely"""
-        directory_path: Path = Path(directory)
-        if not directory_path.is_dir():
-            self._throw(f"No such directory: {directory_path}")
-        for checklist_file in directory_path.iterdir():  # type: Path
-            if not checklist_file.is_file():
-                self._throw(f"Checklist is not a file: {checklist_file}")
-            if checklist_file.suffix != ".checklist":
-                self._throw(f"Checklist file has invalid extension: {checklist_file} (should be '.checklist')")
-            checklist_name: str = checklist_file.stem
-            if checklist_name in self._checklists:
-                self._throw(f"Checklist defined twice: {checklist_name!r}")
-            if checklist_name in self._RESERVED_CHECKLISTS_NAMES:
-                self._throw(f"Reserved checklist name used: {checklist_name!r}")
-            self._checklists[checklist_name] = [
-                action_name.strip()
-                for action_name in checklist_file.read_text(encoding="utf-8").splitlines()
-                if action_name.strip()
-            ]
-
     def _internal_load(self, source_file: t.Union[str, Path]) -> None:
-        """Load config partially from file (can be called recursively).
+        """Load workflow partially from file (can be called recursively).
         :param source_file: either Path or string object pointing at a file"""
         with self._read_file(source_file) as file_data:
             self._internal_loads(file_data)
@@ -85,17 +62,17 @@ class AbstractBaseConfigLoader(LoggerMixin):
             self._throw("Cyclic load")
         self._raw_file_names_stack.append(str(source_file))
         self._resolved_file_paths_stack.append(source_resolved_file_path)
-        self.logger.debug(f"Loading config file: {source_resolved_file_path}")
+        self.logger.debug(f"Loading workflow file: {source_resolved_file_path}")
         try:
             if not source_resolved_file_path.is_file():
-                self._throw(f"Config file not found: {source_resolved_file_path}")
+                self._throw(f"Workflow file not found: {source_resolved_file_path}")
             yield source_resolved_file_path.read_bytes()
         finally:
             self._raw_file_names_stack.pop()
             self._resolved_file_paths_stack.pop()
 
     def _internal_loads(self, data: t.Union[str, bytes]) -> None:
-        """Load config partially from text (can be called recursively)"""
+        """Load workflow partially from text (can be called recursively)"""
         raise NotImplementedError
 
     def _get_action_factory_by_type(self, action_type: str) -> t.Type[ActionBase]:
@@ -103,15 +80,15 @@ class AbstractBaseConfigLoader(LoggerMixin):
             self._throw(f"Unknown dispatched type: {action_type}")
         return self.STATIC_ACTION_FACTORIES[action_type]
 
-    def loads(self, data: t.Union[str, bytes]) -> ActionNet:
-        """Load config from text"""
+    def loads(self, data: t.Union[str, bytes]) -> Workflow:
+        """Load workflow from text"""
         self._internal_loads(data=data)
-        return ActionNet(self._actions, context=self._gathered_context)
+        return Workflow(self._actions, context=self._gathered_context)
 
-    def load(self, source_file: t.Union[str, Path]) -> ActionNet:
-        """Load config from file"""
+    def load(self, source_file: t.Union[str, Path]) -> Workflow:
+        """Load workflow from file"""
         self._internal_load(source_file=source_file)
-        return ActionNet(self._actions, context=self._gathered_context)
+        return Workflow(self._actions, context=self._gathered_context)
 
     def build_dependency_from_node(self, dep_node: t.Union[str, dict]) -> t.Tuple[str, ActionDependency]:
         """Unified method to process transform dependency source data"""

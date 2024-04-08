@@ -7,10 +7,10 @@ import typing as t
 import pytest
 
 from cjunct.actions.base import ActionBase, ActionDependency
-from cjunct.actions.net import ActionNet
+from cjunct.workflow import Workflow
 
 
-def _make_chained_net(action_class: t.Type[ActionBase]) -> ActionNet:
+def _make_chained_workflow(action_class: t.Type[ActionBase]) -> Workflow:
     step_names: t.List[str] = [
         "foo",
         "bar",
@@ -19,7 +19,7 @@ def _make_chained_net(action_class: t.Type[ActionBase]) -> ActionNet:
         "fred",
         "thud",
     ]
-    return ActionNet(
+    return Workflow(
         {
             step_name: action_class(
                 name=step_name,
@@ -31,8 +31,8 @@ def _make_chained_net(action_class: t.Type[ActionBase]) -> ActionNet:
 
 
 @pytest.fixture
-def strict_successful_net() -> ActionNet:
-    """Minimalistic strict chained action net"""
+def strict_successful_workflow() -> Workflow:
+    """Minimalistic strict chained workflow"""
 
     class SuccessAction(ActionBase):
         """Does nothing"""
@@ -40,12 +40,12 @@ def strict_successful_net() -> ActionNet:
         async def run(self) -> None:
             pass
 
-    return _make_chained_net(action_class=SuccessAction)
+    return _make_chained_workflow(action_class=SuccessAction)
 
 
 @pytest.fixture
-def strict_failing_net() -> ActionNet:
-    """Minimalistic strict chained action net with failures"""
+def strict_failing_workflow() -> Workflow:
+    """Minimalistic strict chained workflow with failures"""
 
     class FailingAction(ActionBase):
         """Raises RuntimeError"""
@@ -53,12 +53,12 @@ def strict_failing_net() -> ActionNet:
         async def run(self) -> None:
             raise RuntimeError
 
-    return _make_chained_net(action_class=FailingAction)
+    return _make_chained_workflow(action_class=FailingAction)
 
 
 @pytest.fixture
-def strict_skipping_net() -> ActionNet:
-    """Minimalistic strict chained action net with explicit skipping"""
+def strict_skipping_workflow() -> Workflow:
+    """Minimalistic strict chained workflow with explicit skipping"""
 
     class SkippingAction(ActionBase):
         """Raises RuntimeError"""
@@ -66,4 +66,4 @@ def strict_skipping_net() -> ActionNet:
         async def run(self) -> None:
             self.skip()
 
-    return _make_chained_net(action_class=SkippingAction)
+    return _make_chained_workflow(action_class=SkippingAction)

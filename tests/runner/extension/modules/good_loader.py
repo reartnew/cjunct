@@ -1,7 +1,7 @@
 """Check extension possibilities"""
 
 from cjunct import ActionBase
-from cjunct.config.loaders.default.yaml import DefaultYAMLConfigLoader
+from cjunct.loader.default import DefaultYAMLWorkflowLoader
 from external_test_lib.constant import TEST_SUFFIX  # type: ignore  # pylint: disable=wrong-import-order
 
 
@@ -13,10 +13,10 @@ class StringReturningAction(ActionBase):
         return f"I am a string! {TEST_SUFFIX}"
 
 
-class ConfigLoader(DefaultYAMLConfigLoader):
+class WorkflowLoader(DefaultYAMLWorkflowLoader):
     """Able to build echoes"""
 
     STATIC_ACTION_FACTORIES = {
-        **DefaultYAMLConfigLoader.STATIC_ACTION_FACTORIES,
+        **DefaultYAMLWorkflowLoader.STATIC_ACTION_FACTORIES,
         "return-string": StringReturningAction,
     }

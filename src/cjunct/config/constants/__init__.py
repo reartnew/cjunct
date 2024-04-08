@@ -52,9 +52,9 @@ def _maybe_strategy(name: t.Optional[str]) -> t.Optional[StrategyClassType]:
 
 
 def _get_default_display_class() -> DisplayClassType:
-    from ...display.default import NetPrefixDisplay
+    from ...display.default import DefaultDisplay
 
-    return NetPrefixDisplay
+    return DefaultDisplay
 
 
 def _get_strategy_class_from_cli_arg() -> t.Optional[StrategyClassType]:
@@ -85,8 +85,6 @@ class C:
         lambda: Path().resolve() / ".env",
     )
     CONTEXT_DIRECTORY: Mandatory[Path] = Mandatory(
-        lambda: get_cli_arg("directory"),
-        lambda: maybe_path(Env.CJUNCT_CONTEXT_DIRECTORY),
         lambda: Path().resolve(),
     )
     INTERACTIVE_MODE: Mandatory[bool] = Mandatory(
@@ -95,15 +93,13 @@ class C:
     )
     ACTIONS_SOURCE_FILE: Optional[Path] = Optional(
         lambda: maybe_path(get_cli_arg("workflow")),
-        lambda: maybe_path(get_cli_arg("file")),
         lambda: maybe_path(Env.CJUNCT_WORKFLOW_FILE),
-        lambda: maybe_path(Env.CJUNCT_ACTIONS_SOURCE_FILE),
     )
-    CONFIG_LOADER_CLASS: Optional[LoaderClassType] = Optional(
+    WORKFLOW_LOADER_CLASS: Optional[LoaderClassType] = Optional(
         lambda: maybe_class_from_module(
-            path_str=Env.CJUNCT_CONFIG_LOADER_SOURCE_FILE,
-            class_name="ConfigLoader",
-            submodule_name="config.loader",
+            path_str=Env.CJUNCT_WORKFLOW_LOADER_SOURCE_FILE,
+            class_name="WorkflowLoader",
+            submodule_name="workflow.loader",
         )
     )
     ACTION_CLASSES_DIRECTORIES: Mandatory[t.List[str]] = Mandatory(

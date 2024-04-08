@@ -1,6 +1,0 @@
-# exception: LoadError
-# match: Checklist defined twice
----
-actions:
-  - !checklists-directory "./ansible-checklists"
-  - !checklists-directory "./common-checklists"

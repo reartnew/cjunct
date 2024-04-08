@@ -1,6 +1,6 @@
 """Check extension possibilities"""
 
-from cjunct.config.loaders.default.yaml import DefaultYAMLConfigLoader
+from cjunct.loader.default import DefaultYAMLWorkflowLoader
 
 
 class BadEchoAction:
@@ -11,10 +11,10 @@ class BadEchoAction:
         return "I am a string!"
 
 
-class ConfigLoader(DefaultYAMLConfigLoader):
+class WorkflowLoader(DefaultYAMLWorkflowLoader):
     """Able to build echoes"""
 
     STATIC_ACTION_FACTORIES = {
-        **DefaultYAMLConfigLoader.STATIC_ACTION_FACTORIES,
+        **DefaultYAMLWorkflowLoader.STATIC_ACTION_FACTORIES,
         "echo": BadEchoAction,  # type: ignore
     }

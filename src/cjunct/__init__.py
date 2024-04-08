@@ -10,8 +10,8 @@ from .actions.types import (
     StringTemplate,
 )
 from .config.constants import C
-from .config.loaders.default.yaml import DefaultYAMLConfigLoader
-from .display.default import NetPrefixDisplay
+from .display.default import DefaultDisplay
+from .loader.default import DefaultYAMLWorkflowLoader
 from .runner import Runner
 from .strategy import (
     FreeStrategy,
