@@ -2,6 +2,8 @@
 
 import typing as t
 
+from .constants import MAX_RECURSION_DEPTH
+from ..actions.types import RenderedStringTemplate
 from ..exceptions import ActionRenderError
 
 __all__ = [
@@ -56,6 +58,22 @@ class ActionContainingDict(AttrDict):
 class ContextDict(AttrDict):
     """Context keys representation"""
 
+    def __init__(self, data: t.Mapping[str, str], render_hook: t.Callable[[str], RenderedStringTemplate]) -> None:
+        super().__init__(data)
+        self.__render_hook: t.Callable[[str], RenderedStringTemplate] = render_hook
+        self.__depth: int = 0
+
     @classmethod
     def _on_key_error(cls, e: KeyError) -> t.Any:
         raise ActionRenderError(f"Context key not found: {e}") from e
+
+    def __getitem__(self, item: str):
+        # Context keys can refer to anything else, thus we keep resolving until the template is stable
+        result = str(super().__getitem__(item))
+        while True:
+            self.__depth += 1
+            if self.__depth >= MAX_RECURSION_DEPTH:
+                raise ActionRenderError(f"Recursion depth exceeded: {self.__depth}/{MAX_RECURSION_DEPTH}")
+            if result == (result := self.__render_hook(result)):
+                break
+        return result

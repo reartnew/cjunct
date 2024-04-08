@@ -35,13 +35,16 @@ class Templar(LoggerMixin):
                 {name: outcomes_leaf_class(outcomes_map.get(name, {})) for name in action_states}
             ),
             "status": c.ActionContainingDict(action_states),
-            "context": c.ContextDict(context_map),
+            "context": c.ContextDict(data=context_map, render_hook=self.render),
             "environment": c.LooseDict(os.environ),
         }
 
     def render(self, value: str) -> RenderedStringTemplate:
         """Process string data, replacing all @{} occurrences"""
         chunks: t.List[str] = []
+        # Cheap check
+        if "@{" not in value:
+            return RenderedStringTemplate(value)
         for lexeme_type, lexeme_value in TemplarStringLexer(value):
             if lexeme_type == TemplarStringLexer.EXPRESSION:
                 lexeme_value = self._string_template_process_expression(expression=lexeme_value)

@@ -89,7 +89,7 @@ def test_restricted_setattr(templar: Templar) -> None:
 def test_complex_rendering(templar: Templar) -> None:
     """Test complex expression rendering"""
     assert (
-        templar.render('@{ f"{context.intval ** 2} percents of actions finished" }: @{dict(status)}')
+        templar.render('@{ f"{int(context.intval) ** 2} percents of actions finished" }: @{dict(status)}')
         == "100 percents of actions finished: {'Foo': 'SUCCESS'}"
     )
 
@@ -97,3 +97,14 @@ def test_complex_rendering(templar: Templar) -> None:
 def test_expression_with_spaces(templar: Templar) -> None:
     """Test expression with space rendering"""
     assert templar.render("@{ 'OK' if context.plugh == 'xyzzy' else 'Not OK' }") == "OK"
+
+
+def test_recursive_expression(templar: Templar) -> None:
+    """Test expression with nesting"""
+    assert templar.render("@{ context.waldo }") == "test"
+
+
+def test_cycle_expression(templar: Templar) -> None:
+    """Test expression with cycle"""
+    with pytest.raises(ActionRenderError, match="Recursion depth exceeded"):
+        templar.render("@{ context.cycle_1 }")
