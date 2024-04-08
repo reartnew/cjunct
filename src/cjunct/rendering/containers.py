@@ -5,7 +5,6 @@ import typing as t
 from ..exceptions import ActionRenderError
 
 __all__ = [
-    "AttrDict",
     "LooseDict",
     "StrictOutcomeDict",
     "ActionContainingDict",
@@ -27,7 +26,7 @@ class AttrDict(dict):
 
     @classmethod
     def _on_key_error(cls, e: KeyError) -> t.Any:
-        raise e
+        raise NotImplementedError
 
 
 class LooseDict(AttrDict):

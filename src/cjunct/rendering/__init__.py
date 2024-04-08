@@ -1,7 +1,6 @@
 """All the templating stuff."""
 
 import os
-import shlex
 import typing as t
 
 from classlogging import LoggerMixin
@@ -10,7 +9,7 @@ from . import containers as c
 from .tokenizing import TemplarStringLexer
 from ..actions.types import RenderedStringTemplate
 from ..config.constants import C
-from ..exceptions import ActionRenderError
+from ..exceptions import ActionRenderError, RestrictedBuiltinError
 
 __all__ = [
     "Templar",
@@ -50,12 +49,11 @@ class Templar(LoggerMixin):
         return RenderedStringTemplate("".join(chunks))
 
     @classmethod
-    def _string_template_expression_split(cls, string: str) -> t.List[str]:
-        """Use shell-style lexer, but split by dots instead of whitespaces"""
-        dot_lexer = shlex.shlex(instream=string, punctuation_chars=True)
-        dot_lexer.whitespace = "."
-        # Extra split to unquote quoted values
-        return ["".join(shlex.split(token)) for token in dot_lexer]
+    def _make_restricted_builtin_call_shim(cls, name: str) -> t.Callable:
+        def _call(*args, **kwargs) -> t.NoReturn:
+            raise RestrictedBuiltinError(name)
+
+        return _call
 
     def _string_template_process_expression(self, expression: str) -> str:
         """Split the expression into parts and process according to the part name"""
@@ -63,9 +61,9 @@ class Templar(LoggerMixin):
         try:
             try:
                 # pylint: disable=eval-used
-                result: t.Any = eval(
+                result: t.Any = eval(  # nosec
                     expression,
-                    {f: None for f in self.DISABLED_GLOBALS},
+                    {f: self._make_restricted_builtin_call_shim(f) for f in self.DISABLED_GLOBALS},
                     self._locals,
                 )
                 return str(result)
@@ -75,10 +73,8 @@ class Templar(LoggerMixin):
         except ActionRenderError:
             raise
         except (SyntaxError, NameError) as e:
+            self.logger.warning(repr(e))
             raise ActionRenderError(e) from e
         except Exception as e:
+            self.logger.warning(repr(e))
             raise ActionRenderError(repr(e)) from e
-
-    def _error(self, message: str) -> t.NoReturn:
-        self.logger.warning(message)
-        raise ActionRenderError(message)

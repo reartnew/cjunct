@@ -1,8 +1,9 @@
 """Templar tests"""
 
+import re
+
 import pytest
 
-from cjunct.config.constants import C
 from cjunct.exceptions import ActionRenderError
 from cjunct.rendering import Templar
 
@@ -68,7 +69,26 @@ def test_complex_expression_split_rendering(templar: Templar) -> None:
     assert templar.render("@{outcomes.Foo['baz qux.fred']}") == "also ok"
 
 
-def test_loose_rendering(templar: Templar, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_loose_rendering(templar: Templar) -> None:
     """Test loose rendering"""
-    monkeypatch.setattr(C, "STRICT_OUTCOMES_RENDERING", False)
     assert templar.render("@{outcomes.Foo.unknown_key}") == ""
+
+
+def test_restricted_exec(templar: Templar) -> None:
+    """Test exec rendering"""
+    with pytest.raises(ActionRenderError, match=re.escape("RestrictedBuiltinError('exec')")):
+        templar.render("@{exec('import sys')}")
+
+
+def test_restricted_setattr(templar: Templar) -> None:
+    """Test setattr rendering"""
+    with pytest.raises(ActionRenderError, match=re.escape("RestrictedBuiltinError('setattr')")):
+        templar.render("@{setattr(status, 'Foo', 'SUCCESS')}")
+
+
+def test_complex_rendering(templar: Templar) -> None:
+    """Test complex expression rendering"""
+    assert (
+        templar.render('@{ f"{context.intval ** 2} percents of actions finished" }: @{dict(status)}')
+        == "100 percents of actions finished: {'Foo': 'SUCCESS'}"
+    )

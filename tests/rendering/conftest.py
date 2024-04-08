@@ -27,6 +27,7 @@ def templar_factory(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[], Templar]:
                 "plugh": "xyzzy",
                 "thud": "@{context.waldo}",
                 "waldo": "@{context.thud}",
+                "intval": 10,
             },
         )
 
