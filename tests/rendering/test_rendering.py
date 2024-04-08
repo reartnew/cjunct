@@ -92,3 +92,8 @@ def test_complex_rendering(templar: Templar) -> None:
         templar.render('@{ f"{context.intval ** 2} percents of actions finished" }: @{dict(status)}')
         == "100 percents of actions finished: {'Foo': 'SUCCESS'}"
     )
+
+
+def test_expression_with_spaces(templar: Templar) -> None:
+    """Test expression with space rendering"""
+    assert templar.render("@{ 'OK' if context.plugh == 'xyzzy' else 'Not OK' }") == "OK"
