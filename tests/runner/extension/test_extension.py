@@ -85,7 +85,4 @@ def test_imports_context_isolation(
     monkeypatch.setenv("CJUNCT_EXTERNAL_MODULES_PATHS", str(MODULES_DIR))
     with pytest.raises(ExecutionFailed):
         cjunct.Runner().run_sync()
-    assert (
-        "[Foo] !| Action 'Foo' rendering failed: Context key not found: 'imported-key' (from 'context.imported-key')"
-        in display_collector
-    )
+    assert "[Foo] !| Action 'Foo' rendering failed: Context key not found: 'imported_key'" in display_collector

@@ -38,11 +38,11 @@ def context_keys_isolation_context(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     (tmp_path / "imported.yaml").write_bytes(
         b"""---
 context:
-    imported-key: ok
+    imported_key: ok
 actions:
   - name: Foo
     type: echo
-    message: "@{context.imported-key}"
+    message: "@{context.imported_key}"
 """,
     )
     (tmp_path / "cjunct.yaml").write_bytes(

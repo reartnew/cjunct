@@ -105,20 +105,20 @@ def runner_shell_yield_good_context(request: SubRequest, tmp_path: Path, monkeyp
     actions_source_path.write_bytes(
         f"""---
 context:
-    bar-prefix: Prefix
+    bar_prefix: Prefix
 actions:
   - name: Foo
     type: shell
-    command: yield_outcome result-key "I am foo" 
+    command: yield_outcome result_key "I am foo" 
   - name: Bar
     type: shell
     command: |
-     echo "@{{outcomes.Foo.result-key}}"
-     echo "@{{context.bar-prefix}} ##cjunct[yield-outcome-b64 {_str_to_b64('result-key')} {_str_to_b64('bar')}]##"
+     echo "@{{outcomes.Foo.result_key}}"
+     echo "@{{context.bar_prefix}} ##cjunct[yield-outcome-b64 {_str_to_b64('result_key')} {_str_to_b64('bar')}]##"
     expects: Foo
   - name: Baz
     type: shell
-    command: echo "@{{outcomes.Bar.result-key}}"
+    command: echo "@{{outcomes.Bar.result_key}}"
     expects: Bar
 """.encode()
     )

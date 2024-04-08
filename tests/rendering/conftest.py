@@ -1,8 +1,10 @@
 """Templar fixtures"""
 
+import os
+
 import pytest
 
-from cjunct.rendering import Templar
+from cjunct.rendering import Templar, containers as c
 
 
 @pytest.fixture
@@ -10,16 +12,23 @@ def templar(monkeypatch: pytest.MonkeyPatch) -> Templar:
     """Prepare a standalone templar"""
     monkeypatch.setenv("TEMPLAR_ENVIRONMENT_KEY", "test")
     return Templar(
-        outcomes_getter={
-            "Foo": {
-                "bar": "ok",
-                "baz qux.fred": "also ok",
-            },
-        }.get,
-        status_getter={"Foo": "SUCCESS"}.get,
-        raw_context_getter={
-            "plugh": "xyzzy",
-            "thud": "@{context.waldo}",
-            "waldo": "@{context.thud}",
-        }.get,
+        outcomes=c.ActionContainingDict(
+            {
+                "Foo": c.LooseOutcomeDict(
+                    {
+                        "bar": "ok",
+                        "baz qux.fred": "also ok",
+                    }
+                ),
+            }
+        ),
+        status=c.ActionContainingDict({"Foo": "SUCCESS"}),
+        context=c.ContextDict(
+            {
+                "plugh": "xyzzy",
+                "thud": "@{context.waldo}",
+                "waldo": "@{context.thud}",
+            }
+        ),
+        environment=c.AttrDict(os.environ),
     )

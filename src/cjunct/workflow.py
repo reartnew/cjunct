@@ -27,15 +27,11 @@ class Workflow(t.Dict[str, ActionBase], LoggerMixin):
         self._entrypoints: t.Set[str] = set()
         self._tiers_sequence: t.List[t.List[ActionBase]] = []
         self._descendants_map: t.Dict[str, t.Dict[str, ActionDependency]] = collections.defaultdict(dict)
-        self._context: t.Dict[str, str] = context or {}
+        self.context: t.Dict[str, str] = context or {}
         # Check dependencies integrity
         self._establish_descendants()
         # Create order map to check all actions are reachable
         self._allocate_tiers()
-
-    def get_context_value(self, key: str) -> t.Optional[str]:
-        """Obtain raw value of the context key"""
-        return self._context.get(key)
 
     def _establish_descendants(self) -> None:
         missing_non_external_deps: t.Set[str] = set()
