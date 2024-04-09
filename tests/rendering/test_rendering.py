@@ -113,3 +113,8 @@ def test_cycle_expression(templar: Templar) -> None:
 def test_dict_context_expression_getitem(templar: Templar) -> None:
     """Test dict context expression via __getitem__"""
     assert templar.render("@{ context.dictData[0]['a'] }") == "b"
+
+
+def test_render_non_string_object(templar: Templar) -> None:
+    """Test rendering of the whole complex object"""
+    assert templar.render("@{ context.dictData }-@{ context.intval }") == "[{'a': 'b'}]-10"
