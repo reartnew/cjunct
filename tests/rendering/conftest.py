@@ -30,6 +30,11 @@ def templar_factory(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[], Templar]:
                 "intval": 10,
                 "cycle_1": "@{context.cycle_2}",
                 "cycle_2": "@{context.cycle_1}",
+                "dictData": [
+                    {
+                        "a": "b",
+                    }
+                ],
             },
         )
 

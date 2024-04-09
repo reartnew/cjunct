@@ -69,8 +69,11 @@ class ContextDict(AttrDict):
 
     def __getitem__(self, item: str):
         # Context keys can refer to anything else, thus we keep resolving until the template is stable
-        result = str(super().__getitem__(item))
+        result = super().__getitem__(item)
         while True:
+            # Only strings should be rendered further
+            if not isinstance(result, str):
+                break
             self.__depth += 1
             if self.__depth >= MAX_RECURSION_DEPTH:
                 raise ActionRenderError(f"Recursion depth exceeded: {self.__depth}/{MAX_RECURSION_DEPTH}")
