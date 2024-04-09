@@ -45,11 +45,14 @@ class Templar(LoggerMixin):
             return self._internal_render(value)
         except ActionRenderRecursionError as e:
             # Eliminate ActionRenderRecursionError stack trace on hit
-            self.logger.warning(f"Rendering {value!r} caused {e!r}")
+            self.logger.debug(f"Rendering {value!r} failed: {e!r}")
             raise ActionRenderError(e) from None
+        except ActionRenderError as e:
+            self.logger.debug(f"Rendering {value!r} failed: {e!r}", exc_info=True)
+            raise
 
     def _internal_render(self, value: str) -> RenderedStringTemplate:
-        """Process string data, replacing all @{} occurrences"""
+        """Recursive rendering routine"""
         chunks: t.List[str] = []
         # Cheap check
         if "@{" not in value:
@@ -71,21 +74,14 @@ class Templar(LoggerMixin):
         """Split the expression into parts and process according to the part name"""
         self.logger.debug(f"Processing expression: {expression!r}")
         try:
-            try:
-                # pylint: disable=eval-used
-                result: t.Any = eval(  # nosec
-                    expression,
-                    {f: self._make_restricted_builtin_call_shim(f) for f in self.DISABLED_GLOBALS},
-                    self._locals,
-                )
-                return str(result)
-            except Exception as e:
-                self.logger.debug(
-                    f"Expression evaluation failed: {e!r}",
-                    exc_info=not isinstance(e, ActionRenderRecursionError),
-                )
-                raise
-        except (ActionRenderRecursionError, ActionRenderError):
+            # pylint: disable=eval-used
+            result: t.Any = eval(  # nosec
+                expression,
+                {f: self._make_restricted_builtin_call_shim(f) for f in self.DISABLED_GLOBALS},
+                self._locals,
+            )
+            return str(result)
+        except ActionRenderError:
             raise
         except (SyntaxError, NameError) as e:
             self.logger.warning(repr(e))

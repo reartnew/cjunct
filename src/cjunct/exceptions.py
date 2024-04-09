@@ -25,7 +25,7 @@ class ActionRenderError(Exception):
     """Action rendering failed"""
 
 
-class ActionRenderRecursionError(Exception):
+class ActionRenderRecursionError(ActionRenderError):
     """Action recursion depth exceeded"""
 
 
