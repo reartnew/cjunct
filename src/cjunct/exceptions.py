@@ -5,6 +5,7 @@ import typing as t
 __all__ = [
     "ExecutionFailed",
     "ActionRenderError",
+    "ActionRenderRecursionError",
     "RestrictedBuiltinError",
     "ActionUnionRenderError",
     "ActionRunError",
@@ -22,6 +23,10 @@ class ExecutionFailed(Exception):
 
 class ActionRenderError(Exception):
     """Action rendering failed"""
+
+
+class ActionRenderRecursionError(Exception):
+    """Action recursion depth exceeded"""
 
 
 class RestrictedBuiltinError(Exception):

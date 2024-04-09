@@ -9,7 +9,7 @@ from . import containers as c
 from .tokenizing import TemplarStringLexer
 from ..actions.types import RenderedStringTemplate
 from ..config.constants import C
-from ..exceptions import ActionRenderError, RestrictedBuiltinError
+from ..exceptions import ActionRenderError, RestrictedBuiltinError, ActionRenderRecursionError
 
 __all__ = [
     "Templar",
@@ -35,11 +35,20 @@ class Templar(LoggerMixin):
                 {name: outcomes_leaf_class(outcomes_map.get(name, {})) for name in action_states}
             ),
             "status": c.ActionContainingDict(action_states),
-            "context": c.ContextDict(data=context_map, render_hook=self.render),
+            "context": c.ContextDict(data=context_map, render_hook=self._internal_render),
             "environment": c.LooseDict(os.environ),
         }
 
     def render(self, value: str) -> RenderedStringTemplate:
+        """Process string data, replacing all @{} occurrences."""
+        try:
+            return self._internal_render(value)
+        except ActionRenderRecursionError as e:
+            # Eliminate ActionRenderRecursionError stack trace on hit
+            self.logger.warning(f"Rendering {value!r} caused {e!r}")
+            raise ActionRenderError(e) from None
+
+    def _internal_render(self, value: str) -> RenderedStringTemplate:
         """Process string data, replacing all @{} occurrences"""
         chunks: t.List[str] = []
         # Cheap check
@@ -70,10 +79,13 @@ class Templar(LoggerMixin):
                     self._locals,
                 )
                 return str(result)
-            except Exception:
-                self.logger.debug("Expression evaluation failed", exc_info=True)
+            except Exception as e:
+                self.logger.debug(
+                    f"Expression evaluation failed: {e!r}",
+                    exc_info=not isinstance(e, ActionRenderRecursionError),
+                )
                 raise
-        except ActionRenderError:
+        except (ActionRenderRecursionError, ActionRenderError):
             raise
         except (SyntaxError, NameError) as e:
             self.logger.warning(repr(e))
