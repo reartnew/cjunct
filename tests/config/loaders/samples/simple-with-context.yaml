@@ -1,6 +1,9 @@
 ---
 context:
   executable: echo
+  integer: 1
+  list_of_dictionaries:
+    - foo: bar
 actions:
 
   - name: Test
