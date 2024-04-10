@@ -35,6 +35,11 @@ def templar_factory(monkeypatch: pytest.MonkeyPatch) -> t.Callable[[], Templar]:
                         "a": "b",
                     }
                 ],
+                "deepRenderData": {
+                    "foo": "This is a @{context.waldo}",
+                    "bar": ["a", "@{context.intval * 2}"],
+                    "baz": "@{context.missingStuff}",
+                },
             },
         )
 

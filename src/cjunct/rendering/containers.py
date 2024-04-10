@@ -78,6 +78,9 @@ class ContextDict(AttrDict):
             if self.__depth >= MAX_RECURSION_DEPTH:
                 # This exception floats to the very "render" call without any logging
                 raise ActionRenderRecursionError(f"Recursion depth exceeded: {self.__depth}/{MAX_RECURSION_DEPTH}")
-            if result == (result := self.__render_hook(result)):
-                break
+            try:
+                if result == (result := self.__render_hook(result)):
+                    break
+            finally:
+                self.__depth -= 1
         return result
