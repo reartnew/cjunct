@@ -6,6 +6,7 @@ import typing as t
 from classlogging import LoggerMixin
 
 from . import containers as c
+from .constants import MAX_RECURSION_DEPTH
 from .tokenizing import TemplarStringLexer
 from ..actions.types import RenderedStringTemplate
 from ..config.constants import C
@@ -38,6 +39,7 @@ class Templar(LoggerMixin):
             "context": c.ContextDict(data=context_map, render_hook=self._internal_render),
             "environment": c.LooseDict(os.environ),
         }
+        self._depth: int = 0
 
     def render(self, value: str) -> RenderedStringTemplate:
         """Process string data, replacing all @{} occurrences."""
@@ -53,15 +55,22 @@ class Templar(LoggerMixin):
 
     def _internal_render(self, value: str) -> RenderedStringTemplate:
         """Recursive rendering routine"""
-        chunks: t.List[str] = []
-        # Cheap check
-        if "@{" not in value:
-            return RenderedStringTemplate(value)
-        for lexeme_type, lexeme_value in TemplarStringLexer(value):
-            if lexeme_type == TemplarStringLexer.EXPRESSION:
-                lexeme_value = self._string_template_process_expression(expression=lexeme_value)
-            chunks.append(lexeme_value)
-        return RenderedStringTemplate("".join(chunks))
+        self._depth += 1
+        if self._depth >= MAX_RECURSION_DEPTH:
+            # This exception floats to the very "render" call without any logging
+            raise ActionRenderRecursionError(f"Recursion depth exceeded: {self._depth}/{MAX_RECURSION_DEPTH}")
+        try:
+            chunks: t.List[str] = []
+            # Cheap check
+            if "@{" not in value:
+                return RenderedStringTemplate(value)
+            for lexeme_type, lexeme_value in TemplarStringLexer(value):
+                if lexeme_type == TemplarStringLexer.EXPRESSION:
+                    lexeme_value = self._string_template_process_expression(expression=lexeme_value)
+                chunks.append(lexeme_value)
+            return RenderedStringTemplate("".join(chunks))
+        finally:
+            self._depth -= 1
 
     @classmethod
     def _make_restricted_builtin_call_shim(cls, name: str) -> t.Callable:

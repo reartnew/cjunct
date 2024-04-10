@@ -2,9 +2,8 @@
 
 import typing as t
 
-from .constants import MAX_RECURSION_DEPTH
 from ..actions.types import RenderedStringTemplate
-from ..exceptions import ActionRenderError, ActionRenderRecursionError
+from ..exceptions import ActionRenderError
 
 __all__ = [
     "LooseDict",
@@ -61,7 +60,6 @@ class ContextDict(AttrDict):
     def __init__(self, data: t.Mapping[str, str], render_hook: t.Callable[[str], RenderedStringTemplate]) -> None:
         super().__init__(data)
         self.__render_hook: t.Callable[[str], RenderedStringTemplate] = render_hook
-        self.__depth: int = 0
 
     @classmethod
     def _on_key_error(cls, e: KeyError) -> t.Any:
@@ -74,13 +72,6 @@ class ContextDict(AttrDict):
             # Only strings should be rendered further
             if not isinstance(result, str):
                 break
-            self.__depth += 1
-            if self.__depth >= MAX_RECURSION_DEPTH:
-                # This exception floats to the very "render" call without any logging
-                raise ActionRenderRecursionError(f"Recursion depth exceeded: {self.__depth}/{MAX_RECURSION_DEPTH}")
-            try:
-                if result == (result := self.__render_hook(result)):
-                    break
-            finally:
-                self.__depth -= 1
+            if result == (result := self.__render_hook(result)):
+                break
         return result
