@@ -96,7 +96,7 @@ def test_complex_rendering(templar: Templar) -> None:
 
 def test_expression_with_spaces(templar: Templar) -> None:
     """Test expression with space rendering"""
-    assert templar.render("@{ 'OK' if context.plugh == 'xyzzy' else 'Not OK' }") == "OK"
+    assert templar.render("@{ 'OK' if str(context.plugh) == 'xyzzy' else 'Not OK' }") == "OK"
 
 
 def test_recursive_expression(templar: Templar) -> None:
@@ -115,9 +115,9 @@ def test_dict_context_expression_getitem(templar: Templar) -> None:
     assert templar.render("@{ context.dictData[0]['a'] }") == "b"
 
 
-# def test_dict_context_expression_getattr(templar: Templar) -> None:
-#     """Test dict context expression via __getattr__"""
-#     assert templar.render("@{ context.dictData.0.a }") == "b"
+def test_dict_context_expression_getattr(templar: Templar) -> None:
+    """Test dict context expression via __getattr__"""
+    assert templar.render("@{ context.dictData[0].a }") == "b"
 
 
 def test_render_non_string_object(templar: Templar) -> None:
@@ -125,7 +125,7 @@ def test_render_non_string_object(templar: Templar) -> None:
     assert templar.render("@{ context.dictData }-@{ context.intval }") == "[{'a': 'b'}]-10"
 
 
-# def test_render_deep_context(templar: Templar) -> None:
-#     """Test rendering of deep context references"""
-#     assert templar.render("@{ context.deepRenderData.foo }") == "This is a test"
-#     assert templar.render("@{ context.deepRenderData.bar }") == "['a', '20']"
+def test_render_deep_context(templar: Templar) -> None:
+    """Test rendering of deep context references"""
+    assert templar.render("@{ context.deepRenderData.foo }") == "This is a test"
+    assert templar.render("@{ context.deepRenderData.bar }") == "['a', '20']"

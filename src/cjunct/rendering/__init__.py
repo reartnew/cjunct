@@ -26,7 +26,7 @@ class Templar(LoggerMixin):
         self,
         outcomes_map: t.Mapping[str, t.Mapping[str, str]],
         action_states: t.Mapping[str, str],
-        context_map: t.Mapping[str, str],
+        context_map: t.Mapping[str, t.Any],
     ) -> None:
         outcomes_leaf_class: t.Type[dict] = (
             c.StrictOutcomeDict if C.STRICT_OUTCOMES_RENDERING else c.LooseDict  # type: ignore
@@ -36,10 +36,14 @@ class Templar(LoggerMixin):
                 {name: outcomes_leaf_class(outcomes_map.get(name, {})) for name in action_states}
             ),
             "status": c.ActionContainingDict(action_states),
-            "context": c.ContextDict(data=context_map, render_hook=self._internal_render),
+            "context": c.ContextDict({k: self._load_ctx_node(data=v) for k, v in context_map.items()}),
             "environment": c.LooseDict(os.environ),
         }
         self._depth: int = 0
+
+    @classmethod
+    def _qualify_string_as_potentially_renderable(cls, data: str) -> bool:
+        return "@{" in data
 
     def render(self, value: str) -> RenderedStringTemplate:
         """Process string data, replacing all @{} occurrences."""
@@ -62,7 +66,7 @@ class Templar(LoggerMixin):
         try:
             chunks: t.List[str] = []
             # Cheap check
-            if "@{" not in value:
+            if not self._qualify_string_as_potentially_renderable(value):
                 return RenderedStringTemplate(value)
             for lexeme_type, lexeme_value in TemplarStringLexer(value):
                 if lexeme_type == TemplarStringLexer.EXPRESSION:
@@ -98,3 +102,21 @@ class Templar(LoggerMixin):
         except Exception as e:
             self.logger.warning(repr(e))
             raise ActionRenderError(repr(e)) from e
+
+    def _load_ctx_node(self, data: t.Any) -> t.Any:
+        """Deep copy of context data,
+        while transforming dict and lists into attribute-accessor proxies
+        and turning leaf string values into deferred templates."""
+        if isinstance(data, dict):
+            result_dict = c.AttrDict()
+            for key, value in data.items():
+                result_dict[key] = self._load_ctx_node(value)
+            return result_dict
+        if isinstance(data, list):
+            result_list = c.AttrList()
+            for item in data:
+                result_list.append(self._load_ctx_node(item))
+            return result_list
+        if isinstance(data, str) and self._qualify_string_as_potentially_renderable(data):
+            return c.DeferredStringTemplate(text=data, render_hook=self._internal_render)
+        return data
