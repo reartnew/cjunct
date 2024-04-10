@@ -21,13 +21,13 @@ class Workflow(t.Dict[str, ActionBase], LoggerMixin):
     def __init__(
         self,
         actions_map: t.Dict[str, ActionBase],
-        context: t.Optional[t.Dict[str, str]] = None,
+        context: t.Optional[t.Dict[str, t.Any]] = None,
     ) -> None:
         super().__init__(actions_map)
         self._entrypoints: t.Set[str] = set()
         self._tiers_sequence: t.List[t.List[ActionBase]] = []
         self._descendants_map: t.Dict[str, t.Dict[str, ActionDependency]] = collections.defaultdict(dict)
-        self.context: t.Dict[str, str] = context or {}
+        self.context: t.Dict[str, t.Any] = context or {}
         # Check dependencies integrity
         self._establish_descendants()
         # Create order map to check all actions are reachable

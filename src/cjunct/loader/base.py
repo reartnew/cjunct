@@ -30,7 +30,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         self._actions: t.Dict[str, ActionBase] = {}
         self._raw_file_names_stack: t.List[str] = []
         self._resolved_file_paths_stack: t.List[Path] = []
-        self._gathered_context: t.Dict[str, str] = {}
+        self._gathered_context: t.Dict[str, t.Any] = {}
 
     def _register_action(self, action: ActionBase) -> None:
         if action.name in self._actions:

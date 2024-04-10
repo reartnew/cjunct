@@ -167,12 +167,10 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
             else:
                 self._throw(f"'context' contents should be a dict or a list (got {type(context)!r})")
 
-    def _loads_contexts_dict(self, data: t.Dict[str, str]) -> None:
+    def _loads_contexts_dict(self, data: t.Dict[str, t.Any]) -> None:
         for context_key, context_value in data.items():
             if not isinstance(context_key, str):
                 self._throw(f"Context keys should be strings (got {type(context_key)!r} for {context_key!r})")
-            if not isinstance(context_value, str):
-                self._throw(f"Context values should be strings (got {type(context_value)!r} for {context_value!r})")
             if context_key in self._gathered_context:
                 self.logger.debug(f"Context key redefined: {context_key}")
             else:
