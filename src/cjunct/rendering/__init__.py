@@ -39,6 +39,9 @@ class Templar(LoggerMixin):
             "context": c.ContextDict({k: self._load_ctx_node(data=v) for k, v in context_map.items()}),
             "environment": c.LooseDict(os.environ),
         }
+        self._globals: t.Dict[str, t.Any] = {
+            f: self._make_restricted_builtin_call_shim(f) for f in self.DISABLED_GLOBALS
+        }
         self._depth: int = 0
 
     @classmethod
@@ -88,11 +91,7 @@ class Templar(LoggerMixin):
         self.logger.debug(f"Processing expression: {expression!r}")
         try:
             # pylint: disable=eval-used
-            result: t.Any = eval(  # nosec
-                expression,
-                {f: self._make_restricted_builtin_call_shim(f) for f in self.DISABLED_GLOBALS},
-                self._locals,
-            )
+            result: t.Any = eval(expression, self._globals, self._locals)  # nosec
             return str(result)
         except ActionRenderError:
             raise
