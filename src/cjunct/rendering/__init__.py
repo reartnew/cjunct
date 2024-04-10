@@ -104,7 +104,7 @@ class Templar(LoggerMixin):
 
     def _load_ctx_node(self, data: t.Any) -> t.Any:
         """Deep copy of context data,
-        while transforming dict and lists into attribute-accessor proxies
+        while transforming dicts into attribute-accessor proxies
         and turning leaf string values into deferred templates."""
         if isinstance(data, dict):
             result_dict = c.AttrDict()
@@ -112,7 +112,7 @@ class Templar(LoggerMixin):
                 result_dict[key] = self._load_ctx_node(value)
             return result_dict
         if isinstance(data, list):
-            result_list = c.AttrList()
+            result_list = []
             for item in data:
                 result_list.append(self._load_ctx_node(item))
             return result_list

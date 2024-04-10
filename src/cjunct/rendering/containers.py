@@ -7,7 +7,6 @@ from ..exceptions import ActionRenderError
 
 __all__ = [
     "AttrDict",
-    "AttrList",
     "LooseDict",
     "StrictOutcomeDict",
     "ActionContainingDict",
@@ -27,10 +26,6 @@ class ItemAttributeAccessorMixin:
 
 class AttrDict(dict, ItemAttributeAccessorMixin):
     """Basic dictionary that allows attribute read access to its keys"""
-
-
-class AttrList(list, ItemAttributeAccessorMixin):
-    """Basic list that allows attribute read access to its keys"""
 
 
 class LooseDict(AttrDict):
