@@ -1,6 +1,7 @@
 """Command-line interface entry"""
 
 import functools
+import os
 import sys
 import typing as t
 from pathlib import Path
@@ -63,6 +64,23 @@ def main() -> None:
     """Declarative task runner"""
 
 
+def load_dotenv() -> bool:
+    """Try loading environment from the dotenv file.
+    Special variable called "HERE" is injected into the environment during dotenv loading,
+    which points to the directory of the dotenv file (if not specified in advance).
+    :return: True, when the file was detected, and False otherwise."""
+    here_var_name: str = "HERE"
+    here_value_was_not_defined: bool = here_var_name not in os.environ
+    dotenv_path: Path = C.ENV_FILE
+    if here_value_was_not_defined:
+        os.environ[here_var_name] = str(dotenv_path.parent)
+    try:
+        return dotenv.load_dotenv(dotenv_path=dotenv_path)
+    finally:
+        if here_value_was_not_defined:
+            os.environ.pop(here_var_name)
+
+
 def wrap_cli_command(func):
     """Standard loading and error handling"""
 
@@ -70,8 +88,7 @@ def wrap_cli_command(func):
     @cliargs_receiver
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        dotenv_path: Path = C.ENV_FILE
-        dotenv_loaded: bool = dotenv.load_dotenv(dotenv_path=dotenv_path)
+        dotenv_loaded: bool = load_dotenv()
         classlogging.configure_logging(
             level=C.LOG_LEVEL,
             colorize=C.USE_COLOR and not C.LOG_FILE,
@@ -79,9 +96,9 @@ def wrap_cli_command(func):
             stream=None if C.LOG_FILE else classlogging.LogStream.STDERR,
         )
         if dotenv_loaded:
-            logger.info(f"Loaded environment variables from {str(dotenv_path)!r}")
+            logger.info(f"Loaded environment variables from {str(C.ENV_FILE)!r}")
         else:
-            logger.debug(f"Dotenv not found: {dotenv_path!r}")
+            logger.debug(f"Dotenv not found: {str(C.ENV_FILE)!r}")
         try:
             return func(*args, **kwargs)
         except BaseError as e:
