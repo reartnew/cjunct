@@ -8,7 +8,7 @@ from pathlib import Path
 
 import classlogging
 import click
-import dotenv
+from dotenv.main import DotEnv
 
 import cjunct
 from cjunct.config.constants import C, LOG_LEVELS
@@ -17,7 +17,33 @@ from cjunct.config.environment import Env
 from cjunct.exceptions import BaseError, ExecutionFailed
 from cjunct.strategy import KNOWN_STRATEGIES
 
-logger = classlogging.get_module_logger()
+
+class DeferredModuleLogger:
+    def __init__(self):
+        self.__logger = classlogging.get_module_logger()
+        self.__events = []
+
+    def uncork(self) -> None:
+        for method, args, kwargs in self.__events:
+            method(*args, **kwargs)
+        self.__events = None
+
+    @staticmethod
+    def __make_deferred_method(name: str) -> t.Callable:
+        def deferred_method(self, *args, **kwargs) -> None:
+            method = getattr(self.__logger, name)
+            if self.__events is None:
+                return method(*args, **kwargs)
+            self.__events.append((method, args, kwargs))
+
+        return deferred_method
+
+    debug = __make_deferred_method("debug")
+    error = __make_deferred_method("error")
+    info = __make_deferred_method("info")
+
+
+logger = DeferredModuleLogger()
 
 
 class WorkflowPositionalArgument(click.Argument):
@@ -70,14 +96,20 @@ def load_dotenv() -> bool:
     which points to the directory of the dotenv file (if not specified in advance).
     :return: True, when the file was detected, and False otherwise."""
     here_var_name: str = "HERE"
-    here_value_was_not_defined: bool = here_var_name not in os.environ
+    here_value_was_defined: bool = here_var_name in os.environ
     dotenv_path: Path = C.ENV_FILE
-    if here_value_was_not_defined:
+    if not here_value_was_defined:
         os.environ[here_var_name] = str(dotenv_path.parent)
+    else:
+        logger.debug(f"{here_var_name!r} was set externally")
     try:
-        return dotenv.load_dotenv(dotenv_path=dotenv_path)
+        dotenv = DotEnv(dotenv_path=dotenv_path)
+        if here_var_name in dotenv.dict():
+            logger.error(f"{here_var_name!r} is explicitly set via dotenv file")
+            here_value_was_defined = True
+        return dotenv.set_as_environment_variables()
     finally:
-        if here_value_was_not_defined:
+        if not here_value_was_defined:
             os.environ.pop(here_var_name)
 
 
@@ -95,6 +127,7 @@ def wrap_cli_command(func):
             main_file=C.LOG_FILE,
             stream=None if C.LOG_FILE else classlogging.LogStream.STDERR,
         )
+        logger.uncork()
         if dotenv_loaded:
             logger.info(f"Loaded environment variables from {str(C.ENV_FILE)!r}")
         else:
