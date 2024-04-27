@@ -38,9 +38,8 @@ class DeferredModuleLogger:
 
         return deferred_method
 
-    debug = __make_deferred_method("debug")
-    error = __make_deferred_method("error")
     info = __make_deferred_method("info")
+    debug = __make_deferred_method("debug")
 
 
 logger = DeferredModuleLogger()
@@ -90,11 +89,10 @@ def main() -> None:
     """Declarative task runner"""
 
 
-def load_dotenv() -> bool:
+def load_dotenv() -> None:
     """Try loading environment from the dotenv file.
     Special variable called "HERE" is injected into the environment during dotenv loading,
-    which points to the directory of the dotenv file (if not specified in advance).
-    :return: True, when the file was detected, and False otherwise."""
+    which points to the directory of the dotenv file (if not specified in advance)."""
     here_var_name: str = "HERE"
     here_value_was_defined: bool = here_var_name in os.environ
     dotenv_path: Path = C.ENV_FILE
@@ -105,9 +103,13 @@ def load_dotenv() -> bool:
     try:
         dotenv = DotEnv(dotenv_path=dotenv_path)
         if here_var_name in dotenv.dict():
-            logger.error(f"{here_var_name!r} is explicitly set via dotenv file")
+            logger.debug(f"{here_var_name!r} is explicitly set via dotenv file")
             here_value_was_defined = True
-        return dotenv.set_as_environment_variables()
+        if dotenv.set_as_environment_variables():
+            logger.info(f"Loaded environment variables from {str(dotenv_path)!r}")
+        else:
+            logger.debug(f"Dotenv not found: {str(dotenv_path)!r}")
+
     finally:
         if not here_value_was_defined:
             os.environ.pop(here_var_name)
@@ -120,7 +122,7 @@ def wrap_cli_command(func):
     @cliargs_receiver
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        dotenv_loaded: bool = load_dotenv()
+        load_dotenv()
         classlogging.configure_logging(
             level=C.LOG_LEVEL,
             colorize=C.USE_COLOR and not C.LOG_FILE,
@@ -128,10 +130,6 @@ def wrap_cli_command(func):
             stream=None if C.LOG_FILE else classlogging.LogStream.STDERR,
         )
         logger.uncork()
-        if dotenv_loaded:
-            logger.info(f"Loaded environment variables from {str(C.ENV_FILE)!r}")
-        else:
-            logger.debug(f"Dotenv not found: {str(C.ENV_FILE)!r}")
         try:
             return func(*args, **kwargs)
         except BaseError as e:
