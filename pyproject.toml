@@ -74,6 +74,7 @@ filterwarnings = [
 source = ["src"]
 omit = [
     "src/cjunct/console.py",
+    "src/cjunct/tools/inspect.py",
 ]
 
 [tool.coverage.report]

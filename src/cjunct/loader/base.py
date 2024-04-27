@@ -10,10 +10,10 @@ from pathlib import Path
 import dacite
 from classlogging import LoggerMixin
 
-from .inspect import get_class_annotations
 from ..actions.base import ActionBase, ArgsBase, ActionDependency
 from ..actions.types import StringTemplate
 from ..exceptions import LoadError
+from ..tools.inspect import get_class_annotations
 from ..workflow import Workflow
 
 __all__ = [

@@ -4,7 +4,6 @@ import functools
 import os
 import sys
 import typing as t
-from dataclasses import dataclass, field
 from pathlib import Path
 
 import classlogging
@@ -17,38 +16,9 @@ from cjunct.config.constants.cli import cliargs_receiver
 from cjunct.config.environment import Env
 from cjunct.exceptions import BaseError, ExecutionFailed
 from cjunct.strategy import KNOWN_STRATEGIES
+from cjunct.tools.proxy import DeferredCallsProxy
 
-
-@dataclass
-class DeferredCall:
-    method: t.Callable
-    args: t.Tuple = tuple()
-    kwargs: t.Dict[str, t.Any] = field(default_factory=dict)
-
-    def __call__(self, *args, **kwargs) -> None:
-        self.args = args
-        self.kwargs = kwargs
-
-
-class DeferredCallsProxy:
-    def __init__(self, obj: t.Any) -> None:
-        self.__obj: t.Any = obj
-        self.__deferred_calls: t.Optional[t.List[DeferredCall]] = []
-
-    def uncork(self) -> None:
-        for deferred_call in self.__deferred_calls:
-            deferred_call.method(*deferred_call.args, **deferred_call.kwargs)
-        self.__deferred_calls = None
-
-    def __getattr__(self, item: str) -> t.Any:
-        proxy_attr: t.Any = getattr(self.__obj, item)
-        if self.__deferred_calls is None or not callable(proxy_attr):
-            return proxy_attr
-        self.__deferred_calls.append(result := DeferredCall(method=proxy_attr))
-        return result
-
-
-logger = DeferredCallsProxy(classlogging.get_module_logger())
+logger = DeferredCallsProxy(obj=classlogging.get_module_logger())
 
 
 class WorkflowPositionalArgument(click.Argument):

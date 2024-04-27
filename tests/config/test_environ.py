@@ -6,7 +6,7 @@ import typing as t
 import pytest
 
 from cjunct.config.environment import Env
-from cjunct.loader.inspect import get_class_annotations
+from cjunct.tools.inspect import get_class_annotations
 
 
 @pytest.mark.parametrize("variable_name", list(get_class_annotations(Env)))
