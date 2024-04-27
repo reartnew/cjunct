@@ -10,7 +10,7 @@ __all__ = [
 
 @dataclasses.dataclass
 class DeferredCall:
-    """Represent a call that will happen later"""
+    """Represents a call that will happen later"""
 
     method: t.Callable
     args: t.Tuple = tuple()
