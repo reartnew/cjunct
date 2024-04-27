@@ -4,6 +4,7 @@ import functools
 import os
 import sys
 import typing as t
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import classlogging
@@ -18,31 +19,36 @@ from cjunct.exceptions import BaseError, ExecutionFailed
 from cjunct.strategy import KNOWN_STRATEGIES
 
 
-class DeferredModuleLogger:
-    def __init__(self):
-        self.__logger = classlogging.get_module_logger()
-        self.__events = []
+@dataclass
+class DeferredCall:
+    method: t.Callable
+    args: t.Tuple = tuple()
+    kwargs: t.Dict[str, t.Any] = field(default_factory=dict)
+
+    def __call__(self, *args, **kwargs) -> None:
+        self.args = args
+        self.kwargs = kwargs
+
+
+class DeferredCallsProxy:
+    def __init__(self, obj: t.Any) -> None:
+        self.__obj: t.Any = obj
+        self.__deferred_calls: t.Optional[t.List[DeferredCall]] = []
 
     def uncork(self) -> None:
-        for method, args, kwargs in self.__events:
-            method(*args, **kwargs)
-        self.__events = None
+        for deferred_call in self.__deferred_calls:
+            deferred_call.method(*deferred_call.args, **deferred_call.kwargs)
+        self.__deferred_calls = None
 
-    @staticmethod
-    def __make_deferred_method(name: str) -> t.Callable:
-        def deferred_method(self, *args, **kwargs) -> None:
-            method = getattr(self.__logger, name)
-            if self.__events is None:
-                return method(*args, **kwargs)
-            self.__events.append((method, args, kwargs))
-
-        return deferred_method
-
-    info = __make_deferred_method("info")
-    debug = __make_deferred_method("debug")
+    def __getattr__(self, item: str) -> t.Any:
+        proxy_attr: t.Any = getattr(self.__obj, item)
+        if self.__deferred_calls is None or not callable(proxy_attr):
+            return proxy_attr
+        self.__deferred_calls.append(result := DeferredCall(method=proxy_attr))
+        return result
 
 
-logger = DeferredModuleLogger()
+logger = DeferredCallsProxy(classlogging.get_module_logger())
 
 
 class WorkflowPositionalArgument(click.Argument):
