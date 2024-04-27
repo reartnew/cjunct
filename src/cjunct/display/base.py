@@ -32,6 +32,12 @@ class BaseDisplay:
         """Execution plan approval handler"""
         raise InteractionError  # pragma: no cover
 
+    def on_action_start(self, action: ActionBase) -> None:
+        """Action start handler"""
+
+    def on_action_finish(self, action: ActionBase) -> None:
+        """Action finish handler"""
+
     def display(self, message: str) -> None:
         """Send text to the end user"""
         print(message.rstrip("\n"))
