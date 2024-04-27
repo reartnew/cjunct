@@ -110,7 +110,7 @@ class Runner(classlogging.LoggerMixin):
         strategy: BaseStrategy = self._strategy_class(workflow=self.workflow)
         if C.INTERACTIVE_MODE:
             self.display.on_plan_interaction(workflow=self.workflow)
-        background_tasks: t.List[asyncio.Task] = []
+        action_runners: t.List[asyncio.Task] = []
         # Prefill outcomes map
         for action_name in self.workflow:
             self._outcomes[action_name] = {}
@@ -119,19 +119,10 @@ class Runner(classlogging.LoggerMixin):
                 self.logger.debug(f"Skipping {action} as it is not enabled")
                 continue
             self.logger.trace(f"Allocating action runner for {action.name!r}")
-            background_tasks.append(asyncio.create_task(self._run_action(action=action)))
-            self.logger.trace(f"Allocating action dispatcher for {action.name!r}")
-            background_tasks.append(
-                asyncio.create_task(
-                    self._dispatch_action_events_to_display(
-                        action=action,
-                        display=self.display,
-                    )
-                )
-            )
+            action_runners.append(asyncio.create_task(self._run_action(action=action)))
 
-        # Finalize running actions and message dispatchers
-        for task in background_tasks:
+        # Finalize running actions
+        for task in action_runners:
             await task
         self.display.on_finish()
         if self._had_failed_actions:
@@ -154,6 +145,18 @@ class Runner(classlogging.LoggerMixin):
             action._internal_fail(e)  # pylint: disable=protected-access
             self._had_failed_actions = True
             return
+        self.logger.trace(f"Calling `on_action_start` for {action.name!r}")
+        try:
+            self.display.on_action_start(action)
+        except Exception:
+            self.logger.exception(f"`on_action_start` failed for {action.name!r}")
+        self.logger.trace(f"Allocating action dispatcher for {action.name!r}")
+        action_events_reader_task: asyncio.Task = asyncio.create_task(
+            self._dispatch_action_events_to_display(
+                action=action,
+                display=self.display,
+            )
+        )
         try:
             await action
         except Exception as e:
@@ -166,6 +169,12 @@ class Runner(classlogging.LoggerMixin):
             self._had_failed_actions = True
         finally:
             self._outcomes[action.name].update(action.get_outcomes())
+            await action_events_reader_task
+            self.logger.trace(f"Calling `on_action_finish` for {action.name!r}")
+            try:
+                self.display.on_action_finish(action)
+            except Exception:
+                self.logger.exception(f"`on_action_finish` failed for {action.name!r}")
 
     def run_sync(self):
         """Wrap async run into an event loop"""
