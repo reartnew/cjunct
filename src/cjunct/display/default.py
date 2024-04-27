@@ -20,7 +20,7 @@ __all__ = [
 class DefaultDisplay(BaseDisplay):
     """Prefix-based default display with colors"""
 
-    _STATUS_TO_COLOR: t.Dict[ActionStatus, t.Callable[[str], str]] = {
+    STATUS_TO_COLOR_WRAPPER_MAP: t.Dict[ActionStatus, t.Callable[[str], str]] = {
         ActionStatus.SKIPPED: Color.gray,
         ActionStatus.PENDING: Color.gray,
         ActionStatus.FAILURE: Color.red,
@@ -67,7 +67,7 @@ class DefaultDisplay(BaseDisplay):
         justification_len: int = self._action_names_max_len + 9  # "9" here stands for (e.g.) "SUCCESS: "
         self.display(Color.gray("=" * justification_len))
         for _, action in self._workflow.iter_actions_by_tier():
-            color_wrapper: t.Callable[[str], str] = self._STATUS_TO_COLOR[action.status]
+            color_wrapper: t.Callable[[str], str] = self.STATUS_TO_COLOR_WRAPPER_MAP[action.status]
             self.display(f"{color_wrapper(action.status.value)}: {action.name}")
 
     def on_finish(self) -> None:
