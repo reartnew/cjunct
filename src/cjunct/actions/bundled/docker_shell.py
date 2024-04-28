@@ -167,6 +167,9 @@ class DockerShellAction(EmissionScannerActionBase):
                     asyncio.create_task(self._read_stdout(container)),
                     asyncio.create_task(self._read_stderr(container)),
                 ]
+                # Wait for all tasks to complete
+                await asyncio.wait(tasks)
+                # Check exceptions
                 await asyncio.gather(*tasks)
                 result: dict = await container.wait()
                 self.logger.debug(f"Docker container result: {result}")

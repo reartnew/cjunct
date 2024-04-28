@@ -59,6 +59,9 @@ class ShellAction(EmissionScannerActionBase):
                 asyncio.create_task(self._read_stdout(shell_process)),
                 asyncio.create_task(self._read_stderr(shell_process)),
             ]
+            # Wait for all tasks to complete
+            await asyncio.wait(tasks)
+            # Check exceptions
             await asyncio.gather(*tasks)
             result: ShellResult = await shell_process
             if result.code:
