@@ -120,6 +120,9 @@ actions:
     type: shell
     command: echo "@{{outcomes.Bar.result_key}}"
     expects: Bar
+  - name: Pivoslav
+    type: shell
+    command: skip
 """.encode()
     )
     if request.param == "chdir":
@@ -151,7 +154,7 @@ def runner_failing_render_context(ctx_from_text: CtxFactoryType) -> None:
         actions:
           - name: Baz
             type: shell
-            command: echo "##cjunct[yield-outcome-b64 * *]##"
+            command: echo "##cjunct[yield-outcome-b64 + +]##"
           - name: Qux
             type: shell
             command: echo "@{A.B.C}"
@@ -161,6 +164,9 @@ def runner_failing_render_context(ctx_from_text: CtxFactoryType) -> None:
           - name: Egor
             type: shell
             command: echo "@{outcomes.Baz.non-existent}"
+          - name: Kuzma
+            type: shell
+            command: echo "##cjunct[what-is-this-expression]##"
         """
     )
 

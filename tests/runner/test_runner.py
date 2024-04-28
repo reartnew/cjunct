@@ -11,6 +11,7 @@ import pytest
 import cjunct
 from cjunct import exceptions
 from cjunct.strategy import BaseStrategy
+from cjunct.actions.base import ActionStatus
 
 
 def test_simple_runner_call(runner_good_context: None) -> None:
@@ -20,7 +21,14 @@ def test_simple_runner_call(runner_good_context: None) -> None:
 
 def test_yield_good_call(runner_shell_yield_good_context: None) -> None:
     """Check yield integration"""
-    cjunct.Runner().run_sync()
+    runner = cjunct.Runner()
+    runner.run_sync()
+    assert {k.name: k.status for k in runner.workflow.values()} == {
+        "Foo": ActionStatus.SUCCESS,
+        "Bar": ActionStatus.SUCCESS,
+        "Baz": ActionStatus.SUCCESS,
+        "Pivoslav": ActionStatus.SKIPPED,
+    }
 
 
 def test_runner_multiple_run(runner_good_context: None) -> None:
