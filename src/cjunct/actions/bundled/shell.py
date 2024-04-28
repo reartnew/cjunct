@@ -46,7 +46,7 @@ class ShellAction(EmissionScannerActionBase):
     async def _create_shell(self) -> Shell:
         command: str = self.args.command or f"source '{self.args.file}'"
         if C.SHELL_INJECT_YIELD_FUNCTION:
-            command = f"{self._YIELD_SHELL_FUNCTION_DEFINITION}\n{command}"
+            command = f"{self._SHELL_SERVICE_FUNCTIONS_DEFINITIONS}\n{command}"
         return Shell(
             command=command,
             environment=self.args.environment,  # type: ignore[arg-type]

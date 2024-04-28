@@ -104,7 +104,7 @@ class DockerShellAction(EmissionScannerActionBase):
                 self.args.command,
             ]
             if C.SHELL_INJECT_YIELD_FUNCTION:
-                script_container_file_clauses.insert(0, self._YIELD_SHELL_FUNCTION_DEFINITION)
+                script_container_file_clauses.insert(0, self._SHELL_SERVICE_FUNCTIONS_DEFINITIONS)
             script_container_file.write_text(
                 data="\n".join(script_container_file_clauses),
                 encoding="utf-8",

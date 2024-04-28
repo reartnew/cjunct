@@ -230,8 +230,20 @@ class ActionBase(classlogging.LoggerMixin):
 class EmissionScannerActionBase(ActionBase):
     """Base class for stream-scanning actions"""
 
-    _YIELD_SCAN_PATTERN: t.ClassVar[t.Pattern] = re.compile(r"^(.*?)##cjunct\[yield-outcome-b64\s*(\S+)\s+(\S*)\s*]##$")
-    _YIELD_SHELL_FUNCTION_DEFINITION: str = textwrap.dedent(
+    _SERVICE_MESSAGES_SCAN_PATTERN: t.ClassVar[t.Pattern] = re.compile(
+        r"""^
+          (.*?)  # possible preceding content
+          \#\#cjunct\[  # message prefix
+            (
+              yield-outcome-b64\ [A-Za-z0-9+/= ]+
+              |
+              skip
+            )
+          ]\#\#  # message suffix
+        $""",
+        re.VERBOSE,
+    )
+    _SHELL_SERVICE_FUNCTIONS_DEFINITIONS: str = textwrap.dedent(
         r"""
             yield_outcome(){
               [ "$1" = "" ] && echo "Missing key (first argument)" && return 1
@@ -244,6 +256,10 @@ class EmissionScannerActionBase(ActionBase):
               )]##"
               return 0
             }
+            skip(){
+              echo "##cjunct[skip]##"
+              exit 0
+            }
         """
     ).lstrip()
 
@@ -253,21 +269,30 @@ class EmissionScannerActionBase(ActionBase):
             super().emit(message)
             return
         memorized_prefix: str = ""
-        for line in message.splitlines():
-            # `endswith` is a cheaper check than re.findall
-            if line.endswith("]##") and (matches := self._YIELD_SCAN_PATTERN.findall(line)):
-                try:
-                    for preceding_content, encoded_key, encoded_value in matches:
-                        memorized_prefix += preceding_content
-                        self.logger.debug(f"Action {self.name!r} emission stream reported an outcome: {encoded_key!r}")
+        try:
+            for line in message.splitlines():
+                # `endswith` is a cheaper check than re.findall
+                if not line.endswith("]##") or not (matches := self._SERVICE_MESSAGES_SCAN_PATTERN.findall(line)):
+                    super().emit(memorized_prefix + line)
+                    memorized_prefix = ""
+                    continue
+                for preceding_content, expression in matches:
+                    memorized_prefix += preceding_content
+                    if expression == "skip":
+                        self.skip()
+                    try:
+                        yield_parts: t.List[str] = expression.split()
+                        encoded_key: str = yield_parts[1]
+                        encoded_value: str = "" if len(yield_parts) == 2 else yield_parts[2]
+                        self.logger.debug(
+                            f"Action {self.name!r} emission stream " f"reported an outcome: {encoded_key!r}"
+                        )
                         key: str = base64.b64decode(encoded_key, validate=True).decode()
                         value: str = base64.b64decode(encoded_value, validate=True).decode()
                         self.yield_outcome(key, value)
-                except Exception:
-                    self.logger.warning("Failed while parsing system message", exc_info=True)
-            else:
-                super().emit(memorized_prefix + line)
-                memorized_prefix = ""
-            # Do not forget to report system message prefix, if any
-        if memorized_prefix:
-            super().emit(memorized_prefix)
+                    except Exception:
+                        self.logger.warning("Failed while parsing system message", exc_info=True)
+        # Do not forget to report system message prefix, if any
+        finally:
+            if memorized_prefix:
+                super().emit(memorized_prefix)
