@@ -110,7 +110,7 @@ class Runner(classlogging.LoggerMixin):
         strategy: BaseStrategy = self._strategy_class(workflow=self.workflow)
         if C.INTERACTIVE_MODE:
             self.display.on_plan_interaction(workflow=self.workflow)
-        action_runners: t.List[asyncio.Task] = []
+        action_runners: t.Dict[ActionBase, asyncio.Task] = {}
         # Prefill outcomes map
         for action_name in self.workflow:
             self._outcomes[action_name] = {}
@@ -118,20 +118,32 @@ class Runner(classlogging.LoggerMixin):
             if not action.enabled:
                 self.logger.debug(f"Skipping {action} as it is not enabled")
                 continue
+            # Finalize all actions that have been done already
+            for maybe_finished_action, corresponding_runner_task in list(action_runners.items()):
+                if maybe_finished_action.done():
+                    self.logger.trace(f"Finalizing done action {maybe_finished_action.name!r} runner")
+                    await corresponding_runner_task
+                    action_runners.pop(maybe_finished_action)
             self.logger.trace(f"Allocating action runner for {action.name!r}")
-            action_runners.append(asyncio.create_task(self._run_action(action=action)))
+            action_runners[action] = asyncio.create_task(self._run_action(action=action))
 
         # Finalize running actions
-        for task in action_runners:
+        for task in action_runners.values():
             await task
-        self.display.on_finish()
+        try:
+            self.display.on_finish()
+        except Exception:
+            self.logger.exception("`on_finish` failed")
         if self._had_failed_actions:
             raise ExecutionFailed
 
-    @staticmethod
-    async def _dispatch_action_events_to_display(action: ActionBase, display: BaseDisplay) -> None:
-        async for message in action.read_events():
-            display.emit_action_message(source=action, message=message)
+    @classmethod
+    async def _dispatch_action_events_to_display(cls, action: ActionBase, display: BaseDisplay) -> None:
+        try:
+            async for message in action.read_events():
+                display.emit_action_message(source=action, message=message)
+        except Exception:
+            cls.logger.exception(f"`emit_action_message` failed for {action.name!r}")
 
     async def _run_action(self, action: ActionBase) -> None:
         message: str
@@ -160,10 +172,13 @@ class Runner(classlogging.LoggerMixin):
         try:
             await action
         except Exception as e:
-            self.display.emit_action_error(
-                source=action,
-                message=str(e) if isinstance(e, ActionRunError) else f"Action {action.name!r} run exception: {e!r}",
-            )
+            try:
+                self.display.emit_action_error(
+                    source=action,
+                    message=str(e) if isinstance(e, ActionRunError) else f"Action {action.name!r} run exception: {e!r}",
+                )
+            except Exception:
+                self.logger.exception(f"`emit_action_error` failed for {action.name!r}")
             self.logger.warning(f"Action {action.name!r} execution failed: {e!r}")
             self.logger.debug("Action failure traceback", exc_info=True)
             self._had_failed_actions = True
