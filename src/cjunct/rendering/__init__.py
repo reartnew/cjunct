@@ -120,7 +120,11 @@ class Templar(LoggerMixin):
         while transforming dicts into attribute-accessor proxies
         and turning leaf string values into deferred templates."""
         if isinstance(data, ComplexTemplateTag):
-            return c.LazyProxy(lambda: self._evaluate_context_object_expression(data.data))
+            tag_value: str = data.data
+            if not isinstance(tag_value, str):
+                self.logger.debug(f"Got non-string tag value: {tag_value!r}")
+                raise ActionRenderError(f"Expression must be a string (got {type(tag_value)!r})")
+            return c.LazyProxy(lambda: self._evaluate_context_object_expression(tag_value))
         if isinstance(data, dict):
             result_dict = c.AttrDict()
             for key, value in data.items():
