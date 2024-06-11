@@ -26,6 +26,7 @@ class DefaultRootWorkflowLoader(AbstractBaseWorkflowLoader):
 
 __all__ = [
     "DefaultYAMLWorkflowLoader",
+    "ComplexTemplateTag",
 ]
 
 
@@ -46,11 +47,17 @@ class ImportTag(ExtraTag):
     yaml_tag: str = "!import"
 
 
+class ComplexTemplateTag(ExtraTag):
+    """Complex template entity"""
+
+    yaml_tag: str = "!@"
+
+
 class YAMLLoader(yaml.SafeLoader):
     """Extension loader"""
 
 
-for extra_tag_class in [ImportTag]:
+for extra_tag_class in [ImportTag, ComplexTemplateTag]:
     YAMLLoader.add_constructor(extra_tag_class.yaml_tag, extra_tag_class.from_yaml)
 
 

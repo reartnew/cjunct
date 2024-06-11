@@ -4,6 +4,7 @@ import os
 import typing as t
 
 from classlogging import LoggerMixin
+from lazy_object_proxy import Proxy
 
 from . import containers as c
 from .constants import MAX_RECURSION_DEPTH
@@ -11,6 +12,7 @@ from .tokenizing import TemplarStringLexer
 from ..actions.types import RenderedStringTemplate
 from ..config.constants import C
 from ..exceptions import ActionRenderError, RestrictedBuiltinError, ActionRenderRecursionError
+from ..loader.default import ComplexTemplateTag
 
 __all__ = [
     "Templar",
@@ -86,13 +88,15 @@ class Templar(LoggerMixin):
 
         return _call
 
+    def _eval(self, expression: str) -> t.Any:
+        # pylint: disable=eval-used
+        return eval(expression, self._globals, self._locals)  # nosec
+
     def _string_template_process_expression(self, expression: str) -> str:
         """Split the expression into parts and process according to the part name"""
         self.logger.debug(f"Processing expression: {expression!r}")
         try:
-            # pylint: disable=eval-used
-            result: t.Any = eval(expression, self._globals, self._locals)  # nosec
-            return str(result)
+            return str(self._eval(expression))
         except ActionRenderError:
             raise
         except (SyntaxError, NameError) as e:
@@ -102,10 +106,17 @@ class Templar(LoggerMixin):
             self.logger.warning(repr(e))
             raise ActionRenderError(repr(e)) from e
 
+    def _evaluate_complex_template(self, obj: t.Any) -> t.Any:
+        if isinstance(obj, str):
+            obj = self._eval(obj)
+        return self._load_ctx_node(obj)
+
     def _load_ctx_node(self, data: t.Any) -> t.Any:
         """Deep copy of context data,
         while transforming dicts into attribute-accessor proxies
         and turning leaf string values into deferred templates."""
+        if isinstance(data, ComplexTemplateTag):
+            return Proxy(lambda: self._evaluate_complex_template(data.data))
         if isinstance(data, dict):
             result_dict = c.AttrDict()
             for key, value in data.items():
