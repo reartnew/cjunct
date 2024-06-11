@@ -4,7 +4,7 @@ import os
 import typing as t
 
 from classlogging import LoggerMixin
-from lazy_object_proxy import Proxy
+from lazy_object_proxy import Proxy  # type: ignore
 
 from . import containers as c
 from .constants import MAX_RECURSION_DEPTH
@@ -75,7 +75,7 @@ class Templar(LoggerMixin):
                 return RenderedStringTemplate(value)
             for lexeme_type, lexeme_value in TemplarStringLexer(value):
                 if lexeme_type == TemplarStringLexer.EXPRESSION:
-                    lexeme_value = self._string_template_process_expression(expression=lexeme_value)
+                    lexeme_value = str(self._eval(expression=lexeme_value))
                 chunks.append(lexeme_value)
             return RenderedStringTemplate("".join(chunks))
         finally:
@@ -89,14 +89,11 @@ class Templar(LoggerMixin):
         return _call
 
     def _eval(self, expression: str) -> t.Any:
-        # pylint: disable=eval-used
-        return eval(expression, self._globals, self._locals)  # nosec
-
-    def _string_template_process_expression(self, expression: str) -> str:
-        """Split the expression into parts and process according to the part name"""
+        """Safely evaluate an expression."""
         self.logger.debug(f"Processing expression: {expression!r}")
         try:
-            return str(self._eval(expression))
+            # pylint: disable=eval-used
+            return eval(expression, self._globals, self._locals)  # nosec
         except ActionRenderError:
             raise
         except (SyntaxError, NameError) as e:
