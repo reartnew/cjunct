@@ -4,7 +4,6 @@ import os
 import typing as t
 
 from classlogging import LoggerMixin
-from lazy_object_proxy import Proxy  # type: ignore
 
 from . import containers as c
 from .constants import MAX_RECURSION_DEPTH
@@ -113,7 +112,7 @@ class Templar(LoggerMixin):
         while transforming dicts into attribute-accessor proxies
         and turning leaf string values into deferred templates."""
         if isinstance(data, ComplexTemplateTag):
-            return Proxy(lambda: self._evaluate_complex_template(data.data))
+            return c.LazyProxy(lambda: self._evaluate_complex_template(data.data))
         if isinstance(data, dict):
             result_dict = c.AttrDict()
             for key, value in data.items():
@@ -125,5 +124,5 @@ class Templar(LoggerMixin):
                 result_list.append(self._load_ctx_node(item))
             return result_list
         if isinstance(data, str) and self._qualify_string_as_potentially_renderable(data):
-            return c.DeferredStringTemplate(text=data, render_hook=self._internal_render)
+            return c.LazyProxy(lambda: self._internal_render(data))
         return data
