@@ -32,13 +32,22 @@ class Templar(LoggerMixin):
         outcomes_leaf_class: t.Type[dict] = (
             c.StrictOutcomeDict if C.STRICT_OUTCOMES_RENDERING else c.LooseDict  # type: ignore
         )
-        self._locals: t.Dict[str, t.Any] = {
-            "outcomes": c.ActionContainingDict(
-                {name: outcomes_leaf_class(outcomes_map.get(name, {})) for name in action_states}
-            ),
-            "status": c.ActionContainingDict(action_states),
-            "context": c.ContextDict({k: self._load_ctx_node(data=v) for k, v in context_map.items()}),
-            "environment": c.LooseDict(os.environ),
+        outcomes_container: c.AttrDict = c.ActionContainingDict(
+            {name: outcomes_leaf_class(outcomes_map.get(name, {})) for name in action_states}
+        )
+        status_container: c.AttrDict = c.ActionContainingDict(action_states)
+        context_container: c.AttrDict = c.ContextDict({k: self._load_ctx_node(data=v) for k, v in context_map.items()})
+        environment_container: c.AttrDict = c.LooseDict(os.environ)
+        self._locals: t.Dict[str, c.AttrDict] = {
+            # Full names
+            "outcomes": outcomes_container,
+            "status": status_container,
+            "context": context_container,
+            "environment": environment_container,
+            # Aliases
+            "out": outcomes_container,
+            "ctx": context_container,
+            "env": environment_container,
         }
         self._globals: t.Dict[str, t.Any] = {
             f: self._make_restricted_builtin_call_shim(f) for f in self.DISABLED_GLOBALS
