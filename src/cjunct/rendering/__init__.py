@@ -102,9 +102,8 @@ class Templar(LoggerMixin):
             self.logger.warning(repr(e))
             raise ActionRenderError(repr(e)) from e
 
-    def _evaluate_complex_template(self, obj: t.Any) -> t.Any:
-        if isinstance(obj, str):
-            obj = self._eval(obj)
+    def _evaluate_context_object_expression(self, expression: str) -> t.Any:
+        obj: t.Any = self._eval(expression)
         return self._load_ctx_node(obj)
 
     def _load_ctx_node(self, data: t.Any) -> t.Any:
@@ -112,7 +111,7 @@ class Templar(LoggerMixin):
         while transforming dicts into attribute-accessor proxies
         and turning leaf string values into deferred templates."""
         if isinstance(data, ComplexTemplateTag):
-            return c.LazyProxy(lambda: self._evaluate_complex_template(data.data))
+            return c.LazyProxy(lambda: self._evaluate_context_object_expression(data.data))
         if isinstance(data, dict):
             result_dict = c.AttrDict()
             for key, value in data.items():
