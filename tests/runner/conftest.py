@@ -249,7 +249,7 @@ async def runner_docker_good_context(check_docker: None, ctx_from_text: CtxFacto
               cat /tmp/bind_file.txt
               printf "-"
               cat /tmp/bind_text.txt
-            pull: True
+            pull: False
             bind:
               - src: {tmp_file_to_bind}
                 dest: /tmp/bind_file.txt
