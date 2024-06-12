@@ -1,5 +1,5 @@
-# exception: LoadError
-# match: Unrecognized '!import' contents type
+# exception: YAMLStructureError
+# match: Expected string content
 ---
 actions:
   - !import {}

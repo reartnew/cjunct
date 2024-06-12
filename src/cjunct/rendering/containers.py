@@ -2,6 +2,8 @@
 
 import typing as t
 
+import lazy_object_proxy  # type: ignore
+
 from ..actions.types import RenderedStringTemplate
 from ..exceptions import ActionRenderError
 
@@ -11,7 +13,7 @@ __all__ = [
     "StrictOutcomeDict",
     "ActionContainingDict",
     "ContextDict",
-    "DeferredStringTemplate",
+    "LazyProxy",
 ]
 
 RenderHookType = t.Callable[[str], RenderedStringTemplate]
@@ -69,15 +71,8 @@ class ContextDict(AttrDict):
             raise ActionRenderError(f"Context key not found: {e}") from e
 
 
-class DeferredStringTemplate:
-    """An object that triggers self-rendering when being cast into a string"""
+class LazyProxy(lazy_object_proxy.Proxy):
+    """Lazy proxy that `repr`s like its wrapped object"""
 
-    def __init__(self, text: str, render_hook: RenderHookType) -> None:
-        self.__text = text
-        self.__render_hook: RenderHookType = render_hook
-
-    def __str__(self) -> str:
-        return self.__render_hook(self.__text)
-
-    def __repr__(self) -> str:
-        return repr(str(self))
+    def __repr__(self, __getattr__=object.__getattribute__) -> str:
+        return repr(self.__wrapped__)

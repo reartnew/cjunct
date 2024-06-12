@@ -14,6 +14,7 @@ __all__ = [
     "IntegrityError",
     "SourceError",
     "InteractionError",
+    "YAMLStructureError",
 ]
 
 
@@ -77,3 +78,9 @@ class InteractionError(BaseError):
     """Can't interact with a display"""
 
     CODE: int = 105
+
+
+class YAMLStructureError(BaseError):
+    """Custom tags structure error"""
+
+    CODE: int = 106

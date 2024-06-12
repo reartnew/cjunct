@@ -11,6 +11,7 @@ from .tokenizing import TemplarStringLexer
 from ..actions.types import RenderedStringTemplate
 from ..config.constants import C
 from ..exceptions import ActionRenderError, RestrictedBuiltinError, ActionRenderRecursionError
+from ..loader.default import ComplexTemplateTag
 
 __all__ = [
     "Templar",
@@ -31,13 +32,22 @@ class Templar(LoggerMixin):
         outcomes_leaf_class: t.Type[dict] = (
             c.StrictOutcomeDict if C.STRICT_OUTCOMES_RENDERING else c.LooseDict  # type: ignore
         )
-        self._locals: t.Dict[str, t.Any] = {
-            "outcomes": c.ActionContainingDict(
-                {name: outcomes_leaf_class(outcomes_map.get(name, {})) for name in action_states}
-            ),
-            "status": c.ActionContainingDict(action_states),
-            "context": c.ContextDict({k: self._load_ctx_node(data=v) for k, v in context_map.items()}),
-            "environment": c.LooseDict(os.environ),
+        outcomes_container: c.AttrDict = c.ActionContainingDict(
+            {name: outcomes_leaf_class(outcomes_map.get(name, {})) for name in action_states}
+        )
+        status_container: c.AttrDict = c.ActionContainingDict(action_states)
+        context_container: c.AttrDict = c.ContextDict({k: self._load_ctx_node(data=v) for k, v in context_map.items()})
+        environment_container: c.AttrDict = c.LooseDict(os.environ)
+        self._locals: t.Dict[str, c.AttrDict] = {
+            # Full names
+            "outcomes": outcomes_container,
+            "status": status_container,
+            "context": context_container,
+            "environment": environment_container,
+            # Aliases
+            "out": outcomes_container,
+            "ctx": context_container,
+            "env": environment_container,
         }
         self._globals: t.Dict[str, t.Any] = {
             f: self._make_restricted_builtin_call_shim(f) for f in self.DISABLED_GLOBALS
@@ -73,7 +83,7 @@ class Templar(LoggerMixin):
                 return RenderedStringTemplate(value)
             for lexeme_type, lexeme_value in TemplarStringLexer(value):
                 if lexeme_type == TemplarStringLexer.EXPRESSION:
-                    lexeme_value = self._string_template_process_expression(expression=lexeme_value)
+                    lexeme_value = str(self._eval(expression=lexeme_value))
                 chunks.append(lexeme_value)
             return RenderedStringTemplate("".join(chunks))
         finally:
@@ -86,13 +96,12 @@ class Templar(LoggerMixin):
 
         return _call
 
-    def _string_template_process_expression(self, expression: str) -> str:
-        """Split the expression into parts and process according to the part name"""
+    def _eval(self, expression: str) -> t.Any:
+        """Safely evaluate an expression."""
         self.logger.debug(f"Processing expression: {expression!r}")
         try:
             # pylint: disable=eval-used
-            result: t.Any = eval(expression, self._globals, self._locals)  # nosec
-            return str(result)
+            return eval(expression, self._globals, self._locals)  # nosec
         except ActionRenderError:
             raise
         except (SyntaxError, NameError) as e:
@@ -102,10 +111,17 @@ class Templar(LoggerMixin):
             self.logger.warning(repr(e))
             raise ActionRenderError(repr(e)) from e
 
+    def _evaluate_context_object_expression(self, expression: str) -> t.Any:
+        obj: t.Any = self._eval(expression)
+        return self._load_ctx_node(obj)
+
     def _load_ctx_node(self, data: t.Any) -> t.Any:
         """Deep copy of context data,
         while transforming dicts into attribute-accessor proxies
         and turning leaf string values into deferred templates."""
+        if isinstance(data, ComplexTemplateTag):
+            tag_value: str = data.data
+            return c.LazyProxy(lambda: self._evaluate_context_object_expression(tag_value))
         if isinstance(data, dict):
             result_dict = c.AttrDict()
             for key, value in data.items():
@@ -117,5 +133,5 @@ class Templar(LoggerMixin):
                 result_list.append(self._load_ctx_node(item))
             return result_list
         if isinstance(data, str) and self._qualify_string_as_potentially_renderable(data):
-            return c.DeferredStringTemplate(text=data, render_hook=self._internal_render)
+            return c.LazyProxy(lambda: self._internal_render(data))
         return data
