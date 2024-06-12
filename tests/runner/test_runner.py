@@ -212,3 +212,13 @@ def test_interaction_context(runner_interaction_context: None, display_collector
         "OMITTED: Bar",
         "OMITTED: Baz",
     ]
+
+
+def test_complex_vars_context(runner_with_complex_vars_context: None, display_collector: t.List[str]) -> None:
+    """Test complex vars context"""
+    cjunct.Runner().run_sync()
+    assert display_collector == [
+        "[Test]  | Hello world!",
+        "=============",
+        "SUCCESS: Test",
+    ]

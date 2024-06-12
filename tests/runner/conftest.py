@@ -358,3 +358,27 @@ def runner_interaction_context(
         """
     )
     monkeypatch.setattr(C, "INTERACTIVE_MODE", True)
+
+
+@pytest.fixture
+def runner_with_complex_vars_context(ctx_from_text: CtxFactoryType) -> None:
+    """Prepare a context with complex tag data"""
+    ctx_from_text(
+        """
+        ---
+        context:
+          first_nested_data:
+            first_word: Hello
+          second_nested_data:
+            second_word: world!
+          merged_data: !@ |
+            {
+              **ctx.first_nested_data,
+              **ctx.second_nested_data,
+            }
+        actions:
+          - name: Test
+            type: echo
+            message: "@{context.merged_data.first_word} @{context.merged_data.second_word}"
+        """
+    )
