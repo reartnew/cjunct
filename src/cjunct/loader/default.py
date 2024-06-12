@@ -10,6 +10,7 @@ import yaml
 
 from .base import AbstractBaseWorkflowLoader
 from ..actions.base import ActionBase
+from ..exceptions import YAMLStructureError
 from ..actions.bundled import (
     EchoAction,
     ShellAction,
@@ -34,7 +35,9 @@ class ExtraTag(yaml.YAMLObject):
     """Extended processing entity"""
 
     def __init__(self, data: t.Any) -> None:
-        self.data = data
+        if not isinstance(data, str):
+            raise YAMLStructureError(f"Expected string content, got {type(data)!r}")
+        self.data: str = data
 
     @classmethod
     def from_yaml(cls, loader, node):
@@ -106,8 +109,6 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
 
     def _parse_import(self, tag: ImportTag, allowed_root_keys: t.Set[str]) -> None:
         path: str = tag.data
-        if not isinstance(path, str):
-            self._throw(f"Unrecognized '!import' contents type: {type(path)!r} (expected a string)")
         if not path:
             self._throw(f"Empty import: {path!r}")
         with self._read_file(path) as file_data:
