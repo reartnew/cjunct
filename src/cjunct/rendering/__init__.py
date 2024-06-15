@@ -8,10 +8,9 @@ from classlogging import LoggerMixin
 from . import containers as c
 from .constants import MAX_RECURSION_DEPTH
 from .tokenizing import TemplarStringLexer
-from ..actions.types import RenderedStringTemplate
+from ..actions.types import RenderedStringTemplate, ObjectTemplate
 from ..config.constants import C
 from ..exceptions import ActionRenderError, RestrictedBuiltinError, ActionRenderRecursionError
-from ..loader.default import ComplexTemplateTag
 
 __all__ = [
     "Templar",
@@ -119,9 +118,8 @@ class Templar(LoggerMixin):
         """Deep copy of context data,
         while transforming dicts into attribute-accessor proxies
         and turning leaf string values into deferred templates."""
-        if isinstance(data, ComplexTemplateTag):
-            tag_value: str = data.data
-            return c.LazyProxy(lambda: self._evaluate_context_object_expression(tag_value))
+        if isinstance(data, ObjectTemplate):
+            return c.LazyProxy(lambda: self._evaluate_context_object_expression(data.expression))
         if isinstance(data, dict):
             result_dict = c.AttrDict()
             for key, value in data.items():

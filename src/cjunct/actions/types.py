@@ -1,5 +1,6 @@
 """Types collection"""
 
+import dataclasses
 import typing as t
 
 EventType = str
@@ -10,6 +11,7 @@ __all__ = [
     "OutcomeStorageType",
     "Stderr",
     "StringTemplate",
+    "ObjectTemplate",
     "RenderedStringTemplate",
 ]
 
@@ -20,6 +22,13 @@ class Stderr(str):
 
 class StringTemplate(str):
     """String arguments to be templated later"""
+
+
+@dataclasses.dataclass
+class ObjectTemplate:
+    """Complex object expression to be rendered later"""
+
+    expression: str
 
 
 class RenderedStringTemplate(StringTemplate):
