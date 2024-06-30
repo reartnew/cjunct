@@ -82,7 +82,7 @@ class Templar(LoggerMixin):
                 return RenderedStringTemplate(value)
             for lexeme_type, lexeme_value in TemplarStringLexer(value):
                 if lexeme_type == TemplarStringLexer.EXPRESSION:
-                    lexeme_value = str(self._eval(expression=lexeme_value))
+                    lexeme_value = str(self.eval(expression=lexeme_value))
                 chunks.append(lexeme_value)
             return RenderedStringTemplate("".join(chunks))
         finally:
@@ -95,7 +95,7 @@ class Templar(LoggerMixin):
 
         return _call
 
-    def _eval(self, expression: str) -> t.Any:
+    def eval(self, expression: str) -> t.Any:
         """Safely evaluate an expression."""
         self.logger.debug(f"Processing expression: {expression!r}")
         try:
@@ -111,7 +111,7 @@ class Templar(LoggerMixin):
             raise ActionRenderError(repr(e)) from e
 
     def _evaluate_context_object_expression(self, expression: str) -> t.Any:
-        obj: t.Any = self._eval(expression)
+        obj: t.Any = self.eval(expression)
         return self._load_ctx_node(obj)
 
     def _load_ctx_node(self, data: t.Any) -> t.Any:
