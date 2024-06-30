@@ -14,7 +14,7 @@ import aiodocker
 from aiodocker.containers import DockerContainer
 
 from ..base import EmissionScannerActionBase, ArgsBase
-from ..types import StringTemplate, Stderr
+from ..types import Stderr
 from ...config.constants import C
 
 __all__ = [
@@ -42,9 +42,9 @@ class NetworkMode(Enum):
 class Auth:
     """Docker auth info"""
 
-    username: StringTemplate
-    password: StringTemplate
-    hostname: t.Optional[StringTemplate] = None
+    username: str
+    password: str
+    hostname: t.Optional[str] = None
 
 
 @dataclass
@@ -58,9 +58,9 @@ class Network:
 class DockerBind:
     """Bind mount specification"""
 
-    dest: StringTemplate
-    src: t.Optional[StringTemplate] = None
-    contents: t.Optional[StringTemplate] = None
+    dest: str
+    src: t.Optional[str] = None
+    contents: t.Optional[str] = None
     mode: BindMode = BindMode.READ_WRITE
 
     def __post_init__(self) -> None:
@@ -73,12 +73,12 @@ class DockerBind:
 class DockerShellArgs(ArgsBase):
     """Args for docker shell"""
 
-    command: StringTemplate
-    image: StringTemplate
-    environment: t.Optional[t.Dict[str, StringTemplate]] = None
-    cwd: t.Optional[StringTemplate] = None
+    command: str
+    image: str
+    environment: t.Optional[t.Dict[str, str]] = None
+    cwd: t.Optional[str] = None
     pull: bool = False
-    executable: StringTemplate = "/bin/sh"  # type: ignore[assignment]
+    executable: str = "/bin/sh"  # type: ignore[assignment]
     bind: t.Optional[t.List[DockerBind]] = None
     network: Network = field(default_factory=Network)  # pylint: disable=invalid-field-call
     privileged: bool = False

@@ -11,7 +11,6 @@ import dacite
 from classlogging import LoggerMixin
 
 from ..actions.base import ActionBase, ArgsBase, ActionDependency
-from ..actions.types import StringTemplate
 from ..exceptions import LoadError
 from ..tools.inspect import get_class_annotations
 from ..workflow import Workflow
@@ -167,15 +166,6 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
             original_args=node,
         )
 
-    @classmethod
-    def _ensure_string_template_hook(cls, data: t.Any) -> StringTemplate:
-        if not isinstance(data, str):
-            raise dacite.WrongTypeError(
-                field_type=StringTemplate,
-                value=data,
-            )
-        return StringTemplate(data)
-
     def _build_args_from_the_rest_of_the_dict_node(
         self,
         action_name: str,
@@ -196,7 +186,6 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
                     config=dacite.Config(
                         strict=True,
                         cast=[Enum],
-                        type_hooks={StringTemplate: self._ensure_string_template_hook},
                     ),
                 ),
             )

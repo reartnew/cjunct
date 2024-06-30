@@ -18,7 +18,7 @@ import dacite.types
 
 from . import types
 from .actions.base import ActionBase, ArgsBase
-from .actions.types import StringTemplate, ObjectTemplate
+from .actions.types import ObjectTemplate
 from .config.constants import C
 from .display.base import BaseDisplay
 from .display.default import DefaultDisplay
@@ -225,7 +225,7 @@ class Runner(classlogging.LoggerMixin):
                 return {k: _recurse(v) for k, v in data.items()}
             if isinstance(data, list):
                 return [_recurse(v) for v in data]
-            if isinstance(data, (str, StringTemplate)):
+            if isinstance(data, str):
                 return _string_template_render_hook(data)
             if isinstance(data, ObjectTemplate):
                 return _object_template_render_hook(data.expression)
@@ -239,9 +239,6 @@ class Runner(classlogging.LoggerMixin):
                 config=dacite.Config(
                     strict=True,
                     cast=[Enum],
-                    type_hooks={
-                        StringTemplate: _string_template_render_hook,
-                    },
                 ),
             )
         # dacite union processing broadly suppresses all exceptions appearing during trying each type of the union

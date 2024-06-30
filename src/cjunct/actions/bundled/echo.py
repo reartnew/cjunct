@@ -1,7 +1,6 @@
 """Simple printer"""
 
 from ..base import ArgsBase, ActionBase
-from ..types import StringTemplate
 
 __all__ = [
     "EchoAction",
@@ -12,7 +11,7 @@ __all__ = [
 class EchoArgs(ArgsBase):
     """Echo arguments"""
 
-    message: StringTemplate
+    message: str
 
 
 class EchoAction(ActionBase):
