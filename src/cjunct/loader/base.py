@@ -164,6 +164,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
             description=description,
             ancestors=dependencies,
             selectable=selectable,
+            original_args=node,
         )
 
     @classmethod

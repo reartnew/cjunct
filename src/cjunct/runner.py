@@ -8,16 +8,17 @@ import functools
 import io
 import sys
 import typing as t
-from dataclasses import asdict
 from enum import Enum
 from pathlib import Path
 
 import classlogging
 import dacite
+import dacite.core
+import dacite.types
 
 from . import types
 from .actions.base import ActionBase, ArgsBase
-from .actions.types import StringTemplate, RenderedStringTemplate
+from .actions.types import StringTemplate, RenderedStringTemplate, ObjectTemplate
 from .config.constants import C
 from .display.base import BaseDisplay
 from .display.default import DefaultDisplay
@@ -33,6 +34,7 @@ __all__ = [
 ]
 
 IOType = io.TextIOBase
+logger = classlogging.get_module_logger()
 
 
 class Runner(classlogging.LoggerMixin):
@@ -211,7 +213,25 @@ class Runner(classlogging.LoggerMixin):
                 union_render_errors.append(str(are))
                 raise
 
-        original_args_dict: dict = asdict(action.args)
+        def _object_template_render_hook(value: str) -> t.Any:
+            try:
+                return templar.eval(value)
+            except ActionRenderError as are:
+                union_render_errors.append(str(are))
+                raise
+
+        def _recurse(data) -> t.Any:
+            if isinstance(data, dict):
+                return {k: _recurse(v) for k, v in data.items()}
+            if isinstance(data, list):
+                return [_recurse(v) for v in data]
+            if isinstance(data, (str, StringTemplate)):
+                return _string_template_render_hook(data)
+            if isinstance(data, ObjectTemplate):
+                return _object_template_render_hook(data.expression)
+            return data
+
+        original_args_dict: dict = _recurse(action.original_args)
         try:
             rendered_args: ArgsBase = dacite.from_dict(
                 data_class=type(action.args),
@@ -231,3 +251,17 @@ class Runner(classlogging.LoggerMixin):
                 raise  # pragma: no cover
             raise ActionUnionRenderError("; ".join(union_render_errors)) from e
         action.args = rendered_args
+
+
+original_is_inst = dacite.types.is_instance
+
+
+def is_instance(value: t.Any, type_: t.Type) -> bool:
+    """Do not check types whether the value is an instance of ObjectTemplate"""
+    if isinstance(value, ObjectTemplate):
+        logger.warning(f"Skipping type check for {value.__class__.__name__}, where {type_!r} was expected")
+        return True
+    return original_is_inst(value, type_)
+
+
+dacite.types.is_instance = dacite.core.is_instance = is_instance
