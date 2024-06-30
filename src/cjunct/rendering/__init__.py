@@ -8,7 +8,7 @@ from classlogging import LoggerMixin
 from . import containers as c
 from .constants import MAX_RECURSION_DEPTH
 from .tokenizing import TemplarStringLexer
-from ..actions.types import RenderedStringTemplate, ObjectTemplate
+from ..actions.types import ObjectTemplate
 from ..config.constants import C
 from ..exceptions import ActionRenderError, RestrictedBuiltinError, ActionRenderRecursionError
 
@@ -57,7 +57,7 @@ class Templar(LoggerMixin):
     def _qualify_string_as_potentially_renderable(cls, data: str) -> bool:
         return "@{" in data
 
-    def render(self, value: str) -> RenderedStringTemplate:
+    def render(self, value: str) -> str:
         """Process string data, replacing all @{} occurrences."""
         try:
             return self._internal_render(value)
@@ -69,7 +69,7 @@ class Templar(LoggerMixin):
             self.logger.debug(f"Rendering {value!r} failed: {e!r}", exc_info=True)
             raise
 
-    def _internal_render(self, value: str) -> RenderedStringTemplate:
+    def _internal_render(self, value: str) -> str:
         """Recursive rendering routine"""
         self._depth += 1
         if self._depth >= MAX_RECURSION_DEPTH:
@@ -79,12 +79,12 @@ class Templar(LoggerMixin):
             chunks: t.List[str] = []
             # Cheap check
             if not self._qualify_string_as_potentially_renderable(value):
-                return RenderedStringTemplate(value)
+                return value
             for lexeme_type, lexeme_value in TemplarStringLexer(value):
                 if lexeme_type == TemplarStringLexer.EXPRESSION:
                     lexeme_value = str(self.eval(expression=lexeme_value))
                 chunks.append(lexeme_value)
-            return RenderedStringTemplate("".join(chunks))
+            return "".join(chunks)
         finally:
             self._depth -= 1
 

@@ -18,7 +18,7 @@ import dacite.types
 
 from . import types
 from .actions.base import ActionBase, ArgsBase
-from .actions.types import StringTemplate, RenderedStringTemplate, ObjectTemplate
+from .actions.types import StringTemplate, ObjectTemplate
 from .config.constants import C
 from .display.base import BaseDisplay
 from .display.default import DefaultDisplay
@@ -206,7 +206,7 @@ class Runner(classlogging.LoggerMixin):
             context_map=self.workflow.context,
         )
 
-        def _string_template_render_hook(value: str) -> RenderedStringTemplate:
+        def _string_template_render_hook(value: str) -> str:
             try:
                 return templar.render(value)
             except ActionRenderError as are:
