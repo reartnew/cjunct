@@ -22,7 +22,7 @@ class ShellArgs(ArgsBase):
     command: t.Optional[StringTemplate] = None
     file: t.Optional[StringTemplate] = None
     environment: t.Optional[t.Dict[str, StringTemplate]] = None
-    cwd: t.Optional[str] = None
+    cwd: t.Optional[StringTemplate] = None
 
     def __post_init__(self) -> None:
         if self.command is None and self.file is None:
