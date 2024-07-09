@@ -222,3 +222,8 @@ def test_complex_vars_context(runner_with_complex_vars_context: None, display_co
         "=============",
         "SUCCESS: Test",
     ]
+
+
+def test_runner_with_shell_env_inheritance(runner_with_shell_env_inheritance: None) -> None:
+    """Check environment inheritance for shell action"""
+    cjunct.Runner().run_sync()

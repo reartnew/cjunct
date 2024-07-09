@@ -1,6 +1,7 @@
 """Separate module for shell-related action"""
 
 import asyncio
+import os
 import typing as t
 
 from async_shell import Shell, ShellResult
@@ -47,9 +48,13 @@ class ShellAction(EmissionScannerActionBase):
         command: str = self.args.command or f"source '{self.args.file}'"
         if C.SHELL_INJECT_YIELD_FUNCTION:
             command = f"{self._SHELL_SERVICE_FUNCTIONS_DEFINITIONS}\n{command}"
+        environment: t.Optional[t.Dict[str, str]] = None
+        if self.args.environment is not None:
+            environment = os.environ.copy()
+            environment.update(self.args.environment)
         return Shell(
             command=command,
-            environment=self.args.environment,  # type: ignore[arg-type]
+            environment=environment,
             cwd=self.args.cwd,
         )
 
