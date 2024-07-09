@@ -54,7 +54,7 @@ class Templar(LoggerMixin):
         self._depth: int = 0
 
     @classmethod
-    def _qualify_string_as_potentially_renderable(cls, data: str) -> bool:
+    def qualify_string_as_potentially_renderable(cls, data: str) -> bool:
         return "@{" in data
 
     def render(self, value: str) -> str:
@@ -78,7 +78,7 @@ class Templar(LoggerMixin):
         try:
             chunks: t.List[str] = []
             # Cheap check
-            if not self._qualify_string_as_potentially_renderable(value):
+            if not self.qualify_string_as_potentially_renderable(value):
                 return value
             for lexeme_type, lexeme_value in TemplarStringLexer(value):
                 if lexeme_type == TemplarStringLexer.EXPRESSION:
@@ -130,6 +130,6 @@ class Templar(LoggerMixin):
             for item in data:
                 result_list.append(self._load_ctx_node(item))
             return result_list
-        if isinstance(data, str) and self._qualify_string_as_potentially_renderable(data):
+        if isinstance(data, str) and self.qualify_string_as_potentially_renderable(data):
             return c.LazyProxy(lambda: self._internal_render(data))
         return data
