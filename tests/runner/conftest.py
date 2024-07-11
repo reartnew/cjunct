@@ -12,8 +12,8 @@ import pytest
 import pytest_asyncio
 from _pytest.fixtures import SubRequest
 
-from cjunct.config.environment import Env
 from cjunct.config.constants import C
+from cjunct.config.environment import Env
 from cjunct.display.default import DefaultDisplay
 
 CtxFactoryType = t.Callable[[str], Path]
@@ -380,5 +380,24 @@ def runner_with_complex_vars_context(ctx_from_text: CtxFactoryType) -> None:
           - name: Test
             type: echo
             message: "@{context.merged_data.first_word} @{context.merged_data.second_word}"
+        """
+    )
+
+
+@pytest.fixture
+def runner_with_shell_env_inheritance(ctx_from_text: CtxFactoryType, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Prepare a context with bot explicit and inherited environment variables"""
+    monkeypatch.setenv("INHERITED_VAR_NAME", "inherited var value")
+    ctx_from_text(
+        """
+        ---
+        actions:
+          - name: Foo
+            type: shell
+            environment:
+              LOCAL_VAR_NAME: local var value
+            command: |
+              [ "$LOCAL_VAR_NAME" = "local var value" ] || exit 1
+              [ "$INHERITED_VAR_NAME" = "inherited var value" ] || exit 2
         """
     )
