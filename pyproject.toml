@@ -27,7 +27,7 @@ python-dotenv = "^1.0.1"
 async-shell = "^1.0.7"
 pyyaml = "^6.0.1"
 click = "^8.1.7"
-dacite = {git = "https://github.com/reartnew/dacite.git", rev = "cjunct"}
+dacite-cjunct = "1.8.1a0"
 inquirer = "^3.3.0"
 aiodocker = { version = "^0.22.1", optional = true }
 lazy-object-proxy = "^1.10.0"
