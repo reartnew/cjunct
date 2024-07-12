@@ -55,19 +55,21 @@ class Network:
 
 
 @dataclass
-class DockerBind:
-    """Bind mount specification"""
+class FileDockerBind:
+    """File-based bind mount specification"""
 
+    src: str
     dest: str
-    src: t.Optional[str] = None
-    contents: t.Optional[str] = None
     mode: BindMode = BindMode.READ_WRITE
 
-    def __post_init__(self) -> None:
-        if self.contents is None and self.src is None:
-            raise ValueError("Neither contents nor src specified")
-        if self.contents is not None and self.src is not None:
-            raise ValueError("Both contents and src specified")
+
+@dataclass
+class ContentDockerBind:
+    """Content-based bind mount specification"""
+
+    contents: str
+    dest: str
+    mode: BindMode = BindMode.READ_ONLY
 
 
 class DockerShellArgs(ArgsBase):
@@ -78,8 +80,8 @@ class DockerShellArgs(ArgsBase):
     environment: t.Optional[t.Dict[str, str]] = None
     cwd: t.Optional[str] = None
     pull: bool = False
-    executable: str = "/bin/sh"  # type: ignore[assignment]
-    bind: t.Optional[t.List[DockerBind]] = None
+    executable: str = "/bin/sh"
+    bind: t.Optional[t.List[t.Union[FileDockerBind, ContentDockerBind]]] = None
     network: Network = field(default_factory=Network)  # pylint: disable=invalid-field-call
     privileged: bool = False
     auth: t.Optional[Auth] = None
@@ -111,9 +113,9 @@ class DockerShellAction(EmissionScannerActionBase):
             )
             container_binds: t.List[str] = [f"{tmp_directory}:{script_container_directory}:ro"]
             for bind_config in self.args.bind or []:
-                if bind_config.src is not None:
+                if isinstance(bind_config, FileDockerBind):
                     container_binds.append(f"{bind_config.src}:{bind_config.dest}:{bind_config.mode.value}")
-                elif bind_config.contents is not None:
+                else:
                     bind_contents_local_file: Path = tmp_dir_path / uuid.uuid4().hex
                     bind_contents_local_file.write_text(
                         data=bind_config.contents,
