@@ -16,7 +16,6 @@ import dacite
 
 from . import types
 from .actions.base import ActionBase, ArgsBase
-from .actions.types import ObjectTemplate
 from .config.constants import C
 from .display.base import BaseDisplay
 from .display.default import DefaultDisplay
@@ -203,18 +202,7 @@ class Runner(classlogging.LoggerMixin):
             context_map=self.workflow.context,
         )
 
-        def _recurse(data) -> t.Any:
-            if isinstance(data, dict):
-                return {k: _recurse(v) for k, v in data.items()}
-            if isinstance(data, list):
-                return [_recurse(v) for v in data]
-            if isinstance(data, str):
-                return templar.render(data)
-            if isinstance(data, ObjectTemplate):
-                return templar.eval(data.expression)
-            return data
-
-        original_args_dict: dict = _recurse(action.original_args)
+        original_args_dict: dict = templar.recursive_render(action.original_args)
         rendered_args: ArgsBase = dacite.from_dict(
             data_class=type(action.args),
             data=original_args_dict,
