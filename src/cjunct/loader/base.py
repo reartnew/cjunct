@@ -34,7 +34,7 @@ class TemplateIndifferentConfig(dacite.Config, LoggerMixin):
             if isinstance(value, str) and qualify_string_as_potentially_renderable(value):
                 cls.logger.info(f"Skipping type check for a renderable string, where {type_!r} was expected")
             else:
-                # This is not a renderable literal, so check enum right away
+                # This is not subject to rendering: check enum right away
                 type_(value)
             return True
         return super().is_instance(value, type_)
