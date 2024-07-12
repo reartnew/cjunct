@@ -83,14 +83,12 @@ class ActionBase(classlogging.LoggerMixin):
         ancestors: t.Optional[t.Dict[str, ActionDependency]] = None,
         description: t.Optional[str] = None,
         selectable: bool = True,
-        original_args: t.Optional[t.Dict[str, t.Any]] = None,
     ) -> None:
         self.name: str = name
         self.args: ArgsBase = args
         self.description: t.Optional[str] = description
         self.ancestors: t.Dict[str, ActionDependency] = ancestors or {}
         self.selectable: bool = selectable
-        self.original_args: t.Dict[str, t.Any] = original_args or {}
 
         self._yielded_keys: OutcomeStorageType = {}
         self._status: ActionStatus = ActionStatus.PENDING

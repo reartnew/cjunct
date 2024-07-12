@@ -50,6 +50,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         self._raw_file_names_stack: t.List[str] = []
         self._resolved_file_paths_stack: t.List[Path] = []
         self._gathered_context: t.Dict[str, t.Any] = {}
+        self._original_args_map: t.Dict[str, t.Dict[str, t.Any]] = {}
 
     def _register_action(self, action: ActionBase) -> None:
         if action.name in self._actions:
@@ -177,14 +178,15 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
             action_class=action_class,
             node=node,
         )
-        return action_class(
+        action_instance: ActionBase = action_class(
             name=name,
             args=args_instance,
             description=description,
             ancestors=dependencies,
             selectable=selectable,
-            original_args=node,
         )
+        self._original_args_map[name] = node
+        return action_instance
 
     def _build_args_from_the_rest_of_the_dict_node(
         self,
@@ -203,10 +205,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
                 dacite.from_dict(
                     data_class=args_class,
                     data=node,
-                    config=TemplateIndifferentConfig(
-                        strict=True,
-                        # cast=[Enum],
-                    ),
+                    config=TemplateIndifferentConfig(strict=True),
                 ),
             )
         except ValueError as e:
@@ -217,3 +216,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
             self._throw(f"Unrecognized keys for action {action_name!r}: {sorted(e.keys)}")
         except dacite.WrongTypeError as e:
             self._throw(f"Unrecognized {e.field_path!r} content type: {type(e.value)} (expected {e.field_type!r})")
+
+    def get_original_args_dict_for_action(self, action: ActionBase) -> dict:
+        """Obtain dictionary representation of the action arguments as was initially loaded"""
+        return self._original_args_map[action.name]

@@ -60,13 +60,17 @@ class Runner(classlogging.LoggerMixin):
         self._had_failed_actions: bool = False
 
     @functools.cached_property
+    def loader(self) -> AbstractBaseWorkflowLoader:
+        """Workflow loader"""
+        return self._loader_class()
+
+    @functools.cached_property
     def workflow(self) -> Workflow:
         """Calculated workflow"""
-        loader: AbstractBaseWorkflowLoader = self._loader_class()
         return (
-            loader.loads(self._workflow_source.read())
+            self.loader.loads(self._workflow_source.read())
             if isinstance(self._workflow_source, io.TextIOBase)
-            else loader.load(self._workflow_source)
+            else self.loader.load(self._workflow_source)
         )
 
     @functools.cached_property
@@ -202,7 +206,7 @@ class Runner(classlogging.LoggerMixin):
             context_map=self.workflow.context,
         )
 
-        original_args_dict: dict = templar.recursive_render(action.original_args)
+        original_args_dict: dict = templar.recursive_render(self.loader.get_original_args_dict_for_action(action))
         rendered_args: ArgsBase = dacite.from_dict(
             data_class=type(action.args),
             data=original_args_dict,
