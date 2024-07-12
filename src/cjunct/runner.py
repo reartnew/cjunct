@@ -248,19 +248,3 @@ class Runner(classlogging.LoggerMixin):
                 raise  # pragma: no cover
             raise ActionUnionRenderError("; ".join(union_render_errors)) from e
         action.args = rendered_args
-
-
-original_is_inst = dacite.types.is_instance
-
-
-def is_instance(value: t.Any, type_: t.Type) -> bool:
-    """Do not check types whether the value is an instance of ObjectTemplate"""
-    if isinstance(value, ObjectTemplate):
-        logger.warning(f"Skipping type check for {value.__class__.__name__}, where {type_!r} was expected")
-        return True
-    if value == '@{ ctx.azaza_key }':
-        return True
-    return original_is_inst(value, type_)
-
-
-dacite.types.is_instance = dacite.core.is_instance = is_instance

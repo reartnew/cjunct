@@ -9,8 +9,10 @@ from pathlib import Path
 
 import dacite
 from classlogging import LoggerMixin
+from dacite.types import is_subclass
 
 from ..actions.base import ActionBase, ArgsBase, ActionDependency
+from ..actions.types import ObjectTemplate, qualify_string_as_potentially_renderable
 from ..exceptions import LoadError
 from ..tools.inspect import get_class_annotations
 from ..workflow import Workflow
@@ -18,6 +20,22 @@ from ..workflow import Workflow
 __all__ = [
     "AbstractBaseWorkflowLoader",
 ]
+
+
+class TemplateIndifferentConfig(dacite.Config, LoggerMixin):
+    """Configuration for initial workflow loading"""
+
+    @classmethod
+    def is_instance(cls, value: t.Any, type_: t.Type) -> bool:
+        if (
+            isinstance(value, ObjectTemplate)
+            or is_subclass(type_, Enum)
+            and isinstance(value, str)
+            and qualify_string_as_potentially_renderable(value)
+        ):
+            cls.logger.warning(f"Skipping type check for {value.__class__.__name__}, where {type_!r} was expected")
+            return True
+        return super().is_instance(value, type_)
 
 
 class AbstractBaseWorkflowLoader(LoggerMixin):
@@ -183,9 +201,9 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
                 dacite.from_dict(
                     data_class=args_class,
                     data=node,
-                    config=dacite.Config(
+                    config=TemplateIndifferentConfig(
                         strict=True,
-                        cast=[Enum],
+                        # cast=[Enum],
                     ),
                 ),
             )

@@ -10,8 +10,8 @@ __all__ = [
     "EventType",
     "OutcomeStorageType",
     "Stderr",
-    "StringTemplate",
     "ObjectTemplate",
+    "qualify_string_as_potentially_renderable",
 ]
 
 
@@ -19,11 +19,13 @@ class Stderr(str):
     """Strings related to standard error stream"""
 
 
-StringTemplate = str
-
-
 @dataclasses.dataclass
 class ObjectTemplate:
     """Complex object expression to be rendered later"""
 
     expression: str
+
+
+def qualify_string_as_potentially_renderable(data: str) -> bool:
+    """Check that a string should be templated later"""
+    return "@{" in data
