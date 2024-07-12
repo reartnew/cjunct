@@ -13,8 +13,6 @@ from pathlib import Path
 
 import classlogging
 import dacite
-import dacite.core
-import dacite.types
 
 from . import types
 from .actions.base import ActionBase, ArgsBase
