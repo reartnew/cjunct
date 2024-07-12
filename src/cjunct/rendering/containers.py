@@ -4,7 +4,6 @@ import typing as t
 
 import lazy_object_proxy  # type: ignore
 
-from ..actions.types import RenderedStringTemplate
 from ..exceptions import ActionRenderError
 
 __all__ = [
@@ -16,7 +15,7 @@ __all__ = [
     "LazyProxy",
 ]
 
-RenderHookType = t.Callable[[str], RenderedStringTemplate]
+RenderHookType = t.Callable[[str], str]
 
 
 class ItemAttributeAccessorMixin:

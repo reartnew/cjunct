@@ -5,10 +5,7 @@ from .actions.base import (
     ArgsBase,
     EmissionScannerActionBase,
 )
-from .actions.types import (
-    Stderr,
-    StringTemplate,
-)
+from .actions.types import Stderr
 from .config.constants import C
 from .display.default import DefaultDisplay
 from .loader.default import DefaultYAMLWorkflowLoader

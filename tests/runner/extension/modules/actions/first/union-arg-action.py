@@ -1,11 +1,11 @@
 # pylint: disable=missing-module-docstring,missing-class-docstring,invalid-name
 import typing as t
 
-from cjunct import ActionBase, ArgsBase, StringTemplate
+from cjunct import ActionBase, ArgsBase
 
 
 class UnionArgs(ArgsBase):
-    message: t.Union[StringTemplate, t.List[StringTemplate]]
+    message: t.Union[str, t.List[str]]
 
 
 class Action(ActionBase):

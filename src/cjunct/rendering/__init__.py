@@ -8,10 +8,9 @@ from classlogging import LoggerMixin
 from . import containers as c
 from .constants import MAX_RECURSION_DEPTH
 from .tokenizing import TemplarStringLexer
-from ..actions.types import RenderedStringTemplate
+from ..actions.types import ObjectTemplate, qualify_string_as_potentially_renderable
 from ..config.constants import C
 from ..exceptions import ActionRenderError, RestrictedBuiltinError, ActionRenderRecursionError
-from ..loader.default import ComplexTemplateTag
 
 __all__ = [
     "Templar",
@@ -54,11 +53,7 @@ class Templar(LoggerMixin):
         }
         self._depth: int = 0
 
-    @classmethod
-    def _qualify_string_as_potentially_renderable(cls, data: str) -> bool:
-        return "@{" in data
-
-    def render(self, value: str) -> RenderedStringTemplate:
+    def render(self, value: str) -> str:
         """Process string data, replacing all @{} occurrences."""
         try:
             return self._internal_render(value)
@@ -70,7 +65,7 @@ class Templar(LoggerMixin):
             self.logger.debug(f"Rendering {value!r} failed: {e!r}", exc_info=True)
             raise
 
-    def _internal_render(self, value: str) -> RenderedStringTemplate:
+    def _internal_render(self, value: str) -> str:
         """Recursive rendering routine"""
         self._depth += 1
         if self._depth >= MAX_RECURSION_DEPTH:
@@ -79,13 +74,13 @@ class Templar(LoggerMixin):
         try:
             chunks: t.List[str] = []
             # Cheap check
-            if not self._qualify_string_as_potentially_renderable(value):
-                return RenderedStringTemplate(value)
+            if not qualify_string_as_potentially_renderable(value):
+                return value
             for lexeme_type, lexeme_value in TemplarStringLexer(value):
                 if lexeme_type == TemplarStringLexer.EXPRESSION:
                     lexeme_value = str(self._eval(expression=lexeme_value))
                 chunks.append(lexeme_value)
-            return RenderedStringTemplate("".join(chunks))
+            return "".join(chunks)
         finally:
             self._depth -= 1
 
@@ -119,9 +114,8 @@ class Templar(LoggerMixin):
         """Deep copy of context data,
         while transforming dicts into attribute-accessor proxies
         and turning leaf string values into deferred templates."""
-        if isinstance(data, ComplexTemplateTag):
-            tag_value: str = data.data
-            return c.LazyProxy(lambda: self._evaluate_context_object_expression(tag_value))
+        if isinstance(data, ObjectTemplate):
+            return c.LazyProxy(lambda: self._evaluate_context_object_expression(data.expression))
         if isinstance(data, dict):
             result_dict = c.AttrDict()
             for key, value in data.items():
@@ -132,6 +126,18 @@ class Templar(LoggerMixin):
             for item in data:
                 result_list.append(self._load_ctx_node(item))
             return result_list
-        if isinstance(data, str) and self._qualify_string_as_potentially_renderable(data):
+        if isinstance(data, str) and qualify_string_as_potentially_renderable(data):
             return c.LazyProxy(lambda: self._internal_render(data))
+        return data
+
+    def recursive_render(self, data: t.Any) -> t.Any:
+        """Perform recursive rendering"""
+        if isinstance(data, dict):
+            return {k: self.recursive_render(v) for k, v in data.items()}
+        if isinstance(data, list):
+            return [self.recursive_render(v) for v in data]
+        if isinstance(data, str):
+            return self.render(data)
+        if isinstance(data, ObjectTemplate):
+            return self._eval(data.expression)
         return data

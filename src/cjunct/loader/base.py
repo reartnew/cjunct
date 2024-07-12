@@ -9,9 +9,10 @@ from pathlib import Path
 
 import dacite
 from classlogging import LoggerMixin
+from dacite.types import is_subclass
 
 from ..actions.base import ActionBase, ArgsBase, ActionDependency
-from ..actions.types import StringTemplate
+from ..actions.types import ObjectTemplate, qualify_string_as_potentially_renderable
 from ..exceptions import LoadError
 from ..tools.inspect import get_class_annotations
 from ..workflow import Workflow
@@ -19,6 +20,24 @@ from ..workflow import Workflow
 __all__ = [
     "AbstractBaseWorkflowLoader",
 ]
+
+
+class TemplateIndifferentConfig(dacite.Config, LoggerMixin):
+    """Configuration for initial workflow loading"""
+
+    @classmethod
+    def is_instance(cls, value: t.Any, type_: t.Type) -> bool:
+        if isinstance(value, ObjectTemplate):
+            cls.logger.info(f"Skipping type check for object template, where {type_!r} was expected")
+            return True
+        if is_subclass(type_, Enum):
+            if isinstance(value, str) and qualify_string_as_potentially_renderable(value):
+                cls.logger.info(f"Skipping type check for a renderable string, where {type_!r} was expected")
+            else:
+                # This is not subject to rendering: check enum right away
+                type_(value)
+            return True
+        return super().is_instance(value, type_)
 
 
 class AbstractBaseWorkflowLoader(LoggerMixin):
@@ -31,6 +50,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         self._raw_file_names_stack: t.List[str] = []
         self._resolved_file_paths_stack: t.List[Path] = []
         self._gathered_context: t.Dict[str, t.Any] = {}
+        self._original_args_map: t.Dict[str, t.Dict[str, t.Any]] = {}
 
     def _register_action(self, action: ActionBase) -> None:
         if action.name in self._actions:
@@ -158,22 +178,15 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
             action_class=action_class,
             node=node,
         )
-        return action_class(
+        action_instance: ActionBase = action_class(
             name=name,
             args=args_instance,
             description=description,
             ancestors=dependencies,
             selectable=selectable,
         )
-
-    @classmethod
-    def _ensure_string_template_hook(cls, data: t.Any) -> StringTemplate:
-        if not isinstance(data, str):
-            raise dacite.WrongTypeError(
-                field_type=StringTemplate,
-                value=data,
-            )
-        return StringTemplate(data)
+        self._original_args_map[name] = node
+        return action_instance
 
     def _build_args_from_the_rest_of_the_dict_node(
         self,
@@ -192,11 +205,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
                 dacite.from_dict(
                     data_class=args_class,
                     data=node,
-                    config=dacite.Config(
-                        strict=True,
-                        cast=[Enum],
-                        type_hooks={StringTemplate: self._ensure_string_template_hook},
-                    ),
+                    config=TemplateIndifferentConfig(strict=True),
                 ),
             )
         except ValueError as e:
@@ -207,3 +216,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
             self._throw(f"Unrecognized keys for action {action_name!r}: {sorted(e.keys)}")
         except dacite.WrongTypeError as e:
             self._throw(f"Unrecognized {e.field_path!r} content type: {type(e.value)} (expected {e.field_type!r})")
+
+    def get_original_args_dict_for_action(self, action: ActionBase) -> dict:
+        """Obtain dictionary representation of the action arguments as was initially loaded"""
+        return self._original_args_map[action.name]

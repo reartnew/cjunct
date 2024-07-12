@@ -8,7 +8,6 @@ import functools
 import io
 import sys
 import typing as t
-from dataclasses import asdict
 from enum import Enum
 from pathlib import Path
 
@@ -17,11 +16,10 @@ import dacite
 
 from . import types
 from .actions.base import ActionBase, ArgsBase
-from .actions.types import StringTemplate, RenderedStringTemplate
 from .config.constants import C
 from .display.base import BaseDisplay
 from .display.default import DefaultDisplay
-from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError, ActionUnionRenderError
+from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError
 from .loader.base import AbstractBaseWorkflowLoader
 from .loader.helpers import get_default_loader_class_for_source
 from .rendering import Templar
@@ -33,6 +31,7 @@ __all__ = [
 ]
 
 IOType = io.TextIOBase
+logger = classlogging.get_module_logger()
 
 
 class Runner(classlogging.LoggerMixin):
@@ -61,13 +60,17 @@ class Runner(classlogging.LoggerMixin):
         self._had_failed_actions: bool = False
 
     @functools.cached_property
+    def loader(self) -> AbstractBaseWorkflowLoader:
+        """Workflow loader"""
+        return self._loader_class()
+
+    @functools.cached_property
     def workflow(self) -> Workflow:
         """Calculated workflow"""
-        loader: AbstractBaseWorkflowLoader = self._loader_class()
         return (
-            loader.loads(self._workflow_source.read())
+            self.loader.loads(self._workflow_source.read())
             if isinstance(self._workflow_source, io.TextIOBase)
-            else loader.load(self._workflow_source)
+            else self.loader.load(self._workflow_source)
         )
 
     @functools.cached_property
@@ -197,37 +200,19 @@ class Runner(classlogging.LoggerMixin):
 
     def _render_action(self, action: ActionBase) -> None:
         """Prepare action to execution by rendering its template fields"""
-        union_render_errors: t.List[str] = []
         templar: Templar = Templar(
             outcomes_map=self._outcomes,
             action_states={name: self.workflow[name].status.value for name in self.workflow},
             context_map=self.workflow.context,
         )
 
-        def _string_template_render_hook(value: str) -> RenderedStringTemplate:
-            try:
-                return templar.render(value)
-            except ActionRenderError as are:
-                union_render_errors.append(str(are))
-                raise
-
-        original_args_dict: dict = asdict(action.args)
-        try:
-            rendered_args: ArgsBase = dacite.from_dict(
-                data_class=type(action.args),
-                data=original_args_dict,
-                config=dacite.Config(
-                    strict=True,
-                    cast=[Enum],
-                    type_hooks={
-                        StringTemplate: _string_template_render_hook,
-                    },
-                ),
-            )
-        # dacite union processing broadly suppresses all exceptions appearing during trying each type of the union
-        except dacite.UnionMatchError as e:
-            if not union_render_errors:
-                # Native dacite error
-                raise  # pragma: no cover
-            raise ActionUnionRenderError("; ".join(union_render_errors)) from e
+        original_args_dict: dict = templar.recursive_render(self.loader.get_original_args_dict_for_action(action))
+        rendered_args: ArgsBase = dacite.from_dict(
+            data_class=type(action.args),
+            data=original_args_dict,
+            config=dacite.Config(
+                strict=True,
+                cast=[Enum],
+            ),
+        )
         action.args = rendered_args

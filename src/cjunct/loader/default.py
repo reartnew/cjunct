@@ -10,14 +10,15 @@ import yaml
 
 from .base import AbstractBaseWorkflowLoader
 from ..actions.base import ActionBase
-from ..exceptions import YAMLStructureError
 from ..actions.bundled import (
     EchoAction,
     ShellAction,
     DockerShellAction,
 )
+from ..actions.types import ObjectTemplate
 from ..config.constants import C
 from ..config.constants.helpers import maybe_class_from_module
+from ..exceptions import YAMLStructureError
 
 
 # pylint: disable=abstract-method
@@ -31,7 +32,7 @@ __all__ = [
 ]
 
 
-class ExtraTag(yaml.YAMLObject):
+class StringExtraTag(yaml.YAMLObject):
     """Extended processing entity"""
 
     def __init__(self, data: t.Any) -> None:
@@ -39,21 +40,25 @@ class ExtraTag(yaml.YAMLObject):
             raise YAMLStructureError(f"Expected string content, got {type(data)!r}")
         self.data: str = data
 
+
+class ImportTag(StringExtraTag):
+    """Imports processing entity"""
+
+    yaml_tag: str = "!import"
+
     @classmethod
     def from_yaml(cls, loader, node):
         return cls(node.value)
 
 
-class ImportTag(ExtraTag):
-    """Imports processing entity"""
-
-    yaml_tag: str = "!import"
-
-
-class ComplexTemplateTag(ExtraTag):
+class ComplexTemplateTag(StringExtraTag):
     """Complex template entity"""
 
     yaml_tag: str = "!@"
+
+    @classmethod
+    def from_yaml(cls, loader, node):
+        return ObjectTemplate(node.value)
 
 
 class YAMLLoader(yaml.SafeLoader):

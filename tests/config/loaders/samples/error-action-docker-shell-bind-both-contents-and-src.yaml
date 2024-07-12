@@ -1,5 +1,5 @@
 # exception: LoadError
-# match: Both contents and src specified
+# match: Unrecognized 'bind' content type
 ---
 actions:
   - name: Foo
