@@ -20,7 +20,7 @@ from .actions.types import ObjectTemplate
 from .config.constants import C
 from .display.base import BaseDisplay
 from .display.default import DefaultDisplay
-from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError, ActionUnionRenderError
+from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError
 from .loader.base import AbstractBaseWorkflowLoader
 from .loader.helpers import get_default_loader_class_for_source
 from .rendering import Templar
@@ -197,26 +197,11 @@ class Runner(classlogging.LoggerMixin):
 
     def _render_action(self, action: ActionBase) -> None:
         """Prepare action to execution by rendering its template fields"""
-        union_render_errors: t.List[str] = []
         templar: Templar = Templar(
             outcomes_map=self._outcomes,
             action_states={name: self.workflow[name].status.value for name in self.workflow},
             context_map=self.workflow.context,
         )
-
-        def _string_template_render_hook(value: str) -> str:
-            try:
-                return templar.render(value)
-            except ActionRenderError as are:
-                union_render_errors.append(str(are))
-                raise
-
-        def _object_template_render_hook(value: str) -> t.Any:
-            try:
-                return templar.eval(value)
-            except ActionRenderError as are:
-                union_render_errors.append(str(are))
-                raise
 
         def _recurse(data) -> t.Any:
             if isinstance(data, dict):
@@ -224,25 +209,18 @@ class Runner(classlogging.LoggerMixin):
             if isinstance(data, list):
                 return [_recurse(v) for v in data]
             if isinstance(data, str):
-                return _string_template_render_hook(data)
+                return templar.render(data)
             if isinstance(data, ObjectTemplate):
-                return _object_template_render_hook(data.expression)
+                return templar.eval(data.expression)
             return data
 
         original_args_dict: dict = _recurse(action.original_args)
-        try:
-            rendered_args: ArgsBase = dacite.from_dict(
-                data_class=type(action.args),
-                data=original_args_dict,
-                config=dacite.Config(
-                    strict=True,
-                    cast=[Enum],
-                ),
-            )
-        # dacite union processing broadly suppresses all exceptions appearing during trying each type of the union
-        except dacite.UnionMatchError as e:
-            if not union_render_errors:
-                # Native dacite error
-                raise  # pragma: no cover
-            raise ActionUnionRenderError("; ".join(union_render_errors)) from e
+        rendered_args: ArgsBase = dacite.from_dict(
+            data_class=type(action.args),
+            data=original_args_dict,
+            config=dacite.Config(
+                strict=True,
+                cast=[Enum],
+            ),
+        )
         action.args = rendered_args

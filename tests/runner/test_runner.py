@@ -449,3 +449,73 @@ def test_runner_with_shell_env_inheritance(
         """
     )
     cjunct.Runner().run_sync()
+
+
+def test_runner_accepts_object_template(
+    ctx_from_text: CtxFactoryType,
+    display_collector: t.List[str],
+) -> None:
+    """Check possibility for passing object template to an action"""
+    ctx_from_text(
+        """
+        ---
+        context:
+          shell_env:
+            B: F
+            A: O
+            R: O
+          shell_command: echo $B$A$R
+          
+        actions:
+          - name: Foo
+            type: shell
+            environment: !@ ctx.shell_env
+            command: !@ ctx.shell_command
+        """
+    )
+    cjunct.Runner().run_sync()
+    assert display_collector == [
+        "[Foo]  | FOO",
+        "============",
+        "SUCCESS: Foo",
+    ]
+
+
+def test_broken_object_template(
+    ctx_from_text: CtxFactoryType,
+    display_collector: t.List[str],
+) -> None:
+    """Check bad object templates"""
+    ctx_from_text(
+        """
+        ---
+        actions:
+          - name: Foo
+            type: shell
+            environment: !@ ctx.shell_env
+            command: !@ ctx.shell_command
+        """
+    )
+    with pytest.raises(exceptions.ExecutionFailed):
+        cjunct.Runner().run_sync()
+
+
+def test_runner_enum_templates(
+    ctx_from_text: CtxFactoryType,
+    display_collector: t.List[str],
+    actions_definitions_directory: None,
+) -> None:
+    """Check possibility for passing string template to Enum args"""
+    ctx_from_text(
+        """
+        ---
+        actions:
+          - name: Foo
+            type: enum-eater
+            food: "@{ 'Foo' }"
+          - name: Bar
+            type: enum-eater
+            food: "Bar"
+        """
+    )
+    cjunct.Runner().run_sync()

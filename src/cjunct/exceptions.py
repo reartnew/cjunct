@@ -7,7 +7,6 @@ __all__ = [
     "ActionRenderError",
     "ActionRenderRecursionError",
     "RestrictedBuiltinError",
-    "ActionUnionRenderError",
     "ActionRunError",
     "BaseError",
     "LoadError",
@@ -32,10 +31,6 @@ class ActionRenderRecursionError(ActionRenderError):
 
 class RestrictedBuiltinError(Exception):
     """Action rendering access to a restricted builtin function"""
-
-
-class ActionUnionRenderError(ActionRenderError):
-    """Action rendering failed for union field"""
 
 
 class ActionRunError(Exception):
