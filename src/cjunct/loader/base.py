@@ -27,13 +27,15 @@ class TemplateIndifferentConfig(dacite.Config, LoggerMixin):
 
     @classmethod
     def is_instance(cls, value: t.Any, type_: t.Type) -> bool:
-        if (
-            isinstance(value, ObjectTemplate)
-            or is_subclass(type_, Enum)
-            and isinstance(value, str)
-            and qualify_string_as_potentially_renderable(value)
-        ):
-            cls.logger.warning(f"Skipping type check for {value.__class__.__name__}, where {type_!r} was expected")
+        if isinstance(value, ObjectTemplate):
+            cls.logger.info(f"Skipping type check for object template, where {type_!r} was expected")
+            return True
+        if is_subclass(type_, Enum):
+            if isinstance(value, str) and qualify_string_as_potentially_renderable(value):
+                cls.logger.info(f"Skipping type check for a renderable string, where {type_!r} was expected")
+            else:
+                # This is not a renderable literal, so check enum right away
+                type_(value)
             return True
         return super().is_instance(value, type_)
 
