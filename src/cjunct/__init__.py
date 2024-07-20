@@ -18,3 +18,6 @@ from .strategy import (
     StrictSequentialStrategy,
 )
 from .version import __version__
+
+# Compatibility shim
+StringTemplate = str
