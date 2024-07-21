@@ -11,7 +11,9 @@ from enum import Enum
 from pathlib import Path
 
 import aiodocker
+import aiohttp
 from aiodocker.containers import DockerContainer
+from aiohttp.client import DEFAULT_TIMEOUT
 
 from ..base import EmissionScannerActionBase, ArgsBase
 from ..types import Stderr
@@ -158,6 +160,11 @@ class DockerShellAction(EmissionScannerActionBase):
 
     async def run(self) -> None:
         async with aiodocker.Docker() as client:
+            # Enable default timeout for the connect phase only
+            # pylint: disable=protected-access
+            client.session._timeout = aiohttp.ClientTimeout(
+                connect=DEFAULT_TIMEOUT.total,
+            )
             if self.args.pull:
                 self.logger.info(f"Pulling image: {self.args.image!r}")
                 await client.pull(

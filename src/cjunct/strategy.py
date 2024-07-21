@@ -153,7 +153,7 @@ class LooseStrategy(BaseStrategy):
             )
             for action in active_actions:  # type: ActionBase
                 if action.done():
-                    self.logger.debug(f"Action {action.name!r} execution finished, removing from active mapping")
+                    self.logger.debug(f"Action {action.name!r} execution finished")
                     del self._active_actions_map[action.name]
             # Maybe now?
             if maybe_next_action := self._get_maybe_next_action():
