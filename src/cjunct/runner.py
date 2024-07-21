@@ -206,13 +206,13 @@ class Runner(classlogging.LoggerMixin):
             context_map=self.workflow.context,
         )
 
-        original_args_dict: dict = templar.recursive_render(self.loader.get_original_args_dict_for_action(action))
-        rendered_args: ArgsBase = dacite.from_dict(
+        rendered_args_dict: dict = templar.recursive_render(self.loader.get_original_args_dict_for_action(action))
+        parsed_args: ArgsBase = dacite.from_dict(
             data_class=type(action.args),
-            data=original_args_dict,
+            data=rendered_args_dict,
             config=dacite.Config(
                 strict=True,
                 cast=[Enum],
             ),
         )
-        action.args = rendered_args
+        action.args = parsed_args

@@ -7,6 +7,7 @@ from classlogging import LoggerMixin
 
 from . import containers as c
 from .constants import MAX_RECURSION_DEPTH
+from .containers import LazyProxy
 from .tokenizing import TemplarStringLexer
 from ..actions.types import ObjectTemplate, qualify_string_as_potentially_renderable
 from ..config.constants import C
@@ -93,18 +94,16 @@ class Templar(LoggerMixin):
 
     def _eval(self, expression: str) -> t.Any:
         """Safely evaluate an expression."""
-        self.logger.debug(f"Processing expression: {expression!r}")
+        self.logger.trace(f"Processing expression: {expression!r}")
         try:
             # pylint: disable=eval-used
             return eval(expression, self._globals, self._locals)  # nosec
         except ActionRenderError:
             raise
-        except (SyntaxError, NameError) as e:
-            self.logger.warning(repr(e))
-            raise ActionRenderError(e) from e
         except Exception as e:
-            self.logger.warning(repr(e))
-            raise ActionRenderError(repr(e)) from e
+            render_failure_source: str = str(e) if isinstance(e, (SyntaxError, NameError)) else repr(e)
+            self.logger.warning(f"Expression render failed: {e!r} (for {expression!r})")
+            raise ActionRenderError(render_failure_source) from e
 
     def _evaluate_context_object_expression(self, expression: str) -> t.Any:
         obj: t.Any = self._eval(expression)
@@ -132,12 +131,18 @@ class Templar(LoggerMixin):
 
     def recursive_render(self, data: t.Any) -> t.Any:
         """Perform recursive rendering"""
+        result: t.Any
         if isinstance(data, dict):
-            return {k: self.recursive_render(v) for k, v in data.items()}
-        if isinstance(data, list):
-            return [self.recursive_render(v) for v in data]
-        if isinstance(data, str):
-            return self.render(data)
-        if isinstance(data, ObjectTemplate):
-            return self._eval(data.expression)
-        return data
+            result = {k: self.recursive_render(v) for k, v in data.items()}
+        elif isinstance(data, list):
+            result = [self.recursive_render(v) for v in data]
+        elif isinstance(data, str):
+            result = self.render(data)
+        elif isinstance(data, ObjectTemplate):
+            result = self._eval(data.expression)
+        else:
+            result = data
+        # Unwrap lazy proxies
+        if isinstance(result, LazyProxy):
+            result = result.__wrapped__
+        return result
