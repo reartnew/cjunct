@@ -502,7 +502,6 @@ def test_broken_object_template(
 
 def test_runner_enum_templates(
     ctx_from_text: CtxFactoryType,
-    display_collector: t.List[str],
     actions_definitions_directory: None,
 ) -> None:
     """Check possibility for passing string template to Enum args"""
@@ -519,3 +518,29 @@ def test_runner_enum_templates(
         """
     )
     cjunct.Runner().run_sync()
+
+
+def test_runner_lazy_proxy_unwrapping(
+    ctx_from_text: CtxFactoryType,
+    display_collector: t.List[str],
+    actions_definitions_directory: None,
+) -> None:
+    """Check that lazy proxies are properly unwrapped"""
+    ctx_from_text(
+        """
+        ---
+        context:
+          env: !@ '{"Foo": "Bar"}'
+        actions:
+          - name: Foo
+            type: shell
+            environment: !@ ctx.env
+            command: echo Foo $Foo
+        """
+    )
+    cjunct.Runner().run_sync()
+    assert display_collector == [
+        "[Foo]  | Foo Bar",
+        "============",
+        "SUCCESS: Foo",
+    ]
