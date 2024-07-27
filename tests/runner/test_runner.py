@@ -12,6 +12,7 @@ import cjunct
 from cjunct import exceptions
 from cjunct.actions.base import ActionStatus
 from cjunct.config.constants import C
+from cjunct.config.environment import Env
 from cjunct.strategy import BaseStrategy
 from .types import RunFactoryType, CtxFactoryType
 
@@ -85,9 +86,11 @@ def test_strategy_runner_call(
     runner_good_context: None,
     strategy_class: t.Type[BaseStrategy],
     display_collector: t.List[str],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Check all strategies"""
-    cjunct.Runner(strategy_class=strategy_class).run_sync()
+    monkeypatch.setattr(Env, "CJUNCT_STRATEGY_NAME", strategy_class.NAME)
+    cjunct.Runner().run_sync()
     assert set(display_collector) == {
         "[Foo]  | foo",
         "[Bar] *| bar",

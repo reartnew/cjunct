@@ -146,11 +146,6 @@ class ActionBase(classlogging.LoggerMixin):
         return self._maybe_event_queue
 
     @property
-    def severity(self) -> ActionSeverity:
-        """Public getter"""
-        return self._severity
-
-    @property
     def status(self) -> ActionStatus:
         """Public getter"""
         return self._status

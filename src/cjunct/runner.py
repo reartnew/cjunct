@@ -19,10 +19,8 @@ from .actions.base import ActionBase, ArgsBase, ActionStatus
 from .config.constants import C
 from .display.base import BaseDisplay
 from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError
-from .loader.base import AbstractBaseWorkflowLoader
 from .loader.helpers import get_default_loader_class_for_source
 from .rendering import Templar
-from .strategy import BaseStrategy, LooseStrategy
 from .workflow import Workflow
 
 __all__ = [
@@ -40,22 +38,21 @@ class Runner(classlogging.LoggerMixin):
         self,
         source: t.Union[str, Path, IOType, None] = None,
         loader: t.Optional[types.LoaderType] = None,
-        strategy_class: types.StrategyClassType = LooseStrategy,
+        strategy: t.Optional[types.StrategyType] = None,
         display: t.Optional[types.DisplayType] = None,
     ) -> None:
         self._workflow_source: t.Union[Path, IOType] = (
             self._detect_workflow_source() if source is None else source if isinstance(source, IOType) else Path(source)
         )
         self._loader: t.Optional[types.LoaderType] = loader
-        self._strategy_class: types.StrategyClassType = strategy_class
-        self.logger.debug(f"Using strategy class: {self._strategy_class}")
+        self._strategy: t.Optional[types.StrategyType] = strategy
         self._display: t.Optional[types.DisplayType] = display
         self._started: bool = False
         self._outcomes: t.Dict[str, t.Dict[str, t.Any]] = {}
         self._execution_failed: bool = False
 
     @functools.cached_property
-    def loader(self) -> AbstractBaseWorkflowLoader:
+    def loader(self) -> types.LoaderType:
         """Workflow loader"""
         if self._loader is not None:
             self.logger.debug(f"Using workflow loader: {self._loader}")
@@ -76,7 +73,7 @@ class Runner(classlogging.LoggerMixin):
         )
 
     @functools.cached_property
-    def display(self) -> BaseDisplay:
+    def display(self) -> types.DisplayType:
         """Attached display"""
         if self._display is not None:
             self.logger.debug(f"Using display: {self._display}")
@@ -84,6 +81,16 @@ class Runner(classlogging.LoggerMixin):
         display_class: types.DisplayClassType = C.DISPLAY_CLASS
         self.logger.debug(f"Using display class: {display_class}")
         return display_class(workflow=self.workflow)
+
+    @functools.cached_property
+    def strategy(self) -> types.StrategyType:
+        """Strategy iterator"""
+        if self._strategy is not None:
+            self.logger.debug(f"Using strategy: {self._strategy}")
+            return self._strategy
+        strategy_class: types.StrategyClassType = C.STRATEGY_CLASS
+        self.logger.debug(f"Using strategy class: {strategy_class}")
+        return strategy_class(workflow=self.workflow)
 
     @classmethod
     def _detect_workflow_source(cls) -> t.Union[Path, IOType]:
@@ -117,14 +124,13 @@ class Runner(classlogging.LoggerMixin):
         if self._started:
             raise RuntimeError("Runner has been started more than one time")
         self._started = True
-        strategy: BaseStrategy = self._strategy_class(workflow=self.workflow)
         if C.INTERACTIVE_MODE:
             self.display.on_plan_interaction(workflow=self.workflow)
         action_runners: t.Dict[ActionBase, asyncio.Task] = {}
         # Prefill outcomes map
         for action_name in self.workflow:
             self._outcomes[action_name] = {}
-        async for action in strategy:  # type: ActionBase
+        async for action in self.strategy:  # type: ActionBase
             if not action.enabled:
                 self.logger.debug(f"Skipping {action} as it is not enabled")
                 continue
