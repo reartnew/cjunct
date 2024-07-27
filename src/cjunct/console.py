@@ -136,7 +136,6 @@ def run() -> None:
     """Run pipeline immediately."""
     cjunct.Runner(
         strategy_class=C.STRATEGY_CLASS,
-        display_class=C.DISPLAY_CLASS,
     ).run_sync()
 
 
@@ -147,7 +146,6 @@ def validate() -> None:
     action_num: int = len(
         cjunct.Runner(
             strategy_class=C.STRATEGY_CLASS,
-            display_class=C.DISPLAY_CLASS,
         ).workflow
     )
     logger.info(f"Located actions number: {action_num}")

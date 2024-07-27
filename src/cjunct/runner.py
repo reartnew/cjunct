@@ -18,7 +18,6 @@ from . import types
 from .actions.base import ActionBase, ArgsBase, ActionStatus
 from .config.constants import C
 from .display.base import BaseDisplay
-from .display.default import DefaultDisplay
 from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError
 from .loader.base import AbstractBaseWorkflowLoader
 from .loader.helpers import get_default_loader_class_for_source
@@ -42,7 +41,7 @@ class Runner(classlogging.LoggerMixin):
         source: t.Union[str, Path, IOType, None] = None,
         loader: t.Optional[types.LoaderType] = None,
         strategy_class: types.StrategyClassType = LooseStrategy,
-        display_class: types.DisplayClassType = DefaultDisplay,
+        display: t.Optional[types.DisplayType] = None,
     ) -> None:
         self._workflow_source: t.Union[Path, IOType] = (
             self._detect_workflow_source() if source is None else source if isinstance(source, IOType) else Path(source)
@@ -50,8 +49,7 @@ class Runner(classlogging.LoggerMixin):
         self._loader: t.Optional[types.LoaderType] = loader
         self._strategy_class: types.StrategyClassType = strategy_class
         self.logger.debug(f"Using strategy class: {self._strategy_class}")
-        self._display_class: types.DisplayClassType = display_class
-        self.logger.debug(f"Using display class: {self._display_class}")
+        self._display: t.Optional[types.DisplayType] = display
         self._started: bool = False
         self._outcomes: t.Dict[str, t.Dict[str, t.Any]] = {}
         self._execution_failed: bool = False
@@ -80,7 +78,12 @@ class Runner(classlogging.LoggerMixin):
     @functools.cached_property
     def display(self) -> BaseDisplay:
         """Attached display"""
-        return self._display_class(workflow=self.workflow)
+        if self._display is not None:
+            self.logger.debug(f"Using display: {self._display}")
+            return self._display
+        display_class: types.DisplayClassType = C.DISPLAY_CLASS
+        self.logger.debug(f"Using display class: {display_class}")
+        return display_class(workflow=self.workflow)
 
     @classmethod
     def _detect_workflow_source(cls) -> t.Union[Path, IOType]:
