@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import collections
 import contextlib
 import typing as t
 from enum import Enum
@@ -51,6 +52,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         self._resolved_file_paths_stack: t.List[Path] = []
         self._gathered_context: t.Dict[str, t.Any] = {}
         self._original_args_map: t.Dict[str, t.Dict[str, t.Any]] = {}
+        self._action_type_counters: t.Dict[str, int] = collections.defaultdict(int)
 
     def _register_action(self, action: ActionBase) -> None:
         if action.name in self._actions:
@@ -142,19 +144,22 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
 
     def build_action_from_dict_data(self, node: dict) -> ActionBase:
         """Process a dictionary representing an action"""
-        # Action name
-        if "name" not in node:
-            self._throw("Missing action node required key: 'name'")
-        name: str = node.pop("name")
-        if not isinstance(name, str):
-            self._throw(f"Unexpected name type: {type(name)!r} (should be a string")
-        if not name:
-            self._throw("Action node name is empty")
         # Action type
         if "type" not in node:
-            self._throw(f"'type' not specified for action {name!r}")
+            self._throw("'type' not specified for action")
         action_type: str = node.pop("type")
         action_class: t.Type[ActionBase] = self._get_action_factory_by_type(action_type)
+        # Action name
+        name: str
+        if "name" in node:
+            name = node.pop("name")
+            if not isinstance(name, str):
+                self._throw(f"Unexpected name type: {type(name)!r} (should be a string")
+            if not name:
+                self._throw("Action node name is empty")
+        else:
+            name = f"{action_type}-{self._action_type_counters[action_type]}"
+        self._action_type_counters[action_type] += 1
         # Description
         description: t.Optional[str] = node.pop("description", None)
         if description is not None and not isinstance(description, str):

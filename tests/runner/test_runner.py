@@ -544,3 +544,24 @@ def test_runner_lazy_proxy_unwrapping(
         "============",
         "SUCCESS: Foo",
     ]
+
+
+def test_implicit_naming(
+    ctx_from_text: CtxFactoryType,
+    display_collector: t.List[str],
+) -> None:
+    """Check automatically assigned action names"""
+    ctx_from_text(
+        """
+        ---
+        actions:
+          - type: shell
+            command: echo Foo
+        """
+    )
+    cjunct.Runner().run_sync()
+    assert display_collector == [
+        "[shell-0]  | Foo",
+        "================",
+        "SUCCESS: shell-0",
+    ]

@@ -2,4 +2,5 @@
 # match: Unexpected name type
 ---
 actions:
-  - name: {}
+  - type: shell
+    name: {}
