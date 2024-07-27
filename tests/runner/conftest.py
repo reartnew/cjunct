@@ -12,10 +12,12 @@ import pytest
 import pytest_asyncio
 from _pytest.fixtures import SubRequest
 
+import cjunct
 from cjunct.config.environment import Env
 from cjunct.display.default import DefaultDisplay
 
 CtxFactoryType = t.Callable[[str], Path]
+RunFactoryType = t.Callable[[str], t.List[str]]
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -57,6 +59,22 @@ def ctx_from_text(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> CtxFactory
         return actions_source_path
 
     return make
+
+
+@pytest.fixture
+def run_text(
+    ctx_from_text: CtxFactoryType,
+    display_collector: t.List[str],
+    actions_definitions_directory: None,
+) -> RunFactoryType:
+    """Runner factory"""
+
+    def run(data: str) -> t.List[str]:
+        ctx_from_text(data)
+        cjunct.Runner().run_sync()
+        return display_collector
+
+    return run
 
 
 @pytest.fixture

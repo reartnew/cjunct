@@ -15,6 +15,7 @@ from cjunct.config.constants import C
 from cjunct.strategy import BaseStrategy
 
 CtxFactoryType = t.Callable[[str], Path]
+RunFactoryType = t.Callable[[str], t.List[str]]
 
 
 def test_simple_runner_call(runner_good_context: None) -> None:
@@ -98,69 +99,60 @@ def test_strategy_runner_call(
     }
 
 
-def test_failing_actions(ctx_from_text: CtxFactoryType) -> None:
+def test_failing_actions(run_text: RunFactoryType) -> None:
     """Check failing action in the runner"""
-    ctx_from_text(
-        """
-        actions:
-          - name: Qux
-            type: shell
-            command: echo "qux" && exit 1
-        """
-    )
     with pytest.raises(exceptions.ExecutionFailed):
-        cjunct.Runner().run_sync()
+        run_text(
+            """
+            actions:
+              - name: Qux
+                type: shell
+                command: echo "qux" && exit 1
+            """
+        )
 
 
-def test_failing_render(ctx_from_text: CtxFactoryType) -> None:
+def test_failing_render(run_text: RunFactoryType) -> None:
     """Check failing render in the runner"""
-    ctx_from_text(
-        """
-        actions:
-          - name: Baz
-            type: shell
-            command: echo "##cjunct[yield-outcome-b64 + +]##"
-          - name: Qux
-            type: shell
-            command: echo "@{A.B.C}"
-          - name: Fred
-            type: shell
-            command: echo "@{outcomes.not-enough-parts}"
-          - name: Egor
-            type: shell
-            command: echo "@{outcomes.Baz.non-existent}"
-          - name: Kuzma
-            type: shell
-            command: echo "##cjunct[what-is-this-expression]##"
-        """
-    )
     with pytest.raises(exceptions.ExecutionFailed):
-        cjunct.Runner().run_sync()
+        run_text(
+            """
+            actions:
+              - name: Baz
+                type: shell
+                command: echo "##cjunct[yield-outcome-b64 + +]##"
+              - name: Qux
+                type: shell
+                command: echo "@{A.B.C}"
+              - name: Fred
+                type: shell
+                command: echo "@{outcomes.not-enough-parts}"
+              - name: Egor
+                type: shell
+                command: echo "@{outcomes.Baz.non-existent}"
+              - name: Kuzma
+                type: shell
+                command: echo "##cjunct[what-is-this-expression]##"
+            """
+        )
 
 
-def test_failing_union_render(
-    ctx_from_text: CtxFactoryType,
-    actions_definitions_directory: None,
-) -> None:
+def test_failing_union_render(run_text: RunFactoryType) -> None:
     """Check failing union render in the runner"""
-    ctx_from_text(
-        """
-        actions:
-          - name: Foo
-            type: union-arg-action
-            message: "@{some.failing.expression}"
-        """
-    )
     with pytest.raises(exceptions.ExecutionFailed):
-        cjunct.Runner().run_sync()
+        run_text(
+            """
+            actions:
+              - name: Foo
+                type: union-arg-action
+                message: "@{some.failing.expression}"
+            """
+        )
 
 
-def test_external_actions(
-    ctx_from_text: CtxFactoryType,
-    actions_definitions_directory: None,
-) -> None:
+def test_external_actions(run_text: RunFactoryType) -> None:
     """Check external actions from directories"""
-    ctx_from_text(
+    run_text(
         """
         actions:
           - name: Foo
@@ -168,7 +160,6 @@ def test_external_actions(
             message: Hi
         """
     )
-    cjunct.Runner().run_sync()
 
 
 def test_invalid_action_source_file_via_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -178,9 +169,9 @@ def test_invalid_action_source_file_via_env(tmp_path: Path, monkeypatch: pytest.
         cjunct.Runner().run_sync()
 
 
-def test_status_good_substitution(ctx_from_text: CtxFactoryType) -> None:
+def test_status_good_substitution(run_text: RunFactoryType) -> None:
     """Check status good substitution"""
-    ctx_from_text(
+    run_text(
         """
         actions:
           - name: Foo
@@ -189,21 +180,19 @@ def test_status_good_substitution(ctx_from_text: CtxFactoryType) -> None:
               [ "@{status.Foo}" = "PENDING" ] || exit 1
         """
     )
-    cjunct.Runner().run_sync()
 
 
-def test_status_bad_substitution(ctx_from_text: CtxFactoryType) -> None:
+def test_status_bad_substitution(run_text: RunFactoryType) -> None:
     """Check status bad substitution"""
-    ctx_from_text(
-        """
-        actions:
-          - name: Foo
-            type: shell
-            command: echo "@{status.too.may.parts}"
-        """
-    )
     with pytest.raises(exceptions.ExecutionFailed):
-        cjunct.Runner().run_sync()
+        run_text(
+            """
+            actions:
+              - name: Foo
+                type: shell
+                command: echo "@{status.too.may.parts}"
+            """
+        )
 
 
 def test_stdin_feed(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -252,11 +241,11 @@ async def test_docker_good_context(
             """
     )
     await cjunct.Runner().run_async()
-    assert set(display_collector) == {
+    assert display_collector == [
         "[Foo]  | bar-baz",
         "============",
         "SUCCESS: Foo",
-    }
+    ]
 
 
 @pytest.mark.asyncio
@@ -302,12 +291,9 @@ async def test_docker_bad_auth_context(
         await cjunct.Runner().run_async()
 
 
-def test_complex_loose_context(
-    ctx_from_text: CtxFactoryType,
-    actions_definitions_directory: None,
-) -> None:
+def test_complex_loose_context(run_text: RunFactoryType) -> None:
     """Test a context where a finished action releases no new actions"""
-    ctx_from_text(
+    run_text(
         """
         actions:
           - name: Foo
@@ -323,15 +309,11 @@ def test_complex_loose_context(
             expects: Bar
         """
     )
-    cjunct.Runner().run_sync()
 
 
-def test_empty_echo_context(
-    ctx_from_text: CtxFactoryType,
-    display_collector: t.List[str],
-) -> None:
+def test_empty_echo_context(run_text: RunFactoryType) -> None:
     """Test empty echo"""
-    ctx_from_text(
+    output = run_text(
         """
         actions:
           - name: Foo
@@ -339,29 +321,27 @@ def test_empty_echo_context(
             message: ""
         """
     )
-    cjunct.Runner().run_sync()
-    assert set(display_collector) == {
+    assert output == [
         "[Foo]  | ",
         "============",
         "SUCCESS: Foo",
-    }
+    ]
 
 
 def test_misplaced_disable_context(
-    ctx_from_text: CtxFactoryType,
-    actions_definitions_directory: None,
+    run_text: RunFactoryType,
     display_collector: t.List[str],
 ) -> None:
     """Test context with misplaced action disable call"""
-    ctx_from_text(
-        """
-        actions:
-          - name: Foo
-            type: misplaced-disable
-        """
-    )
+
     with pytest.raises(exceptions.ExecutionFailed):
-        cjunct.Runner().run_sync()
+        run_text(
+            """
+            actions:
+              - name: Foo
+                type: misplaced-disable
+            """
+        )
     assert (
         "[Foo] !| Action 'Foo' run exception: RuntimeError(\"Action Foo can't be disabled due to its status: RUNNING\")"
         in display_collector
@@ -369,13 +349,12 @@ def test_misplaced_disable_context(
 
 
 def test_interaction_context(
-    ctx_from_text: CtxFactoryType,
-    actions_definitions_directory: None,
+    run_text: RunFactoryType,
     monkeypatch: pytest.MonkeyPatch,
-    display_collector: t.List[str],
 ) -> None:
     """Test interaction context"""
-    ctx_from_text(
+    monkeypatch.setattr(C, "INTERACTIVE_MODE", True)
+    output = run_text(
         """
         actions:
           - name: Foo
@@ -387,9 +366,7 @@ def test_interaction_context(
             type: noop
         """
     )
-    monkeypatch.setattr(C, "INTERACTIVE_MODE", True)
-    cjunct.Runner().run_sync()
-    assert display_collector == [
+    assert output == [
         "============",
         "SUCCESS: Foo",
         "OMITTED: Bar",
@@ -397,12 +374,9 @@ def test_interaction_context(
     ]
 
 
-def test_complex_vars_context(
-    ctx_from_text: CtxFactoryType,
-    display_collector: t.List[str],
-) -> None:
+def test_complex_vars_context(run_text: RunFactoryType) -> None:
     """Test complex vars context"""
-    ctx_from_text(
+    output = run_text(
         """
         ---
         context:
@@ -421,8 +395,7 @@ def test_complex_vars_context(
             message: "@{context.merged_data.first_word} @{context.merged_data.second_word}"
         """
     )
-    cjunct.Runner().run_sync()
-    assert display_collector == [
+    assert output == [
         "[Test]  | Hello world!",
         "=============",
         "SUCCESS: Test",
@@ -451,12 +424,9 @@ def test_runner_with_shell_env_inheritance(
     cjunct.Runner().run_sync()
 
 
-def test_runner_accepts_object_template(
-    ctx_from_text: CtxFactoryType,
-    display_collector: t.List[str],
-) -> None:
+def test_runner_accepts_object_template(run_text: RunFactoryType) -> None:
     """Check possibility for passing object template to an action"""
-    ctx_from_text(
+    output = run_text(
         """
         ---
         context:
@@ -473,39 +443,31 @@ def test_runner_accepts_object_template(
             command: !@ ctx.shell_command
         """
     )
-    cjunct.Runner().run_sync()
-    assert display_collector == [
+    assert output == [
         "[Foo]  | FOO",
         "============",
         "SUCCESS: Foo",
     ]
 
 
-def test_broken_object_template(
-    ctx_from_text: CtxFactoryType,
-    display_collector: t.List[str],
-) -> None:
+def test_broken_object_template(run_text: RunFactoryType) -> None:
     """Check bad object templates"""
-    ctx_from_text(
-        """
-        ---
-        actions:
-          - name: Foo
-            type: shell
-            environment: !@ ctx.shell_env
-            command: !@ ctx.shell_command
-        """
-    )
     with pytest.raises(exceptions.ExecutionFailed):
-        cjunct.Runner().run_sync()
+        run_text(
+            """
+            ---
+            actions:
+              - name: Foo
+                type: shell
+                environment: !@ ctx.shell_env
+                command: !@ ctx.shell_command
+            """
+        )
 
 
-def test_runner_enum_templates(
-    ctx_from_text: CtxFactoryType,
-    actions_definitions_directory: None,
-) -> None:
+def test_runner_enum_templates(run_text: RunFactoryType) -> None:
     """Check possibility for passing string template to Enum args"""
-    ctx_from_text(
+    run_text(
         """
         ---
         actions:
@@ -517,16 +479,11 @@ def test_runner_enum_templates(
             food: "Bar"
         """
     )
-    cjunct.Runner().run_sync()
 
 
-def test_runner_lazy_proxy_unwrapping(
-    ctx_from_text: CtxFactoryType,
-    display_collector: t.List[str],
-    actions_definitions_directory: None,
-) -> None:
+def test_runner_lazy_proxy_unwrapping(run_text: RunFactoryType) -> None:
     """Check that lazy proxies are properly unwrapped"""
-    ctx_from_text(
+    output = run_text(
         """
         ---
         context:
@@ -538,20 +495,16 @@ def test_runner_lazy_proxy_unwrapping(
             command: echo Foo $Foo
         """
     )
-    cjunct.Runner().run_sync()
-    assert display_collector == [
+    assert output == [
         "[Foo]  | Foo Bar",
         "============",
         "SUCCESS: Foo",
     ]
 
 
-def test_implicit_naming(
-    ctx_from_text: CtxFactoryType,
-    display_collector: t.List[str],
-) -> None:
+def test_implicit_naming(run_text: RunFactoryType) -> None:
     """Check automatically assigned action names"""
-    ctx_from_text(
+    output = run_text(
         """
         ---
         actions:
@@ -559,8 +512,7 @@ def test_implicit_naming(
             command: echo Foo
         """
     )
-    cjunct.Runner().run_sync()
-    assert display_collector == [
+    assert output == [
         "[shell-0]  | Foo",
         "================",
         "SUCCESS: shell-0",
