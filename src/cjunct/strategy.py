@@ -131,7 +131,7 @@ class LooseStrategy(BaseStrategy):
             self.logger.debug(f"The next action is: {next_action}")
             for ancestor_name, ancestor_dependency in next_action.ancestors.items():
                 ancestor: ActionBase = self._workflow[ancestor_name]
-                if ancestor.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED) and (
+                if ancestor.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED, ActionStatus.WARNING) and (
                     ancestor_dependency.strict or self.STRICT
                 ):
                     self.logger.debug(f"Action {next_action} is qualified as skipped due to strict failure: {ancestor}")

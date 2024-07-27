@@ -15,7 +15,7 @@ import classlogging
 import dacite
 
 from . import types
-from .actions.base import ActionBase, ArgsBase
+from .actions.base import ActionBase, ArgsBase, ActionStatus
 from .config.constants import C
 from .display.base import BaseDisplay
 from .display.default import DefaultDisplay
@@ -57,7 +57,7 @@ class Runner(classlogging.LoggerMixin):
         self.logger.debug(f"Using display class: {self._display_class}")
         self._started: bool = False
         self._outcomes: t.Dict[str, t.Dict[str, t.Any]] = {}
-        self._had_failed_actions: bool = False
+        self._execution_failed: bool = False
 
     @functools.cached_property
     def loader(self) -> AbstractBaseWorkflowLoader:
@@ -137,7 +137,7 @@ class Runner(classlogging.LoggerMixin):
             self.display.on_finish()
         except Exception:
             self.logger.exception("`on_finish` failed")
-        if self._had_failed_actions:
+        if self._execution_failed:
             raise ExecutionFailed
 
     @classmethod
@@ -158,7 +158,7 @@ class Runner(classlogging.LoggerMixin):
             self.display.emit_action_error(source=action, message=message)
             self.logger.warning(message, exc_info=not isinstance(e, ActionRenderError))
             action._internal_fail(e)  # pylint: disable=protected-access
-            self._had_failed_actions = True
+            self._execution_failed = True
             return
         self.logger.trace(f"Calling `on_action_start` for {action.name!r}")
         try:
@@ -182,9 +182,12 @@ class Runner(classlogging.LoggerMixin):
                 )
             except Exception:
                 self.logger.exception(f"`emit_action_error` failed for {action.name!r}")
-            self.logger.warning(f"Action {action.name!r} execution failed: {e!r}")
+            if action.status == ActionStatus.WARNING:
+                self.logger.warning(f"Action {action.name!r} finished with warning status")
+            else:
+                self.logger.warning(f"Action {action.name!r} execution failed: {e!r}")
+                self._execution_failed = True
             self.logger.debug("Action failure traceback", exc_info=True)
-            self._had_failed_actions = True
         finally:
             self._outcomes[action.name].update(action.get_outcomes())
             await action_events_reader_task

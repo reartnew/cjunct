@@ -24,6 +24,7 @@ class DefaultDisplay(BaseDisplay):
         ActionStatus.SKIPPED: Color.gray,
         ActionStatus.PENDING: Color.gray,
         ActionStatus.FAILURE: Color.red,
+        ActionStatus.WARNING: Color.yellow,
         ActionStatus.RUNNING: lambda x: x,
         ActionStatus.SUCCESS: Color.green,
         ActionStatus.OMITTED: Color.gray,

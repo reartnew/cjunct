@@ -12,7 +12,7 @@ import dacite
 from classlogging import LoggerMixin
 from dacite.types import is_subclass
 
-from ..actions.base import ActionBase, ArgsBase, ActionDependency
+from ..actions.base import ActionBase, ArgsBase, ActionDependency, ActionSeverity
 from ..actions.types import ObjectTemplate, qualify_string_as_potentially_renderable
 from ..exceptions import LoadError
 from ..tools.inspect import get_class_annotations
@@ -61,7 +61,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
 
     def _throw(self, message: str) -> t.NoReturn:
         """Raise loader exception from text"""
-        raise LoadError(message=message, stack=self._raw_file_names_stack)
+        raise LoadError(message=message, stack=self._raw_file_names_stack) from None
 
     def _internal_load(self, source_file: t.Union[str, Path]) -> None:
         """Load workflow partially from file (can be called recursively).
@@ -177,6 +177,15 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         selectable: bool = node.pop("selectable", True)
         if not isinstance(selectable, bool):
             self._throw(f"Unrecognized 'selectable' content type: {type(selectable)!r} (expected a bool)")
+        # Severity
+        severity_str: str = node.pop("severity", ActionSeverity.NORMAL.value)
+        if not isinstance(severity_str, str):
+            self._throw(f"Unrecognized 'severity' content type: {type(severity_str)!r} (expected a string)")
+        try:
+            severity = ActionSeverity(severity_str)
+        except ValueError:
+            valid_severities: str = ", ".join(sorted(s.value for s in ActionSeverity))
+            self._throw(f"Invalid severity: {severity_str!r} (expected one of: {valid_severities})")
         # Make action instance
         args_instance: ArgsBase = self._build_args_from_the_rest_of_the_dict_node(
             action_name=name,
@@ -189,6 +198,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
             description=description,
             ancestors=dependencies,
             selectable=selectable,
+            severity=severity,
         )
         self._original_args_map[name] = node
         return action_instance

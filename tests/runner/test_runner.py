@@ -515,3 +515,22 @@ def test_implicit_naming(run_text: RunFactoryType) -> None:
         "================",
         "SUCCESS: shell-0",
     ]
+
+
+def test_low_severity(run_text: RunFactoryType) -> None:
+    """Check that low severity action does not stop the execution"""
+    output = run_text(
+        """
+        ---
+        actions:
+          - type: shell
+            command: echo Foo && exit 1
+            severity: low
+        """
+    )
+    assert output == [
+        "[shell-0]  | Foo",
+        "          !| Exit code: 1",
+        "================",
+        "WARNING: shell-0",
+    ]

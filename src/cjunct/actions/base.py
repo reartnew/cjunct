@@ -18,6 +18,7 @@ from ..exceptions import ActionRunError
 
 __all__ = [
     "ActionDependency",
+    "ActionSeverity",
     "ActionBase",
     "ActionStatus",
     "ActionSkip",
@@ -36,6 +37,7 @@ class ActionStatus(enum.Enum):
     PENDING = "PENDING"  # Enabled, but not started yet
     RUNNING = "RUNNING"  # Execution in process
     SUCCESS = "SUCCESS"  # Finished without errors
+    WARNING = "WARNING"  # Erroneous action with low severity
     FAILURE = "FAILURE"  # Erroneous action
     SKIPPED = "SKIPPED"  # May be set by action itself
     OMITTED = "OMITTED"  # Disabled during interaction
@@ -44,6 +46,13 @@ class ActionStatus(enum.Enum):
         return self.name
 
     __str__ = __repr__
+
+
+class ActionSeverity(enum.Enum):
+    """Action severity"""
+
+    LOW = "low"
+    NORMAL = "normal"
 
 
 @dataclass
@@ -83,6 +92,7 @@ class ActionBase(classlogging.LoggerMixin):
         ancestors: t.Optional[t.Dict[str, ActionDependency]] = None,
         description: t.Optional[str] = None,
         selectable: bool = True,
+        severity: ActionSeverity = ActionSeverity.NORMAL,
     ) -> None:
         self.name: str = name
         self.args: ArgsBase = args
@@ -96,6 +106,7 @@ class ActionBase(classlogging.LoggerMixin):
         self._maybe_finish_flag: t.Optional[asyncio.Future] = None
         self._maybe_event_queue: t.Optional[asyncio.Queue[EventType]] = None
         self._running_task: t.Optional[asyncio.Task] = None
+        self._severity: ActionSeverity = severity
 
     @property
     def enabled(self) -> bool:
@@ -133,6 +144,11 @@ class ActionBase(classlogging.LoggerMixin):
         if self._maybe_event_queue is None:
             self._maybe_event_queue = asyncio.Queue()
         return self._maybe_event_queue
+
+    @property
+    def severity(self) -> ActionSeverity:
+        """Public getter"""
+        return self._severity
 
     @property
     def status(self) -> ActionStatus:
@@ -192,7 +208,7 @@ class ActionBase(classlogging.LoggerMixin):
 
     def _internal_fail(self, exception: Exception) -> None:
         if not self.get_future().done():
-            self._status = ActionStatus.FAILURE
+            self._status = ActionStatus.FAILURE if self._severity == ActionSeverity.NORMAL else ActionStatus.WARNING
             self.logger.info(f"Action {self.name!r} failed: {repr(exception)}")
             self.get_future().set_exception(exception)
 
