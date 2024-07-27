@@ -40,17 +40,14 @@ class Runner(classlogging.LoggerMixin):
     def __init__(
         self,
         source: t.Union[str, Path, IOType, None] = None,
-        loader_class: t.Optional[types.LoaderClassType] = None,
+        loader: t.Optional[types.LoaderType] = None,
         strategy_class: types.StrategyClassType = LooseStrategy,
         display_class: types.DisplayClassType = DefaultDisplay,
     ) -> None:
         self._workflow_source: t.Union[Path, IOType] = (
             self._detect_workflow_source() if source is None else source if isinstance(source, IOType) else Path(source)
         )
-        self._loader_class: types.LoaderClassType = (
-            loader_class or C.WORKFLOW_LOADER_CLASS or get_default_loader_class_for_source(self._workflow_source)
-        )
-        self.logger.debug(f"Using workflow loader class: {self._loader_class}")
+        self._loader: t.Optional[types.LoaderType] = loader
         self._strategy_class: types.StrategyClassType = strategy_class
         self.logger.debug(f"Using strategy class: {self._strategy_class}")
         self._display_class: types.DisplayClassType = display_class
@@ -62,7 +59,14 @@ class Runner(classlogging.LoggerMixin):
     @functools.cached_property
     def loader(self) -> AbstractBaseWorkflowLoader:
         """Workflow loader"""
-        return self._loader_class()
+        if self._loader is not None:
+            self.logger.debug(f"Using workflow loader: {self._loader}")
+            return self._loader
+        loader_class: types.LoaderClassType = C.WORKFLOW_LOADER_CLASS or get_default_loader_class_for_source(
+            self._workflow_source
+        )
+        self.logger.debug(f"Using workflow loader class: {loader_class}")
+        return loader_class()
 
     @functools.cached_property
     def workflow(self) -> Workflow:
