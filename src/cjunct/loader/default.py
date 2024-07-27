@@ -20,12 +20,6 @@ from ..config.constants import C
 from ..config.constants.helpers import maybe_class_from_module
 from ..exceptions import YAMLStructureError
 
-
-# pylint: disable=abstract-method
-class DefaultRootWorkflowLoader(AbstractBaseWorkflowLoader):
-    """Bind default actions to abstract base"""
-
-
 __all__ = [
     "DefaultYAMLWorkflowLoader",
     "ComplexTemplateTag",
