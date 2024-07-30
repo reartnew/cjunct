@@ -220,7 +220,10 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
                 dacite.from_dict(
                     data_class=args_class,
                     data=node,
-                    config=TemplateIndifferentConfig(strict=True),
+                    config=TemplateIndifferentConfig(
+                        strict=True,
+                        cast=[Path],
+                    ),
                 ),
             )
         except ValueError as e:

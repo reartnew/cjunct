@@ -228,7 +228,7 @@ class Runner(classlogging.LoggerMixin):
             data=rendered_args_dict,
             config=dacite.Config(
                 strict=True,
-                cast=[Enum],
+                cast=[Enum, Path],
             ),
         )
         action.args = parsed_args
