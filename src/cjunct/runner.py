@@ -121,11 +121,24 @@ class Runner(classlogging.LoggerMixin):
 
     async def run_async(self) -> None:
         """Primary coroutine for all further processing"""
+        try:
+            self.display.on_runner_start()
+        except Exception:
+            self.logger.exception(f"`on_runner_start` callback failed for {self.display}")
+        if C.INTERACTIVE_MODE:
+            self.display.on_plan_interaction(workflow=self.workflow)
+        await self._run_all_actions()
+        try:
+            self.display.on_runner_finish()
+        except Exception:
+            self.logger.exception(f"`on_runner_finish` callback failed for {self.display}")
+        if self._execution_failed:
+            raise ExecutionFailed
+
+    async def _run_all_actions(self) -> None:
         if self._started:
             raise RuntimeError("Runner has been started more than one time")
         self._started = True
-        if C.INTERACTIVE_MODE:
-            self.display.on_plan_interaction(workflow=self.workflow)
         action_runners: t.Dict[ActionBase, asyncio.Task] = {}
         # Prefill outcomes map
         for action_name in self.workflow:
@@ -146,12 +159,6 @@ class Runner(classlogging.LoggerMixin):
         # Finalize running actions
         for task in action_runners.values():
             await task
-        try:
-            self.display.on_finish()
-        except Exception:
-            self.logger.exception("`on_finish` failed")
-        if self._execution_failed:
-            raise ExecutionFailed
 
     @classmethod
     async def _dispatch_action_events_to_display(cls, action: ActionBase, display: BaseDisplay) -> None:
@@ -177,7 +184,7 @@ class Runner(classlogging.LoggerMixin):
         try:
             self.display.on_action_start(action)
         except Exception:
-            self.logger.exception(f"`on_action_start` failed for {action.name!r}")
+            self.logger.exception(f"`on_action_start` callback failed on {action.name!r} for {self.display}")
         self.logger.trace(f"Allocating action dispatcher for {action.name!r}")
         action_events_reader_task: asyncio.Task = asyncio.create_task(
             self._dispatch_action_events_to_display(
@@ -208,7 +215,7 @@ class Runner(classlogging.LoggerMixin):
             try:
                 self.display.on_action_finish(action)
             except Exception:
-                self.logger.exception(f"`on_action_finish` failed for {action.name!r}")
+                self.logger.exception(f"`on_action_finish` callback failed on {action.name!r} for {self.display}")
 
     def run_sync(self):
         """Wrap async run into an event loop"""

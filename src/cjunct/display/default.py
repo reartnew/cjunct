@@ -71,7 +71,7 @@ class DefaultDisplay(BaseDisplay):
             color_wrapper: t.Callable[[str], str] = self.STATUS_TO_COLOR_WRAPPER_MAP[action.status]
             self.display(f"{color_wrapper(action.status.value)}: {action.name}")
 
-    def on_finish(self) -> None:
+    def on_runner_finish(self) -> None:
         self._display_status_banner()
 
     def on_plan_interaction(self, workflow: Workflow) -> None:
