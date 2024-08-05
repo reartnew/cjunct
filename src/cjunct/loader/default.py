@@ -15,7 +15,7 @@ from ..actions.bundled import (
     ShellAction,
     DockerShellAction,
 )
-from ..actions.types import ObjectTemplate
+from ..actions.types import ObjectTemplate, Import
 from ..config.constants import C
 from ..config.constants.helpers import maybe_class_from_module
 from ..exceptions import YAMLStructureError
@@ -26,32 +26,27 @@ __all__ = [
 ]
 
 
-class StringExtraTag(yaml.YAMLObject):
-    """Extended processing entity"""
-
-    def __init__(self, data: t.Any) -> None:
-        if not isinstance(data, str):
-            raise YAMLStructureError(f"Expected string content, got {type(data)!r}")
-        self.data: str = data
-
-
-class ImportTag(StringExtraTag):
+class ImportTag(yaml.YAMLObject):
     """Imports processing entity"""
 
     yaml_tag: str = "!import"
 
     @classmethod
     def from_yaml(cls, loader, node):
-        return cls(node.value)
+        if not isinstance(node.value, str):
+            raise YAMLStructureError(f"Expected string content after {cls.yaml_tag!r}, got {node.value!r}")
+        return Import(node.value)
 
 
-class ComplexTemplateTag(StringExtraTag):
+class ComplexTemplateTag(yaml.YAMLObject):
     """Complex template entity"""
 
     yaml_tag: str = "!@"
 
     @classmethod
     def from_yaml(cls, loader, node):
+        if not isinstance(node.value, str):
+            raise YAMLStructureError(f"Expected string content after {cls.yaml_tag!r}, got {node.value!r}")
         return ObjectTemplate(node.value)
 
 
@@ -106,8 +101,8 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                 dynamic_bases_map[action_type] = action_class
         return dynamic_bases_map
 
-    def _parse_import(self, tag: ImportTag, allowed_root_keys: t.Set[str]) -> None:
-        path: str = tag.data
+    def _parse_import(self, tag: Import, allowed_root_keys: t.Set[str]) -> None:
+        path: str = tag.path
         if not path:
             self._throw(f"Empty import: {path!r}")
         with self._read_file(path) as file_data:
@@ -142,14 +137,14 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
             )
         processable_keys: t.Set[str] = set(root_node) & allowed_root_keys
         if "actions" in processable_keys:
-            actions: t.List[t.Union[dict, ImportTag]] = root_node["actions"]
+            actions: t.List[t.Union[dict, Import]] = root_node["actions"]
             if not isinstance(actions, list):
                 self._throw(f"'actions' contents should be a list (got {type(actions)!r})")
             for child_node in actions:
                 if isinstance(child_node, dict):
                     action: ActionBase = self.build_action_from_dict_data(child_node)
                     self._register_action(action)
-                elif isinstance(child_node, ImportTag):
+                elif isinstance(child_node, Import):
                     self._parse_import(
                         tag=child_node,
                         allowed_root_keys={"actions"},
@@ -157,14 +152,14 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                 else:
                     self._throw(f"Unrecognized node type: {type(child_node)!r}")
         if "context" in processable_keys:
-            context: t.Union[t.Dict[str, str], t.List[t.Union[t.Dict[str, str], ImportTag]]] = root_node["context"]
+            context: t.Union[t.Dict[str, str], t.List[t.Union[t.Dict[str, str], Import]]] = root_node["context"]
             if isinstance(context, dict):
                 self._loads_contexts_dict(data=context)
             elif isinstance(context, list):
                 for num, item in enumerate(context):
                     if isinstance(item, dict):
                         self._loads_contexts_dict(data=item)
-                    elif isinstance(item, ImportTag):
+                    elif isinstance(item, Import):
                         self._parse_import(
                             tag=item,
                             allowed_root_keys={"context"},

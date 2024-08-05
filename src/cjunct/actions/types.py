@@ -10,6 +10,7 @@ __all__ = [
     "EventType",
     "OutcomeStorageType",
     "Stderr",
+    "Import",
     "ObjectTemplate",
     "qualify_string_as_potentially_renderable",
 ]
@@ -17,6 +18,13 @@ __all__ = [
 
 class Stderr(str):
     """Strings related to standard error stream"""
+
+
+@dataclasses.dataclass
+class Import:
+    """Import clause"""
+
+    path: str
 
 
 @dataclasses.dataclass
