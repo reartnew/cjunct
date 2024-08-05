@@ -21,6 +21,7 @@ from .display.base import BaseDisplay
 from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError
 from .loader.helpers import get_default_loader_class_for_source
 from .rendering import Templar
+from .tools.concealment import represent_object_type
 from .workflow import Workflow
 
 __all__ = [
@@ -241,30 +242,7 @@ class Runner(classlogging.LoggerMixin):
             )
         except dacite.WrongTypeError as e:
             raise ActionRenderError(
-                f"Unrecognized {e.field_path!r} content type: {self._repr_type(e.value)}"
+                f"Unrecognized {e.field_path!r} content type: {represent_object_type(e.value)}"
                 f" (expected {e.field_type!r})"
-            )
+            ) from None
         action.args = parsed_args
-
-    @classmethod
-    def _repr_type(cls, data: t.Any) -> str:
-        if isinstance(data, t.Mapping):
-            if not data:
-                return "typing.Dict"
-            return f"typing.Dict[{cls._repr_union(data)}, {cls._repr_union(data.values())}]"
-        if isinstance(data, t.List):
-            if not data:
-                return "typing.List"
-            return f"typing.List[{cls._repr_union(data)}]"
-        return data.__class__.__name__
-
-    @classmethod
-    def _repr_union(cls, collection: t.Iterable) -> str:
-        sorted_unique_types_names: t.List[str] = sorted({cls._repr_type(item) for item in collection})
-        if len(sorted_unique_types_names) == 1:
-            return sorted_unique_types_names[0]
-        none_type_name: str = type(None).__name__
-        if len(sorted_unique_types_names) == 2 and none_type_name in sorted_unique_types_names:
-            non_none_types = [v for v in sorted_unique_types_names if v != none_type_name]
-            return f"typing.Optional[{non_none_types[0]}]"
-        return f"typing.Union[{', '.join(sorted_unique_types_names)}]"

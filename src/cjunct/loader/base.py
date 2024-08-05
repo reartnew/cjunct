@@ -15,6 +15,7 @@ from dacite.types import is_subclass
 from ..actions.base import ActionBase, ArgsBase, ActionDependency, ActionSeverity
 from ..actions.types import ObjectTemplate, qualify_string_as_potentially_renderable
 from ..exceptions import LoadError
+from ..tools.concealment import represent_object_type
 from ..tools.inspect import get_class_annotations
 from ..workflow import Workflow
 
@@ -233,7 +234,10 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         except dacite.UnexpectedDataError as e:
             self._throw(f"Unrecognized keys for action {action_name!r}: {sorted(e.keys)}")
         except dacite.WrongTypeError as e:
-            self._throw(f"Unrecognized {e.field_path!r} content type: {type(e.value)} (expected {e.field_type!r})")
+            self._throw(
+                f"Unrecognized {e.field_path!r} content type: {represent_object_type(e.value)}"
+                f" (expected {e.field_type!r})"
+            )
 
     def get_original_args_dict_for_action(self, action: ActionBase) -> dict:
         """Obtain dictionary representation of the action arguments as was initially loaded"""
