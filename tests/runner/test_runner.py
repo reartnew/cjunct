@@ -404,12 +404,12 @@ def test_complex_vars_context(run_text: RunFactoryType) -> None:
 
 
 def test_runner_with_shell_env_inheritance(
-    ctx_from_text: CtxFactoryType,
+    run_text: RunFactoryType,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Check environment inheritance for shell action"""
     monkeypatch.setenv("INHERITED_VAR_NAME", "inherited var value")
-    ctx_from_text(
+    run_text(
         """
         ---
         actions:
@@ -422,7 +422,6 @@ def test_runner_with_shell_env_inheritance(
               [ "$INHERITED_VAR_NAME" = "inherited var value" ] || exit 2
         """
     )
-    cjunct.Runner().run_sync()
 
 
 def test_runner_accepts_object_template(run_text: RunFactoryType) -> None:
@@ -536,4 +535,29 @@ def test_low_severity(run_text: RunFactoryType) -> None:
         "          !| Exit code: 1",
         "================",
         "WARNING: shell-0",
+    ]
+
+
+def test_render_wrong_type(
+    run_text: RunFactoryType,
+    display_collector: t.List[str],
+) -> None:
+    """Check late render type mismatch"""
+
+    with pytest.raises(exceptions.ExecutionFailed):
+        run_text(
+            """
+            ---
+            actions:
+              - type: shell
+                environment: !@ |
+                  {"Foo": None}
+                command: echo Foo
+            """
+        )
+    assert display_collector == [
+        "[shell-0] !| Action 'shell-0' rendering failed: Unrecognized 'environment' content type: "
+        "typing.Dict[str, NoneType] (expected typing.Optional[typing.Dict[str, str]])",
+        "================",
+        "FAILURE: shell-0",
     ]
