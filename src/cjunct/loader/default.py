@@ -22,40 +22,26 @@ from ..exceptions import YAMLStructureError
 
 __all__ = [
     "DefaultYAMLWorkflowLoader",
-    "ComplexTemplateTag",
 ]
-
-
-class ImportTag(yaml.YAMLObject):
-    """Imports processing entity"""
-
-    yaml_tag: str = "!import"
-
-    @classmethod
-    def from_yaml(cls, loader, node):
-        if not isinstance(node.value, str):
-            raise YAMLStructureError(f"Expected string content after {cls.yaml_tag!r}, got {node.value!r}")
-        return Import(node.value)
-
-
-class ComplexTemplateTag(yaml.YAMLObject):
-    """Complex template entity"""
-
-    yaml_tag: str = "!@"
-
-    @classmethod
-    def from_yaml(cls, loader, node):
-        if not isinstance(node.value, str):
-            raise YAMLStructureError(f"Expected string content after {cls.yaml_tag!r}, got {node.value!r}")
-        return ObjectTemplate(node.value)
 
 
 class YAMLLoader(yaml.SafeLoader):
     """Extension loader"""
 
+    @classmethod
+    def add_string_constructor(cls, tag: str, target_class: type) -> None:
+        """Register simple string constructor with type checking"""
 
-for extra_tag_class in [ImportTag, ComplexTemplateTag]:
-    YAMLLoader.add_constructor(extra_tag_class.yaml_tag, extra_tag_class.from_yaml)
+        def construct(_, node):
+            if not isinstance(node.value, str):
+                raise YAMLStructureError(f"Expected string content after {tag!r}, got {node.value!r}")
+            return target_class(node.value)
+
+        cls.add_constructor(tag, construct)
+
+
+YAMLLoader.add_string_constructor("!@", ObjectTemplate)
+YAMLLoader.add_string_constructor("!import", Import)
 
 
 class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
