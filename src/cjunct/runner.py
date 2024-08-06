@@ -38,16 +38,10 @@ class Runner(classlogging.LoggerMixin):
     def __init__(
         self,
         source: t.Union[str, Path, IOType, None] = None,
-        loader: t.Optional[types.LoaderType] = None,
-        strategy: t.Optional[types.StrategyType] = None,
         display: t.Optional[types.DisplayType] = None,
     ) -> None:
-        self._workflow_source: t.Union[Path, IOType] = (
-            self._detect_workflow_source() if source is None else source if isinstance(source, IOType) else Path(source)
-        )
-        self._loader: t.Optional[types.LoaderType] = loader
-        self._strategy: t.Optional[types.StrategyType] = strategy
-        self._display: t.Optional[types.DisplayType] = display
+        self._workflow_source: t.Union[Path, IOType] = self._detect_workflow_source(explicit_source=source)
+        self._explicit_display: t.Optional[types.DisplayType] = display
         self._started: bool = False
         self._outcomes: t.Dict[str, t.Dict[str, t.Any]] = {}
         self._execution_failed: bool = False
@@ -55,12 +49,11 @@ class Runner(classlogging.LoggerMixin):
     @functools.cached_property
     def loader(self) -> types.LoaderType:
         """Workflow loader"""
-        if self._loader is not None:
-            self.logger.debug(f"Using workflow loader: {self._loader}")
-            return self._loader
-        loader_class: types.LoaderClassType = C.WORKFLOW_LOADER_CLASS or get_default_loader_class_for_source(
-            self._workflow_source
-        )
+        loader_class: types.LoaderClassType
+        if C.WORKFLOW_LOADER_CLASS is not None:
+            loader_class = C.WORKFLOW_LOADER_CLASS
+        else:
+            loader_class = get_default_loader_class_for_source(self._workflow_source)
         self.logger.debug(f"Using workflow loader class: {loader_class}")
         return loader_class()
 
@@ -76,9 +69,9 @@ class Runner(classlogging.LoggerMixin):
     @functools.cached_property
     def display(self) -> types.DisplayType:
         """Attached display"""
-        if self._display is not None:
-            self.logger.debug(f"Using display: {self._display}")
-            return self._display
+        if self._explicit_display is not None:
+            self.logger.debug(f"Using explicit display: {self._explicit_display}")
+            return self._explicit_display
         display_class: types.DisplayClassType = C.DISPLAY_CLASS
         self.logger.debug(f"Using display class: {display_class}")
         return display_class(workflow=self.workflow)
@@ -86,15 +79,16 @@ class Runner(classlogging.LoggerMixin):
     @functools.cached_property
     def strategy(self) -> types.StrategyType:
         """Strategy iterator"""
-        if self._strategy is not None:
-            self.logger.debug(f"Using strategy: {self._strategy}")
-            return self._strategy
         strategy_class: types.StrategyClassType = C.STRATEGY_CLASS
         self.logger.debug(f"Using strategy class: {strategy_class}")
         return strategy_class(workflow=self.workflow)
 
     @classmethod
-    def _detect_workflow_source(cls) -> t.Union[Path, IOType]:
+    def _detect_workflow_source(cls, explicit_source: t.Union[str, Path, IOType, None] = None) -> t.Union[Path, IOType]:
+        if explicit_source is not None:
+            if isinstance(explicit_source, IOType):
+                return explicit_source
+            return Path(explicit_source)
         if C.ACTIONS_SOURCE_FILE is not None:
             source_file: Path = C.ACTIONS_SOURCE_FILE
             if str(source_file) == "-":
