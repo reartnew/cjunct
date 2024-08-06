@@ -134,22 +134,14 @@ def wrap_cli_command(func):
 @click.argument("workflow", cls=WorkflowPositionalArgument)
 def run() -> None:
     """Run pipeline immediately."""
-    cjunct.Runner(
-        strategy_class=C.STRATEGY_CLASS,
-        display_class=C.DISPLAY_CLASS,
-    ).run_sync()
+    cjunct.Runner().run_sync()
 
 
 @wrap_cli_command
 @click.argument("workflow", cls=WorkflowPositionalArgument)
 def validate() -> None:
     """Check workflow validity."""
-    action_num: int = len(
-        cjunct.Runner(
-            strategy_class=C.STRATEGY_CLASS,
-            display_class=C.DISPLAY_CLASS,
-        ).workflow
-    )
+    action_num: int = len(cjunct.Runner().workflow)
     logger.info(f"Located actions number: {action_num}")
 
 

@@ -17,7 +17,8 @@ class BaseBadDisplay(BaseDisplay):
     METHOD_FAILURES_TO_CHECK: t.Set[str] = {
         "emit_action_message",
         "emit_action_error",
-        "on_finish",
+        "on_runner_start",
+        "on_runner_finish",
         "on_action_start",
         "on_action_finish",
     }
@@ -32,7 +33,7 @@ class BaseBadDisplay(BaseDisplay):
 
 
 @pytest.fixture
-def bad_display_class() -> t.Type[BaseBadDisplay]:
+def bad_display() -> BaseBadDisplay:
     class BadDisplay(BaseBadDisplay):
         """A display incapable of doing anything"""
 
@@ -41,10 +42,10 @@ def bad_display_class() -> t.Type[BaseBadDisplay]:
     for method_name in BaseBadDisplay.METHOD_FAILURES_TO_CHECK:
         setattr(BadDisplay, method_name, BadDisplay.make_failure(method_name))
 
-    return BadDisplay
+    return BadDisplay(workflow=None)  # type: ignore[arg-type]
 
 
-def test_bad_display(bad_display_class: t.Type[BaseBadDisplay]):
+def test_bad_display(bad_display: BaseBadDisplay):
     """Check that a bad display does not interrupt execution"""
     source = io.StringIO(
         """
@@ -57,7 +58,7 @@ def test_bad_display(bad_display_class: t.Type[BaseBadDisplay]):
             command: baz
         """
     )
-    runner = Runner(source=source, display_class=bad_display_class)
+    runner = Runner(source=source, display=bad_display)
     with pytest.raises(exceptions.ExecutionFailed):
         runner.run_sync()
-    assert bad_display_class.FAILURES == BaseBadDisplay.METHOD_FAILURES_TO_CHECK
+    assert bad_display.FAILURES == BaseBadDisplay.METHOD_FAILURES_TO_CHECK

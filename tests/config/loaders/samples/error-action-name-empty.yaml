@@ -2,4 +2,5 @@
 # match: Action node name is empty
 ---
 actions:
-  - name: ""
+  - type: shell
+    name: ""

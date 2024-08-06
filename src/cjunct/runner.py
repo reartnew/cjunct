@@ -8,7 +8,6 @@ import functools
 import io
 import sys
 import typing as t
-from dataclasses import asdict
 from enum import Enum
 from pathlib import Path
 
@@ -16,16 +15,13 @@ import classlogging
 import dacite
 
 from . import types
-from .actions.base import ActionBase, ArgsBase
-from .actions.types import StringTemplate, RenderedStringTemplate
+from .actions.base import ActionBase, ArgsBase, ActionStatus
 from .config.constants import C
 from .display.base import BaseDisplay
-from .display.default import DefaultDisplay
-from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError, ActionUnionRenderError
-from .loader.base import AbstractBaseWorkflowLoader
+from .exceptions import SourceError, ExecutionFailed, ActionRenderError, ActionRunError
 from .loader.helpers import get_default_loader_class_for_source
 from .rendering import Templar
-from .strategy import BaseStrategy, LooseStrategy
+from .tools.concealment import represent_object_type
 from .workflow import Workflow
 
 __all__ = [
@@ -33,6 +29,7 @@ __all__ = [
 ]
 
 IOType = io.TextIOBase
+logger = classlogging.get_module_logger()
 
 
 class Runner(classlogging.LoggerMixin):
@@ -41,42 +38,57 @@ class Runner(classlogging.LoggerMixin):
     def __init__(
         self,
         source: t.Union[str, Path, IOType, None] = None,
-        loader_class: t.Optional[types.LoaderClassType] = None,
-        strategy_class: types.StrategyClassType = LooseStrategy,
-        display_class: types.DisplayClassType = DefaultDisplay,
+        display: t.Optional[types.DisplayType] = None,
     ) -> None:
-        self._workflow_source: t.Union[Path, IOType] = (
-            self._detect_workflow_source() if source is None else source if isinstance(source, IOType) else Path(source)
-        )
-        self._loader_class: types.LoaderClassType = (
-            loader_class or C.WORKFLOW_LOADER_CLASS or get_default_loader_class_for_source(self._workflow_source)
-        )
-        self.logger.debug(f"Using workflow loader class: {self._loader_class}")
-        self._strategy_class: types.StrategyClassType = strategy_class
-        self.logger.debug(f"Using strategy class: {self._strategy_class}")
-        self._display_class: types.DisplayClassType = display_class
-        self.logger.debug(f"Using display class: {self._display_class}")
+        self._workflow_source: t.Union[Path, IOType] = self._detect_workflow_source(explicit_source=source)
+        self._explicit_display: t.Optional[types.DisplayType] = display
         self._started: bool = False
         self._outcomes: t.Dict[str, t.Dict[str, t.Any]] = {}
-        self._had_failed_actions: bool = False
+        self._execution_failed: bool = False
+
+    @functools.cached_property
+    def loader(self) -> types.LoaderType:
+        """Workflow loader"""
+        loader_class: types.LoaderClassType
+        if C.WORKFLOW_LOADER_CLASS is not None:
+            loader_class = C.WORKFLOW_LOADER_CLASS
+        else:
+            loader_class = get_default_loader_class_for_source(self._workflow_source)
+        self.logger.debug(f"Using workflow loader class: {loader_class}")
+        return loader_class()
 
     @functools.cached_property
     def workflow(self) -> Workflow:
         """Calculated workflow"""
-        loader: AbstractBaseWorkflowLoader = self._loader_class()
         return (
-            loader.loads(self._workflow_source.read())
+            self.loader.loads(self._workflow_source.read())
             if isinstance(self._workflow_source, io.TextIOBase)
-            else loader.load(self._workflow_source)
+            else self.loader.load(self._workflow_source)
         )
 
     @functools.cached_property
-    def display(self) -> BaseDisplay:
+    def display(self) -> types.DisplayType:
         """Attached display"""
-        return self._display_class(workflow=self.workflow)
+        if self._explicit_display is not None:
+            self.logger.debug(f"Using explicit display: {self._explicit_display}")
+            return self._explicit_display
+        display_class: types.DisplayClassType = C.DISPLAY_CLASS
+        self.logger.debug(f"Using display class: {display_class}")
+        return display_class(workflow=self.workflow)
+
+    @functools.cached_property
+    def strategy(self) -> types.StrategyType:
+        """Strategy iterator"""
+        strategy_class: types.StrategyClassType = C.STRATEGY_CLASS
+        self.logger.debug(f"Using strategy class: {strategy_class}")
+        return strategy_class(workflow=self.workflow)
 
     @classmethod
-    def _detect_workflow_source(cls) -> t.Union[Path, IOType]:
+    def _detect_workflow_source(cls, explicit_source: t.Union[str, Path, IOType, None] = None) -> t.Union[Path, IOType]:
+        if explicit_source is not None:
+            if isinstance(explicit_source, IOType):
+                return explicit_source
+            return Path(explicit_source)
         if C.ACTIONS_SOURCE_FILE is not None:
             source_file: Path = C.ACTIONS_SOURCE_FILE
             if str(source_file) == "-":
@@ -104,17 +116,29 @@ class Runner(classlogging.LoggerMixin):
 
     async def run_async(self) -> None:
         """Primary coroutine for all further processing"""
+        try:
+            self.display.on_runner_start()
+        except Exception:
+            self.logger.exception(f"`on_runner_start` callback failed for {self.display}")
+        if C.INTERACTIVE_MODE:
+            self.display.on_plan_interaction(workflow=self.workflow)
+        await self._run_all_actions()
+        try:
+            self.display.on_runner_finish()
+        except Exception:
+            self.logger.exception(f"`on_runner_finish` callback failed for {self.display}")
+        if self._execution_failed:
+            raise ExecutionFailed
+
+    async def _run_all_actions(self) -> None:
         if self._started:
             raise RuntimeError("Runner has been started more than one time")
         self._started = True
-        strategy: BaseStrategy = self._strategy_class(workflow=self.workflow)
-        if C.INTERACTIVE_MODE:
-            self.display.on_plan_interaction(workflow=self.workflow)
         action_runners: t.Dict[ActionBase, asyncio.Task] = {}
         # Prefill outcomes map
         for action_name in self.workflow:
             self._outcomes[action_name] = {}
-        async for action in strategy:  # type: ActionBase
+        async for action in self.strategy:  # type: ActionBase
             if not action.enabled:
                 self.logger.debug(f"Skipping {action} as it is not enabled")
                 continue
@@ -130,12 +154,6 @@ class Runner(classlogging.LoggerMixin):
         # Finalize running actions
         for task in action_runners.values():
             await task
-        try:
-            self.display.on_finish()
-        except Exception:
-            self.logger.exception("`on_finish` failed")
-        if self._had_failed_actions:
-            raise ExecutionFailed
 
     @classmethod
     async def _dispatch_action_events_to_display(cls, action: ActionBase, display: BaseDisplay) -> None:
@@ -155,13 +173,13 @@ class Runner(classlogging.LoggerMixin):
             self.display.emit_action_error(source=action, message=message)
             self.logger.warning(message, exc_info=not isinstance(e, ActionRenderError))
             action._internal_fail(e)  # pylint: disable=protected-access
-            self._had_failed_actions = True
+            self._execution_failed = True
             return
         self.logger.trace(f"Calling `on_action_start` for {action.name!r}")
         try:
             self.display.on_action_start(action)
         except Exception:
-            self.logger.exception(f"`on_action_start` failed for {action.name!r}")
+            self.logger.exception(f"`on_action_start` callback failed on {action.name!r} for {self.display}")
         self.logger.trace(f"Allocating action dispatcher for {action.name!r}")
         action_events_reader_task: asyncio.Task = asyncio.create_task(
             self._dispatch_action_events_to_display(
@@ -179,9 +197,12 @@ class Runner(classlogging.LoggerMixin):
                 )
             except Exception:
                 self.logger.exception(f"`emit_action_error` failed for {action.name!r}")
-            self.logger.warning(f"Action {action.name!r} execution failed: {e!r}")
+            if action.status == ActionStatus.WARNING:
+                self.logger.warning(f"Action {action.name!r} finished with warning status")
+            else:
+                self.logger.warning(f"Action {action.name!r} execution failed: {e!r}")
+                self._execution_failed = True
             self.logger.debug("Action failure traceback", exc_info=True)
-            self._had_failed_actions = True
         finally:
             self._outcomes[action.name].update(action.get_outcomes())
             await action_events_reader_task
@@ -189,7 +210,7 @@ class Runner(classlogging.LoggerMixin):
             try:
                 self.display.on_action_finish(action)
             except Exception:
-                self.logger.exception(f"`on_action_finish` failed for {action.name!r}")
+                self.logger.exception(f"`on_action_finish` callback failed on {action.name!r} for {self.display}")
 
     def run_sync(self):
         """Wrap async run into an event loop"""
@@ -197,37 +218,25 @@ class Runner(classlogging.LoggerMixin):
 
     def _render_action(self, action: ActionBase) -> None:
         """Prepare action to execution by rendering its template fields"""
-        union_render_errors: t.List[str] = []
         templar: Templar = Templar(
             outcomes_map=self._outcomes,
             action_states={name: self.workflow[name].status.value for name in self.workflow},
             context_map=self.workflow.context,
         )
 
-        def _string_template_render_hook(value: str) -> RenderedStringTemplate:
-            try:
-                return templar.render(value)
-            except ActionRenderError as are:
-                union_render_errors.append(str(are))
-                raise
-
-        original_args_dict: dict = asdict(action.args)
+        rendered_args_dict: dict = templar.recursive_render(self.loader.get_original_args_dict_for_action(action))
         try:
-            rendered_args: ArgsBase = dacite.from_dict(
+            parsed_args: ArgsBase = dacite.from_dict(
                 data_class=type(action.args),
-                data=original_args_dict,
+                data=rendered_args_dict,
                 config=dacite.Config(
                     strict=True,
-                    cast=[Enum],
-                    type_hooks={
-                        StringTemplate: _string_template_render_hook,
-                    },
+                    cast=[Enum, Path],
                 ),
             )
-        # dacite union processing broadly suppresses all exceptions appearing during trying each type of the union
-        except dacite.UnionMatchError as e:
-            if not union_render_errors:
-                # Native dacite error
-                raise  # pragma: no cover
-            raise ActionUnionRenderError("; ".join(union_render_errors)) from e
-        action.args = rendered_args
+        except dacite.WrongTypeError as e:
+            raise ActionRenderError(
+                f"Unrecognized {e.field_path!r} content type: {represent_object_type(e.value)}"
+                f" (expected {e.field_type!r})"
+            ) from None
+        action.args = parsed_args

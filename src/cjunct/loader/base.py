@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import collections
 import contextlib
 import typing as t
 from enum import Enum
@@ -9,16 +10,36 @@ from pathlib import Path
 
 import dacite
 from classlogging import LoggerMixin
+from dacite.types import is_subclass
 
-from ..actions.base import ActionBase, ArgsBase, ActionDependency
-from ..actions.types import StringTemplate
+from ..actions.base import ActionBase, ArgsBase, ActionDependency, ActionSeverity
+from ..actions.types import ObjectTemplate, qualify_string_as_potentially_renderable
 from ..exceptions import LoadError
+from ..tools.concealment import represent_object_type
 from ..tools.inspect import get_class_annotations
 from ..workflow import Workflow
 
 __all__ = [
     "AbstractBaseWorkflowLoader",
 ]
+
+
+class TemplateIndifferentConfig(dacite.Config, LoggerMixin):
+    """Configuration for initial workflow loading"""
+
+    @classmethod
+    def is_instance(cls, value: t.Any, type_: t.Type) -> bool:
+        if isinstance(value, ObjectTemplate):
+            cls.logger.info(f"Skipping type check for object template, where {type_!r} was expected")
+            return True
+        if is_subclass(type_, Enum):
+            if isinstance(value, str) and qualify_string_as_potentially_renderable(value):
+                cls.logger.info(f"Skipping type check for a renderable string, where {type_!r} was expected")
+            else:
+                # This is not subject to rendering: check enum right away
+                type_(value)
+            return True
+        return super().is_instance(value, type_)
 
 
 class AbstractBaseWorkflowLoader(LoggerMixin):
@@ -31,6 +52,8 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         self._raw_file_names_stack: t.List[str] = []
         self._resolved_file_paths_stack: t.List[Path] = []
         self._gathered_context: t.Dict[str, t.Any] = {}
+        self._original_args_map: t.Dict[str, t.Dict[str, t.Any]] = {}
+        self._action_type_counters: t.Dict[str, int] = collections.defaultdict(int)
 
     def _register_action(self, action: ActionBase) -> None:
         if action.name in self._actions:
@@ -39,7 +62,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
 
     def _throw(self, message: str) -> t.NoReturn:
         """Raise loader exception from text"""
-        raise LoadError(message=message, stack=self._raw_file_names_stack)
+        raise LoadError(message=message, stack=self._raw_file_names_stack) from None
 
     def _internal_load(self, source_file: t.Union[str, Path]) -> None:
         """Load workflow partially from file (can be called recursively).
@@ -122,19 +145,22 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
 
     def build_action_from_dict_data(self, node: dict) -> ActionBase:
         """Process a dictionary representing an action"""
-        # Action name
-        if "name" not in node:
-            self._throw("Missing action node required key: 'name'")
-        name: str = node.pop("name")
-        if not isinstance(name, str):
-            self._throw(f"Unexpected name type: {type(name)!r} (should be a string")
-        if not name:
-            self._throw("Action node name is empty")
         # Action type
         if "type" not in node:
-            self._throw(f"'type' not specified for action {name!r}")
+            self._throw("'type' not specified for action")
         action_type: str = node.pop("type")
         action_class: t.Type[ActionBase] = self._get_action_factory_by_type(action_type)
+        # Action name
+        name: str
+        if "name" in node:
+            name = node.pop("name")
+            if not isinstance(name, str):
+                self._throw(f"Unexpected name type: {type(name)!r} (should be a string")
+            if not name:
+                self._throw("Action node name is empty")
+        else:
+            name = f"{action_type}-{self._action_type_counters[action_type]}"
+        self._action_type_counters[action_type] += 1
         # Description
         description: t.Optional[str] = node.pop("description", None)
         if description is not None and not isinstance(description, str):
@@ -152,28 +178,31 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         selectable: bool = node.pop("selectable", True)
         if not isinstance(selectable, bool):
             self._throw(f"Unrecognized 'selectable' content type: {type(selectable)!r} (expected a bool)")
+        # Severity
+        severity_str: str = node.pop("severity", ActionSeverity.NORMAL.value)
+        if not isinstance(severity_str, str):
+            self._throw(f"Unrecognized 'severity' content type: {type(severity_str)!r} (expected a string)")
+        try:
+            severity = ActionSeverity(severity_str)
+        except ValueError:
+            valid_severities: str = ", ".join(sorted(s.value for s in ActionSeverity))
+            self._throw(f"Invalid severity: {severity_str!r} (expected one of: {valid_severities})")
         # Make action instance
         args_instance: ArgsBase = self._build_args_from_the_rest_of_the_dict_node(
             action_name=name,
             action_class=action_class,
             node=node,
         )
-        return action_class(
+        action_instance: ActionBase = action_class(
             name=name,
             args=args_instance,
             description=description,
             ancestors=dependencies,
             selectable=selectable,
+            severity=severity,
         )
-
-    @classmethod
-    def _ensure_string_template_hook(cls, data: t.Any) -> StringTemplate:
-        if not isinstance(data, str):
-            raise dacite.WrongTypeError(
-                field_type=StringTemplate,
-                value=data,
-            )
-        return StringTemplate(data)
+        self._original_args_map[name] = node
+        return action_instance
 
     def _build_args_from_the_rest_of_the_dict_node(
         self,
@@ -192,10 +221,9 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
                 dacite.from_dict(
                     data_class=args_class,
                     data=node,
-                    config=dacite.Config(
+                    config=TemplateIndifferentConfig(
                         strict=True,
-                        cast=[Enum],
-                        type_hooks={StringTemplate: self._ensure_string_template_hook},
+                        cast=[Path],
                     ),
                 ),
             )
@@ -206,4 +234,11 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         except dacite.UnexpectedDataError as e:
             self._throw(f"Unrecognized keys for action {action_name!r}: {sorted(e.keys)}")
         except dacite.WrongTypeError as e:
-            self._throw(f"Unrecognized {e.field_path!r} content type: {type(e.value)} (expected {e.field_type!r})")
+            self._throw(
+                f"Unrecognized {e.field_path!r} content type: {represent_object_type(e.value)}"
+                f" (expected {e.field_type!r})"
+            )
+
+    def get_original_args_dict_for_action(self, action: ActionBase) -> dict:
+        """Obtain dictionary representation of the action arguments as was initially loaded"""
+        return self._original_args_map[action.name]

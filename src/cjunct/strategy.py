@@ -131,7 +131,7 @@ class LooseStrategy(BaseStrategy):
             self.logger.debug(f"The next action is: {next_action}")
             for ancestor_name, ancestor_dependency in next_action.ancestors.items():
                 ancestor: ActionBase = self._workflow[ancestor_name]
-                if ancestor.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED) and (
+                if ancestor.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED, ActionStatus.WARNING) and (
                     ancestor_dependency.strict or self.STRICT
                 ):
                     self.logger.debug(f"Action {next_action} is qualified as skipped due to strict failure: {ancestor}")
@@ -153,7 +153,7 @@ class LooseStrategy(BaseStrategy):
             )
             for action in active_actions:  # type: ActionBase
                 if action.done():
-                    self.logger.debug(f"Action {action.name!r} execution finished, removing from active mapping")
+                    self.logger.debug(f"Action {action.name!r} execution finished")
                     del self._active_actions_map[action.name]
             # Maybe now?
             if maybe_next_action := self._get_maybe_next_action():

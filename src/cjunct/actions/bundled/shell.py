@@ -7,7 +7,7 @@ import typing as t
 from async_shell import Shell, ShellResult
 
 from ..base import ArgsBase, EmissionScannerActionBase
-from ..types import Stderr, StringTemplate
+from ..types import Stderr
 from ...config.constants import C
 
 __all__ = [
@@ -19,10 +19,10 @@ __all__ = [
 class ShellArgs(ArgsBase):
     """Args for shell-related actions"""
 
-    command: t.Optional[StringTemplate] = None
-    file: t.Optional[StringTemplate] = None
-    environment: t.Optional[t.Dict[str, StringTemplate]] = None
-    cwd: t.Optional[StringTemplate] = None
+    command: t.Optional[str] = None
+    file: t.Optional[str] = None
+    environment: t.Optional[t.Dict[str, str]] = None
+    cwd: t.Optional[str] = None
 
     def __post_init__(self) -> None:
         if self.command is None and self.file is None:

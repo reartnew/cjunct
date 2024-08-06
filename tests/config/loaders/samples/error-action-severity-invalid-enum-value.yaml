@@ -1,6 +1,6 @@
 # exception: LoadError
-# match: Unexpected name type
+# match: Invalid severity
 ---
 actions:
   - type: shell
-    name: {}
+    severity: foo

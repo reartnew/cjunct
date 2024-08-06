@@ -1,5 +1,6 @@
 """Types collection"""
 
+import dataclasses
 import typing as t
 
 EventType = str
@@ -9,8 +10,9 @@ __all__ = [
     "EventType",
     "OutcomeStorageType",
     "Stderr",
-    "StringTemplate",
-    "RenderedStringTemplate",
+    "Import",
+    "ObjectTemplate",
+    "qualify_string_as_potentially_renderable",
 ]
 
 
@@ -18,9 +20,20 @@ class Stderr(str):
     """Strings related to standard error stream"""
 
 
-class StringTemplate(str):
-    """String arguments to be templated later"""
+@dataclasses.dataclass
+class Import:
+    """Import clause"""
+
+    path: str
 
 
-class RenderedStringTemplate(StringTemplate):
-    """Rendered string arguments"""
+@dataclasses.dataclass
+class ObjectTemplate:
+    """Complex object expression to be rendered later"""
+
+    expression: str
+
+
+def qualify_string_as_potentially_renderable(data: str) -> bool:
+    """Check that a string should be templated later"""
+    return "@{" in data

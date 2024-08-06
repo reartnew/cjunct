@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cjunct"
-version = "2.2.2"
+version = "3.0.0a1"
 description = "Declarative task runner"
 license = "MIT"
 authors = [
@@ -27,26 +27,30 @@ python-dotenv = "^1.0.1"
 async-shell = "^1.0.7"
 pyyaml = "^6.0.1"
 click = "^8.1.7"
-dacite = "^1.8.1"
-inquirer = "^3.2.3"
-aiodocker = { version = "^0.21.0", optional = true }
+dacite-cjunct = "1.8.1a0"
+inquirer = "^3.3.0"
+aiodocker = { version = "^0.22.2", optional = true }
 lazy-object-proxy = "^1.10.0"
 
 [tool.poetry.extras]
 docker = ["aiodocker"]
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.1.1"
-pylint = "^3.1.0"
+tox = "^4.14.1"
+pytest = "^8.3.2"
+pylint = "^3.2.6"
+mypy = "^1.11.1"
+black = "^24.8.0"
+bandit = "^1.7.9"
+coverage = "^7.6.1"
 pytest-pylint = "^0.21.0"
 pytest-mypy = "^0.10.3"
 pytest-black = "^0.3.12"
-pytest-asyncio = "^0.23.5.post1"
 pytest-bandit = "^0.6.1"
-tox = "^4.14.1"
-pytest-cov = "^4.1.0"
+pytest-cov = "^5.0.0"
+pytest-asyncio = "^0.23.8"
 types-pyyaml = "^6.0.12.20240311"
-setuptools = "^69.2.0"
+setuptools = "^72.1.0"
 pytest-data-suites = "^1.0.5"
 
 [tool.poetry.scripts]
@@ -76,6 +80,7 @@ source = ["src"]
 omit = [
     "src/cjunct/console.py",
     "src/cjunct/tools/inspect.py",
+    "src/cjunct/tools/proxy.py",
 ]
 
 [tool.coverage.report]

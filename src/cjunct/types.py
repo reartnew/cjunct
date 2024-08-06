@@ -11,9 +11,15 @@ from .strategy import BaseStrategy
 LoaderClassType = t.Type[AbstractBaseWorkflowLoader]
 StrategyClassType = t.Type[BaseStrategy]
 DisplayClassType = t.Type[BaseDisplay]
+LoaderType = AbstractBaseWorkflowLoader
+StrategyType = BaseStrategy
+DisplayType = BaseDisplay
 
 __all__ = [
     "LoaderClassType",
     "StrategyClassType",
     "DisplayClassType",
+    "LoaderType",
+    "StrategyType",
+    "DisplayType",
 ]
