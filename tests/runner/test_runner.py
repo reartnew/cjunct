@@ -14,7 +14,9 @@ from cjunct.actions.base import ActionStatus
 from cjunct.config.constants import C
 from cjunct.config.environment import Env
 from cjunct.strategy import BaseStrategy
-from .types import RunFactoryType, CtxFactoryType
+
+CtxFactoryType = t.Callable[[str], Path]
+RunFactoryType = t.Callable[[str], t.List[str]]
 
 
 def test_simple_runner_call(runner_good_context: None) -> None:
