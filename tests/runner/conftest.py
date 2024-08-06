@@ -15,9 +15,7 @@ from _pytest.fixtures import SubRequest
 import cjunct
 from cjunct.config.environment import Env
 from cjunct.display.default import DefaultDisplay
-
-CtxFactoryType = t.Callable[[str], Path]
-RunFactoryType = t.Callable[[str], t.List[str]]
+from .types import CtxFactoryType, RunFactoryType
 
 
 @pytest.fixture(scope="session", autouse=True)
