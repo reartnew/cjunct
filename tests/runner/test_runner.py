@@ -555,9 +555,11 @@ def test_render_wrong_type(
                 command: echo Foo
             """
         )
-    assert display_collector == [
-        "[shell-0] !| Action 'shell-0' rendering failed: Unrecognized 'environment' content type: "
-        "typing.Dict[str, NoneType] (expected typing.Optional[typing.Dict[str, str]])",
-        "================",
-        "FAILURE: shell-0",
-    ]
+    # Can't check exactly due to different representations of the Optional in different python versions
+    assert any(
+        k.startswith(
+            "[shell-0] !| Action 'shell-0' rendering failed: Unrecognized 'environment' "
+            "content type: typing.Dict[str, NoneType]"
+        )
+        for k in display_collector
+    )
