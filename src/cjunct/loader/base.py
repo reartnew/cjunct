@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import collections
 import contextlib
+import importlib.metadata as im
 import typing as t
 from enum import Enum
 from pathlib import Path
@@ -11,10 +12,11 @@ from pathlib import Path
 import dacite
 from classlogging import LoggerMixin
 from dacite.types import is_subclass
+from packaging.requirements import Requirement
 
 from ..actions.base import ActionBase, ArgsBase, ActionDependency, ActionSeverity
 from ..actions.types import ObjectTemplate, qualify_string_as_potentially_renderable
-from ..exceptions import LoadError
+from ..exceptions import LoadError, PackageRequirementsError
 from ..tools.concealment import represent_object_type
 from ..tools.inspect import get_class_annotations
 from ..workflow import Workflow
@@ -54,6 +56,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         self._gathered_context: t.Dict[str, t.Any] = {}
         self._original_args_map: t.Dict[str, t.Dict[str, t.Any]] = {}
         self._action_type_counters: t.Dict[str, int] = collections.defaultdict(int)
+        self._package_requirements: t.Dict[str, Requirement] = {}
 
     def _register_action(self, action: ActionBase) -> None:
         if action.name in self._actions:
@@ -242,3 +245,22 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
     def get_original_args_dict_for_action(self, action: ActionBase) -> dict:
         """Obtain dictionary representation of the action arguments as was initially loaded"""
         return self._original_args_map[action.name]
+
+    def check_requirements(self) -> None:
+        """Check that all loaded requirements are met"""
+        failed_constrains: t.List[t.Tuple[t.Optional[str,], Requirement]] = []
+        for package_name, package_constrain in self._package_requirements.items():
+            self.logger.debug(f"Checking package requirement: {package_constrain}")
+            try:
+                installed_version: str = im.version(package_name)
+            except im.PackageNotFoundError:
+                failed_constrains.append((None, package_constrain))
+            else:
+                if installed_version not in package_constrain.specifier:
+                    failed_constrains.append((installed_version, package_constrain))
+        if failed_constrains:
+            message: str = "Following package requirements were not satisfied: \n" + "\n".join(
+                f"    Requested {constrain.name} of version {constrain.specifier}, got {installed_version}"
+                for installed_version, constrain in failed_constrains
+            )
+            raise PackageRequirementsError(message)
