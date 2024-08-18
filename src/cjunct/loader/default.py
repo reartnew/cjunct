@@ -166,10 +166,17 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                     f" (expected some of: {sorted(allowed_cfg_keys)})"
                 )
             if "requires_packages" in configuration:
-                req_pkgs: t.List[str] = configuration["requires_packages"]
-                if not isinstance(req_pkgs, list):
-                    self._throw(f"'configuration.requires_packages' contents should be a list (got {type(req_pkgs)!r})")
-                for package_constrain_str in req_pkgs:
+                required_packages_unparsed: t.Union[t.List[str], str] = configuration["requires_packages"]
+                if isinstance(required_packages_unparsed, list):
+                    required_packages_list: t.List[str] = required_packages_unparsed
+                elif isinstance(required_packages_unparsed, str):
+                    required_packages_list = [required_packages_unparsed]
+                else:
+                    self._throw(
+                        f"'configuration.requires_packages' contents should be "
+                        f"a list of strings or a string (got {type(required_packages_unparsed)!r})"
+                    )
+                for package_constrain_str in required_packages_list:
                     if not isinstance(package_constrain_str, str):
                         self._throw(f"Unexpected package constrain: {package_constrain_str!r} (expected a string)")
                     package_constrain = Requirement(package_constrain_str)
