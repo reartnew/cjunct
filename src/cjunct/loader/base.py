@@ -56,7 +56,7 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
         self._gathered_context: t.Dict[str, t.Any] = {}
         self._original_args_map: t.Dict[str, t.Dict[str, t.Any]] = {}
         self._action_type_counters: t.Dict[str, int] = collections.defaultdict(int)
-        self._package_requirements: t.Dict[str, Requirement] = {}
+        self._package_requirements: t.List[Requirement] = []
 
     def _register_action(self, action: ActionBase) -> None:
         if action.name in self._actions:
@@ -249,18 +249,18 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
     def check_requirements(self) -> None:
         """Check that all loaded requirements are met"""
         failed_constrains: t.List[t.Tuple[t.Optional[str,], Requirement]] = []
-        for package_name, package_constrain in self._package_requirements.items():
+        for package_constrain in self._package_requirements:
             self.logger.debug(f"Checking package requirement: {package_constrain}")
             try:
-                installed_version: str = im.version(package_name)
+                installed_version: str = im.version(package_constrain.name)
             except im.PackageNotFoundError:
                 failed_constrains.append((None, package_constrain))
             else:
                 if installed_version not in package_constrain.specifier:
                     failed_constrains.append((installed_version, package_constrain))
         if failed_constrains:
-            message: str = "Following package requirements were not satisfied: \n" + "\n".join(
-                f"    Requested {constrain.name} of version {constrain.specifier}, got {installed_version}"
-                for installed_version, constrain in failed_constrains
-            )
-            raise PackageRequirementsError(message)
+            fails_info: t.List[str] = ["Following package requirements were not satisfied:"]
+            for version, constrain in failed_constrains:
+                required_version_details: str = f" of version {constrain.specifier}" if constrain.specifier else ""
+                fails_info.append(f"    Requested {constrain.name}{required_version_details}, got {version}")
+            raise PackageRequirementsError("\n".join(fails_info))

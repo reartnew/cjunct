@@ -159,45 +159,22 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
             configuration: t.Dict[str, t.Any] = root_node["configuration"]
             if not isinstance(configuration, dict):
                 self._throw(f"'configuration' contents should be a dict (got {type(configuration)!r})")
-            allowed_cfg_keys: t.Set[str] = {"requirements"}
+            allowed_cfg_keys: t.Set[str] = {"requires_packages"}
             if bad_cfg_keys := set(configuration) - allowed_cfg_keys:
                 self._throw(
                     f"Unrecognized configuration keys: {sorted(bad_cfg_keys)}"
                     f" (expected some of: {sorted(allowed_cfg_keys)})"
                 )
-            if "requirements" in configuration:
-                requirements: t.Dict[str, t.Any] = configuration["requirements"]
-                if not isinstance(requirements, dict):
-                    self._throw(f"'configuration.requirements' contents should be a dict (got {type(requirements)!r})")
-                allowed_requirements_keys: t.Set[str] = {"packages"}
-                if bad_requirements_keys := set(requirements) - allowed_requirements_keys:
-                    self._throw(
-                        f"Unrecognized configuration.requirements keys: {sorted(bad_requirements_keys)})"
-                        f" (expected some of: {sorted(allowed_requirements_keys)})"
-                    )
-                if "packages" in requirements:
-                    packages: t.Dict[str, t.Any] = requirements["packages"]
-                    if not isinstance(packages, dict):
-                        self._throw(
-                            f"'configuration.requirements.packages' contents should be a dict"
-                            f" (got {type(packages)!r})"
-                        )
-                    for package_name, package_constrain_str in packages.items():
-                        if not isinstance(package_name, str):
-                            self._throw(f"Unexpected package name: {package_name!r} (expected a string)")
-                        if not isinstance(package_constrain_str, str):
-                            self._throw(f"Unexpected package constrain: {package_constrain_str!r} (expected a string)")
-                        package_constrain = Requirement(f"{package_name}{package_constrain_str}")
-                        if package_constrain.name != package_name:
-                            self._throw(f"Invalid constrain format: {package_constrain_str!r}")
-                        if (previously_defined_version := self._package_requirements.get(package_name)) is not None:
-                            self.logger.debug(
-                                f"Redefining package {package_name!r} constrain to {package_constrain!r}"
-                                f" (was {previously_defined_version!r})"
-                            )
-                        else:
-                            self.logger.debug(f"Defining package {package_name!r} constrain: {package_constrain!r}")
-                        self._package_requirements[package_name] = package_constrain
+            if "requires_packages" in configuration:
+                req_pkgs: t.List[str] = configuration["requires_packages"]
+                if not isinstance(req_pkgs, list):
+                    self._throw(f"'configuration.requires_packages' contents should be a list (got {type(req_pkgs)!r})")
+                for package_constrain_str in req_pkgs:
+                    if not isinstance(package_constrain_str, str):
+                        self._throw(f"Unexpected package constrain: {package_constrain_str!r} (expected a string)")
+                    package_constrain = Requirement(package_constrain_str)
+                    self.logger.debug(f"Defining package constrain: {package_constrain!r}")
+                    self._package_requirements.append(package_constrain)
 
     def _loads_contexts_dict(self, data: t.Dict[str, t.Any]) -> None:
         for context_key, context_value in data.items():
