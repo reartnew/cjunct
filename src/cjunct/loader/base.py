@@ -264,3 +264,29 @@ class AbstractBaseWorkflowLoader(LoggerMixin):
                 required_version_details: str = f" of version {constrain.specifier}" if constrain.specifier else ""
                 fails_info.append(f"    Requested {constrain.name}{required_version_details}, got {version}")
             raise PackageRequirementsError("\n".join(fails_info))
+
+    def load_configuration_from_dict(self, configuration_dict: t.Dict[str, t.Any]) -> None:
+        """Process configuration dictionary"""
+        if not isinstance(configuration_dict, dict):
+            self._throw(f"'configuration' contents should be a dict (got {type(configuration_dict)!r})")
+        allowed_cfg_keys: t.Set[str] = {"requires_packages"}
+        if bad_cfg_keys := set(configuration_dict) - allowed_cfg_keys:
+            self._throw(
+                f"Unrecognized configuration keys: {sorted(bad_cfg_keys)}"
+                f" (expected some of: {sorted(allowed_cfg_keys)})"
+            )
+        if "requires_packages" in configuration_dict:
+            required_packages_list: t.Union[t.List[str], str] = configuration_dict["requires_packages"]
+            if isinstance(required_packages_list, str):
+                required_packages_list = [required_packages_list]
+            elif not isinstance(required_packages_list, list):
+                self._throw(
+                    f"'configuration.requires_packages' contents should be "
+                    f"a list of strings or a string (got {type(required_packages_list)!r})"
+                )
+            for package_constrain_str in required_packages_list:
+                if not isinstance(package_constrain_str, str):
+                    self._throw(f"Unexpected package constrain: {package_constrain_str!r} (expected a string)")
+                package_constrain = Requirement(package_constrain_str)
+                self.logger.debug(f"Defining package constrain: {package_constrain!r}")
+                self._package_requirements.append(package_constrain)

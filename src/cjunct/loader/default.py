@@ -7,7 +7,6 @@ from functools import lru_cache
 from pathlib import Path
 
 import yaml
-from packaging.requirements import Requirement
 
 from .base import AbstractBaseWorkflowLoader
 from ..actions.base import ActionBase
@@ -156,32 +155,7 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
             else:
                 self._throw(f"'context' contents should be a dict or a list (got {type(context)!r})")
         if "configuration" in processable_keys:
-            configuration: t.Dict[str, t.Any] = root_node["configuration"]
-            if not isinstance(configuration, dict):
-                self._throw(f"'configuration' contents should be a dict (got {type(configuration)!r})")
-            allowed_cfg_keys: t.Set[str] = {"requires_packages"}
-            if bad_cfg_keys := set(configuration) - allowed_cfg_keys:
-                self._throw(
-                    f"Unrecognized configuration keys: {sorted(bad_cfg_keys)}"
-                    f" (expected some of: {sorted(allowed_cfg_keys)})"
-                )
-            if "requires_packages" in configuration:
-                required_packages_unparsed: t.Union[t.List[str], str] = configuration["requires_packages"]
-                if isinstance(required_packages_unparsed, list):
-                    required_packages_list: t.List[str] = required_packages_unparsed
-                elif isinstance(required_packages_unparsed, str):
-                    required_packages_list = [required_packages_unparsed]
-                else:
-                    self._throw(
-                        f"'configuration.requires_packages' contents should be "
-                        f"a list of strings or a string (got {type(required_packages_unparsed)!r})"
-                    )
-                for package_constrain_str in required_packages_list:
-                    if not isinstance(package_constrain_str, str):
-                        self._throw(f"Unexpected package constrain: {package_constrain_str!r} (expected a string)")
-                    package_constrain = Requirement(package_constrain_str)
-                    self.logger.debug(f"Defining package constrain: {package_constrain!r}")
-                    self._package_requirements.append(package_constrain)
+            self.load_configuration_from_dict(root_node["configuration"])
 
     def _loads_contexts_dict(self, data: t.Dict[str, t.Any]) -> None:
         for context_key, context_value in data.items():
