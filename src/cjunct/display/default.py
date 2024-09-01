@@ -17,8 +17,8 @@ __all__ = [
 ]
 
 
-class DefaultDisplay(BaseDisplay):
-    """Prefix-based default display with colors"""
+class PrologueDisplay(BaseDisplay):
+    """Default display base"""
 
     STATUS_TO_COLOR_WRAPPER_MAP: t.Dict[ActionStatus, t.Callable[[str], str]] = {
         ActionStatus.SKIPPED: Color.gray,
@@ -32,44 +32,33 @@ class DefaultDisplay(BaseDisplay):
 
     def __init__(self, workflow: Workflow) -> None:
         super().__init__(workflow)
-        self._action_names_max_len = max(map(len, self._workflow))
-        self._last_displayed_name: str = ""
+        self._last_displayed_name: t.Optional[str] = None
 
-    def _make_prefix(self, source_name: str, mark: str = " "):
-        """Construct prefix based on previous emitter action name"""
-        justification_len: int = self._action_names_max_len + 2  # "2" here stands for square brackets
-        formatted_name: str = (
-            f"[{source_name}]".ljust(justification_len)
-            if self._last_displayed_name != source_name
-            else " " * justification_len
-        )
-        self._last_displayed_name = source_name
-        return Color.gray(f"{formatted_name} {mark}| ")
+    def _make_prologue(self, source: ActionBase, mark: str) -> str:
+        raise NotImplementedError
 
     def emit_action_message(self, source: ActionBase, message: str) -> None:
         is_stderr: bool = isinstance(message, Stderr)
         for line in message.splitlines() if message else [message]:
-            line_prefix: str = self._make_prefix(source_name=source.name, mark="*" if is_stderr else " ")
-            super().emit_action_message(
-                source=source,
-                message=f"{line_prefix}{Color.yellow(line) if is_stderr else line}",
-            )
+            line_prefix: str = self._make_prologue(source=source, mark="*" if is_stderr else " ")
+            self.display(f"{line_prefix}{Color.yellow(line) if is_stderr else line}")
 
     def emit_action_error(self, source: ActionBase, message: str) -> None:
-        line_prefix: str = self._make_prefix(source_name=source.name, mark="!")
+        line_prefix: str = self._make_prologue(source=source, mark="!")
         for line in message.splitlines():
             super().emit_action_error(
                 source=source,
                 message=f"{line_prefix}{Color.red(line)}",
             )
 
-    def _display_status_banner(self) -> None:
-        """Show a text banner with the status info"""
-        justification_len: int = self._action_names_max_len + 9  # "9" here stands for (e.g.) "SUCCESS: "
-        self.display(Color.gray("=" * justification_len))
+    def _iterate_states(self) -> t.Iterator[str]:
         for _, action in self._workflow.iter_actions_by_tier():
             color_wrapper: t.Callable[[str], str] = self.STATUS_TO_COLOR_WRAPPER_MAP[action.status]
-            self.display(f"{color_wrapper(action.status.value)}: {action.name}")
+            yield f"{color_wrapper(action.status.value)}: {action.name}"
+
+    def _display_status_banner(self) -> None:
+        """Show a text banner with the status info"""
+        raise NotImplementedError
 
     def on_runner_finish(self) -> None:
         self._display_status_banner()
@@ -110,3 +99,49 @@ class DefaultDisplay(BaseDisplay):
         )
         selected_action_names: t.List[str] = answers["actions"]
         return selected_action_names
+
+
+class PrefixDisplay(PrologueDisplay):
+
+    def __init__(self, workflow: Workflow) -> None:
+        super().__init__(workflow)
+        self._action_names_max_len = max(map(len, self._workflow))
+
+    def _make_prologue(self, source: ActionBase, mark: str) -> str:
+        """Construct prefix based on previous emitter action name"""
+        justification_len: int = self._action_names_max_len + 2  # "2" here stands for square brackets
+        formatted_name: str = (
+            f"[{source.name}]".ljust(justification_len)
+            if self._last_displayed_name != source.name
+            else " " * justification_len
+        )
+        self._last_displayed_name = source.name
+        return Color.gray(f"{formatted_name} {mark}| ")
+
+    def _display_status_banner(self) -> None:
+        justification_len: int = self._action_names_max_len + 9  # "9" here stands for (e.g.) "SUCCESS: "
+        self.display(Color.gray("=" * justification_len))
+        for state_string in self._iterate_states():
+            self.display(state_string)
+
+
+class HeaderDisplay(PrologueDisplay):
+    def _close_block_if_necessary(self) -> None:
+        if self._last_displayed_name is not None:
+            self.display(Color.gray(" ╵"))
+
+    def _make_prologue(self, source: ActionBase, mark: str) -> str:
+        """Construct header based on previous emitter action name"""
+        if self._last_displayed_name != source.name:
+            self._close_block_if_necessary()
+            self.display(Color.gray(f" ┌─[{source.name}]"))
+            self._last_displayed_name = source.name
+        return Color.gray(f"{mark}│ ")
+
+    def _display_status_banner(self) -> None:
+        self._close_block_if_necessary()
+        for state_string in self._iterate_states():
+            self.display(Color.gray(f" □ {state_string}"))
+
+
+DefaultDisplay = HeaderDisplay
