@@ -102,6 +102,7 @@ class PrologueDisplay(BaseDisplay):
 
 
 class PrefixDisplay(PrologueDisplay):
+    """Adds prefixes to output chunks"""
 
     def __init__(self, workflow: Workflow) -> None:
         super().__init__(workflow)
@@ -126,6 +127,8 @@ class PrefixDisplay(PrologueDisplay):
 
 
 class HeaderDisplay(PrologueDisplay):
+    """Adds headers to output chunks"""
+
     def _close_block_if_necessary(self) -> None:
         if self._last_displayed_name is not None:
             self.display(Color.gray(" ╵"))
@@ -144,4 +147,4 @@ class HeaderDisplay(PrologueDisplay):
             self.display(Color.gray(f" □ {state_string}"))
 
 
-DefaultDisplay = HeaderDisplay
+DefaultDisplay = PrefixDisplay
