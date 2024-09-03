@@ -51,6 +51,17 @@ def _maybe_strategy(name: t.Optional[str]) -> t.Optional[StrategyClassType]:
         raise ValueError(f"Invalid strategy name: {name!r} (allowed: {sorted(KNOWN_STRATEGIES)})") from None
 
 
+def _maybe_display_class_by_name(name: t.Optional[str]) -> t.Optional[DisplayClassType]:
+    from ...display.default import KNOWN_DISPLAYS
+
+    if not name:
+        return None
+    try:
+        return KNOWN_DISPLAYS[name]
+    except Exception:
+        raise ValueError(f"Display name should be one of: {sorted(KNOWN_DISPLAYS)}. Got {name!r}") from None
+
+
 def _get_default_display_class() -> DisplayClassType:
     from ...display.default import DefaultDisplay
 
@@ -111,6 +122,8 @@ class C:
             class_name="Display",
             submodule_name="display",
         ),
+        lambda: _maybe_display_class_by_name(get_cli_arg("display")),
+        lambda: _maybe_display_class_by_name(Env.CJUNCT_DISPLAY_NAME),
         _get_default_display_class,
     )
     STRATEGY_CLASS: Mandatory[StrategyClassType] = Mandatory(

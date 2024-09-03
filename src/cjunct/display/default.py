@@ -13,7 +13,10 @@ from ..exceptions import InteractionError
 from ..workflow import Workflow
 
 __all__ = [
+    "HeaderDisplay",
+    "PrefixDisplay",
     "DefaultDisplay",
+    "KNOWN_DISPLAYS",
 ]
 
 
@@ -148,3 +151,7 @@ class HeaderDisplay(PrologueDisplay):
 
 
 DefaultDisplay = PrefixDisplay
+KNOWN_DISPLAYS: t.Dict[str, t.Type[BaseDisplay]] = {
+    "headers": HeaderDisplay,
+    "prefixes": PrefixDisplay,
+}
