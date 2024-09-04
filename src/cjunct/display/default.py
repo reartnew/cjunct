@@ -13,6 +13,7 @@ from ..exceptions import InteractionError
 from ..workflow import Workflow
 
 __all__ = [
+    "PrologueDisplay",
     "HeaderDisplay",
     "PrefixDisplay",
     "DefaultDisplay",
@@ -22,6 +23,8 @@ __all__ = [
 
 class PrologueDisplay(BaseDisplay):
     """Default display base"""
+
+    NAME: str
 
     STATUS_TO_COLOR_WRAPPER_MAP: t.Dict[ActionStatus, t.Callable[[str], str]] = {
         ActionStatus.SKIPPED: Color.gray,
@@ -107,6 +110,8 @@ class PrologueDisplay(BaseDisplay):
 class PrefixDisplay(PrologueDisplay):
     """Adds prefixes to output chunks"""
 
+    NAME = "prefixes"
+
     def __init__(self, workflow: Workflow) -> None:
         super().__init__(workflow)
         self._action_names_max_len = max(map(len, self._workflow))
@@ -132,6 +137,8 @@ class PrefixDisplay(PrologueDisplay):
 class HeaderDisplay(PrologueDisplay):
     """Adds headers to output chunks"""
 
+    NAME = "headers"
+
     def _close_block_if_necessary(self) -> None:
         if self._last_displayed_name is not None:
             self.display(Color.gray(" ╵"))
@@ -152,6 +159,6 @@ class HeaderDisplay(PrologueDisplay):
 
 DefaultDisplay = PrefixDisplay
 KNOWN_DISPLAYS: t.Dict[str, t.Type[BaseDisplay]] = {
-    "headers": HeaderDisplay,
-    "prefixes": PrefixDisplay,
+    HeaderDisplay.NAME: HeaderDisplay,
+    PrefixDisplay.NAME: PrefixDisplay,
 }
