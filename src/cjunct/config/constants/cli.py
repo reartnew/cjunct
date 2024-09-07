@@ -19,13 +19,20 @@ def cliargs_receiver(func):  # pragma: no cover
     @functools.wraps(func)
     # pylint: disable=unused-argument
     def wrapped(ctx: click.Context, **kwargs):
+        old_cli_params: t.Dict[str, t.Any] = _CLI_PARAMS.copy()
         current_ctx: t.Optional[click.Context] = ctx
         while current_ctx:
             for k, v in current_ctx.params.items():
                 if k not in _CLI_PARAMS:
                     _CLI_PARAMS[k] = v
             current_ctx = current_ctx.parent
-        return func()
+        try:
+            return func()
+        finally:
+            # Restore CLI params container
+            for k in list(_CLI_PARAMS):
+                del _CLI_PARAMS[k]
+            _CLI_PARAMS.update(old_cli_params)
 
     return click.pass_context(wrapped)
 

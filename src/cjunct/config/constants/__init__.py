@@ -4,6 +4,7 @@
 import os
 import sys
 import typing as t
+from io import UnsupportedOperation
 from pathlib import Path
 
 from classlogging import LogLevel
@@ -80,6 +81,13 @@ def _get_default_strategy_class() -> StrategyClassType:
     return LooseStrategy
 
 
+def _isatty() -> bool:
+    try:
+        return os.isatty(sys.stdout.fileno())
+    except UnsupportedOperation:
+        return False
+
+
 class C:
     """Runtime constants"""
 
@@ -133,7 +141,7 @@ class C:
     )
     USE_COLOR: Mandatory[bool] = Mandatory(
         lambda: Env.CJUNCT_FORCE_COLOR,
-        lambda: os.isatty(sys.stdout.fileno()),
+        _isatty,
     )
     SHELL_INJECT_YIELD_FUNCTION: Mandatory[bool] = Mandatory(
         lambda: Env.CJUNCT_SHELL_INJECT_YIELD_FUNCTION,
