@@ -26,9 +26,12 @@ class CLIError(Exception):
 
 
 class RunnerType(t.Protocol):
-    """Protocol for the `runner` fixture return type"""
+    """Protocol for the `run` fixture return type"""
 
     def __call__(self, text: str, opts: OptsType = None, global_opts: OptsType = None) -> t.List[str]: ...
+
+
+BuilderType = t.Callable[[str], RunnerType]
 
 
 def _invoke(*args, **kwargs) -> t.List[str]:
@@ -42,27 +45,32 @@ def _noop(*args, **kwargs) -> None:  # pylint: disable=unused-argument
     return None
 
 
-def test_cli_version() -> None:
-    """Check version command"""
-    assert _invoke(console.main, ["info", "version"]) == [version.__version__]
-
-
-def test_cli_env_vars() -> None:
-    """Check env vars command"""
-    doc: str = t.cast(str, Env.__doc__)
-    assert _invoke(console.main, ["info", "env-vars"]) == doc.splitlines()
-
-
 @pytest.fixture
-def runner(monkeypatch: pytest.MonkeyPatch) -> RunnerType:
-    """Setup test runner fed from stdin"""
+def builder(monkeypatch: pytest.MonkeyPatch) -> BuilderType:
+    """Setup test command fed from stdin"""
+
     monkeypatch.setattr(DotEnv, "set_as_environment_variables", _noop)
     monkeypatch.setattr(classlogging, "configure_logging", _noop)
 
-    def run(text: str, opts: OptsType = None, global_opts: OptsType = None) -> t.List[str]:
-        return _invoke(console.main, (global_opts or []) + ["run", "-"] + (opts or []), input=text)
+    def build(subcommand: str):
+        def execute(text: str, opts: OptsType = None, global_opts: OptsType = None) -> t.List[str]:
+            return _invoke(console.main, (global_opts or []) + [subcommand, "-"] + (opts or []), input=text)
 
-    return run
+        return execute
+
+    return build
+
+
+@pytest.fixture
+def run(builder: BuilderType) -> RunnerType:
+    """Setup test run fed from stdin"""
+    return builder("run")
+
+
+@pytest.fixture
+def validate(builder: BuilderType) -> RunnerType:
+    """Setup test validate fed from stdin"""
+    return builder("validate")
 
 
 GOOD_WORKFLOW_TEXT: str = """---
@@ -72,18 +80,34 @@ actions:
 """
 
 
-def test_cli_run(runner: RunnerType) -> None:
+def test_cli_version() -> None:
+    """Check version command"""
+    assert _invoke(console.main, ["info", "version"]) == [version.__version__]
+
+
+def test_cli_validate(validate: RunnerType) -> None:
+    """Check validate command"""
+    assert validate(GOOD_WORKFLOW_TEXT) == []
+
+
+def test_cli_env_vars() -> None:
+    """Check env vars command"""
+    doc: str = t.cast(str, Env.__doc__)
+    assert _invoke(console.main, ["info", "env-vars"]) == doc.splitlines()
+
+
+def test_cli_run(run: RunnerType) -> None:
     """Default run"""
-    assert runner(text=GOOD_WORKFLOW_TEXT) == [
+    assert run(text=GOOD_WORKFLOW_TEXT) == [
         "[echo-0]  | foo",
         "===============",
         "SUCCESS: echo-0",
     ]
 
 
-def test_cli_run_display(runner: RunnerType) -> None:
+def test_cli_run_display(run: RunnerType) -> None:
     """Run with overridden display"""
-    assert runner(
+    assert run(
         text=GOOD_WORKFLOW_TEXT,
         global_opts=["--display", "headers"],
     ) == [
@@ -95,9 +119,9 @@ def test_cli_run_display(runner: RunnerType) -> None:
 
 
 @pytest.mark.parametrize("strategy", ["free", "sequential", "loose", "strict", "strict-sequential"])
-def test_cli_run_explicit_strategy(runner: RunnerType, strategy: str) -> None:
+def test_cli_run_explicit_strategy(run: RunnerType, strategy: str) -> None:
     """Run with overridden strategy"""
-    assert runner(
+    assert run(
         text=GOOD_WORKFLOW_TEXT,
         opts=["--strategy", strategy],
     ) == [
@@ -107,19 +131,25 @@ def test_cli_run_explicit_strategy(runner: RunnerType, strategy: str) -> None:
     ]
 
 
-def test_cli_run_execution_failed(runner: RunnerType) -> None:
+def test_cli_run_execution_failed(run: RunnerType) -> None:
     """Catch ExecutionFailed"""
     with pytest.raises(CLIError, match="<1>"):
-        runner(text="{actions: [{type: shell, command: foobar}]}")
+        run(text="{actions: [{type: shell, command: foobar}]}")
 
 
-def test_cli_run_load_error(runner: RunnerType) -> None:
+def test_cli_run_load_error(run: RunnerType) -> None:
     """Catch LoadError"""
     with pytest.raises(CLIError, match="<102>"):
-        runner(text="actions:")
+        run(text="actions:")
 
 
-def test_cli_run_integrity_error(runner: RunnerType) -> None:
+def test_cli_run_integrity_error(run: RunnerType) -> None:
     """Catch IntegrityError"""
     with pytest.raises(CLIError, match="<103>"):
-        runner(text="actions: []")
+        run(text="actions: []")
+
+
+def test_cli_run_unhandled_exception(run: RunnerType) -> None:
+    """Catch YAML parse error"""
+    with pytest.raises(CLIError, match="<2>"):
+        run(text="!@#$%^")
