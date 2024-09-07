@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cjunct"
-version = "3.0.0a1"
+version = "3.0.0a2"
 description = "Declarative task runner"
 license = "MIT"
 authors = [
@@ -31,6 +31,7 @@ dacite-cjunct = "1.8.1a0"
 inquirer = "^3.3.0"
 aiodocker = { version = "^0.22.2", optional = true }
 lazy-object-proxy = "^1.10.0"
+packaging = "^24.1"
 
 [tool.poetry.extras]
 docker = ["aiodocker"]

@@ -47,7 +47,7 @@ YAMLLoader.add_string_constructor("!import", Import)
 class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
     """Default loader for YAML source files"""
 
-    ALLOWED_ROOT_TAGS: t.Set[str] = {"actions", "context", "miscellaneous"}
+    ALLOWED_ROOT_TAGS: t.Set[str] = {"actions", "context", "miscellaneous", "configuration"}
     STATIC_ACTION_FACTORIES = {
         name: klass
         for name, klass in (
@@ -100,7 +100,7 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
     def _internal_loads(self, data: t.Union[str, bytes]) -> None:
         self._internal_loads_with_filter(
             data=data,
-            allowed_root_keys={"actions", "context"},
+            allowed_root_keys=self.ALLOWED_ROOT_TAGS,
         )
 
     def _internal_loads_with_filter(
@@ -154,6 +154,8 @@ class DefaultYAMLWorkflowLoader(AbstractBaseWorkflowLoader):
                         self._throw(f"Context item #{num + 1} is not a dict nor an '!import' (got {type(item)!r})")
             else:
                 self._throw(f"'context' contents should be a dict or a list (got {type(context)!r})")
+        if "configuration" in processable_keys:
+            self.load_configuration_from_dict(root_node["configuration"])
 
     def _loads_contexts_dict(self, data: t.Dict[str, t.Any]) -> None:
         for context_key, context_value in data.items():

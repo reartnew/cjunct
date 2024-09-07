@@ -563,3 +563,21 @@ def test_render_wrong_type(
         )
         for k in display_collector
     )
+
+
+def test_unsatisfied_package_requirements(run_text: RunFactoryType) -> None:
+    """Check requirements failures"""
+    with pytest.raises(exceptions.PackageRequirementsError):
+        run_text(
+            """
+            ---
+            configuration:
+              requires_packages:
+                - wtf_is_this_package
+                - cjunct<1.0.0
+            actions:
+              - name: Foo
+                type: echo
+                message: foo
+            """
+        )

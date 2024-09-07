@@ -116,17 +116,22 @@ class Runner(classlogging.LoggerMixin):
 
     async def run_async(self) -> None:
         """Primary coroutine for all further processing"""
+        # Build workflow and display
+        workflow: Workflow = self.workflow
+        display: BaseDisplay = self.display
+        # Check requirements
+        self.loader.check_requirements()
         try:
-            self.display.on_runner_start()
+            display.on_runner_start()
         except Exception:
-            self.logger.exception(f"`on_runner_start` callback failed for {self.display}")
+            self.logger.exception(f"`on_runner_start` callback failed for {display}")
         if C.INTERACTIVE_MODE:
-            self.display.on_plan_interaction(workflow=self.workflow)
+            display.on_plan_interaction(workflow=workflow)
         await self._run_all_actions()
         try:
-            self.display.on_runner_finish()
+            display.on_runner_finish()
         except Exception:
-            self.logger.exception(f"`on_runner_finish` callback failed for {self.display}")
+            self.logger.exception(f"`on_runner_finish` callback failed for {display}")
         if self._execution_failed:
             raise ExecutionFailed
 

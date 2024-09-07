@@ -14,6 +14,7 @@ __all__ = [
     "SourceError",
     "InteractionError",
     "YAMLStructureError",
+    "PackageRequirementsError",
 ]
 
 
@@ -79,3 +80,9 @@ class YAMLStructureError(BaseError):
     """Custom tags structure error"""
 
     CODE: int = 106
+
+
+class PackageRequirementsError(BaseError):
+    """Package constrains violated"""
+
+    CODE: int = 107
