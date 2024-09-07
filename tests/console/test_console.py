@@ -28,7 +28,9 @@ class CLIError(Exception):
 class RunnerType(t.Protocol):
     """Protocol for the `run` fixture return type"""
 
-    def __call__(self, text: str, opts: OptsType = None, global_opts: OptsType = None) -> t.List[str]: ...
+    def __call__(
+        self, text: t.Optional[str] = None, opts: OptsType = None, global_opts: OptsType = None
+    ) -> t.List[str]: ...
 
 
 BuilderType = t.Callable[[str], RunnerType]
@@ -53,7 +55,7 @@ def builder(monkeypatch: pytest.MonkeyPatch) -> BuilderType:
     monkeypatch.setattr(classlogging, "configure_logging", _noop)
 
     def build(subcommand: str):
-        def execute(text: str, opts: OptsType = None, global_opts: OptsType = None) -> t.List[str]:
+        def execute(text: t.Optional[str] = None, opts: OptsType = None, global_opts: OptsType = None) -> t.List[str]:
             return _invoke(console.main, (global_opts or []) + [subcommand, "-"] + (opts or []), input=text)
 
         return execute
@@ -153,3 +155,14 @@ def test_cli_run_unhandled_exception(run: RunnerType) -> None:
     """Catch YAML parse error"""
     with pytest.raises(CLIError, match="<2>"):
         run(text="!@#$%^")
+
+
+def test_cli_run_help(run: RunnerType) -> None:
+    """CLI help"""
+    assert "  Run pipeline immediately." in run(opts=["--help"])
+
+
+def test_cli_multiple_positional_args(run: RunnerType) -> None:
+    """Only one positional argument should be accepted"""
+    with pytest.raises(CLIError, match="<2>"):
+        run(opts=["foo", "bar"])
