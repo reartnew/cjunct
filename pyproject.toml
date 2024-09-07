@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cjunct"
-version = "3.0.0a2"
+version = "3.0.0a3"
 description = "Declarative task runner"
 license = "MIT"
 authors = [
@@ -79,9 +79,7 @@ filterwarnings = [
 [tool.coverage.run]
 source = ["src"]
 omit = [
-    "src/cjunct/console.py",
     "src/cjunct/tools/inspect.py",
-    "src/cjunct/tools/proxy.py",
 ]
 
 [tool.coverage.report]

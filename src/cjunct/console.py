@@ -17,18 +17,19 @@ from cjunct.config.environment import Env
 from cjunct.exceptions import BaseError, ExecutionFailed
 from cjunct.strategy import KNOWN_STRATEGIES
 from cjunct.tools.proxy import DeferredCallsProxy
+from cjunct.display.default import KNOWN_DISPLAYS
 
 logger = DeferredCallsProxy(obj=classlogging.get_module_logger())
 
 
-class WorkflowPositionalArgument(click.Argument):
+# pylint: disable=invalid-name
+class _WorkflowPositionalArgument(click.Argument):
     """Optional positional argument for the workflow source"""
 
     NAME: str = "WORKFLOW"
 
+    # pylint: disable=unused-argument
     def __init__(self, param_decls: t.Sequence[str], required: t.Optional[bool] = None, **attrs: t.Any) -> None:
-        if attrs or required is not None:
-            self._throw("Cannot apply any attributes")
         super().__init__(param_decls, required=False, nargs=-1)
 
     def get_help_record(self, ctx: click.Context) -> t.Optional[t.Tuple[str, str]]:
@@ -45,9 +46,6 @@ class WorkflowPositionalArgument(click.Argument):
             raise click.BadParameter("Cannot apply more than one value", param=self)
         return vanilla_value[0] if vanilla_value else None
 
-    def _throw(self, message: str) -> t.NoReturn:
-        raise click.BadParameter(message, param=self)
-
     def make_metavar(self) -> str:
         """Fixed representation"""
         return f"[{self.NAME}]"
@@ -60,12 +58,18 @@ class WorkflowPositionalArgument(click.Argument):
     help="Logging level. Defaults to ERROR. Also configurable via the CJUNCT_LOG_LEVEL environment variable.",
     type=click.Choice(list(LOG_LEVELS)),
 )
+@click.option(
+    "-d",
+    "--display",
+    help="Display name. Defaults to prefixes. Also configurable via the CJUNCT_DISPLAY_NAME environment variable.",
+    type=click.Choice(list(KNOWN_DISPLAYS)),
+)
 @cliargs_receiver
 def main() -> None:
     """Declarative task runner"""
 
 
-def load_dotenv() -> None:
+def load_dotenv() -> None:  # pragma: no cover
     """Try loading environment from the dotenv file.
     Special variable called "HERE" is injected into the environment during dotenv loading,
     which points to the directory of the dotenv file (if not specified in advance)."""
@@ -131,14 +135,14 @@ def wrap_cli_command(func):
     type=click.Choice(list(KNOWN_STRATEGIES)),
 )
 @click.option("-i", "--interactive", help="Run in dialog mode.", is_flag=True, default=False)
-@click.argument("workflow", cls=WorkflowPositionalArgument)
+@click.argument("workflow", cls=_WorkflowPositionalArgument)
 def run() -> None:
     """Run pipeline immediately."""
     cjunct.Runner().run_sync()
 
 
 @wrap_cli_command
-@click.argument("workflow", cls=WorkflowPositionalArgument)
+@click.argument("workflow", cls=_WorkflowPositionalArgument)
 def validate() -> None:
     """Check workflow validity."""
     action_num: int = len(cjunct.Runner().workflow)
