@@ -17,6 +17,7 @@ from cjunct.config.environment import Env
 from cjunct.exceptions import BaseError, ExecutionFailed
 from cjunct.strategy import KNOWN_STRATEGIES
 from cjunct.tools.proxy import DeferredCallsProxy
+from cjunct.display.default import KNOWN_DISPLAYS
 
 logger = DeferredCallsProxy(obj=classlogging.get_module_logger())
 
@@ -59,6 +60,12 @@ class WorkflowPositionalArgument(click.Argument):
     "--log-level",
     help="Logging level. Defaults to ERROR. Also configurable via the CJUNCT_LOG_LEVEL environment variable.",
     type=click.Choice(list(LOG_LEVELS)),
+)
+@click.option(
+    "-d",
+    "--display",
+    help="Display name. Defaults to prefixes. Also configurable via the CJUNCT_DISPLAY_NAME environment variable.",
+    type=click.Choice(list(KNOWN_DISPLAYS)),
 )
 @cliargs_receiver
 def main() -> None:

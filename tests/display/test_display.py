@@ -98,6 +98,12 @@ actions:
     expects: Foo
     type: shell
     command: echo bar >&2 && exit 1
+  - name: Baz
+    expects:
+      - name: Bar
+        strict: True
+    type: echo
+    message: baz
 """
         )
     )
@@ -111,6 +117,7 @@ actions:
         "*│ bar",
         "!│ Exit code: 1",
         " ╵",
-        " □ SUCCESS: Foo",
-        " □ FAILURE: Bar",
+        " ✓ SUCCESS: Foo",
+        " ✗ FAILURE: Bar",
+        " ◯ SKIPPED: Baz",
     ]

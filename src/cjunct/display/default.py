@@ -57,11 +57,6 @@ class PrologueDisplay(BaseDisplay):
                 message=f"{line_prefix}{Color.red(line)}",
             )
 
-    def _iterate_states(self) -> t.Iterator[str]:
-        for _, action in self._workflow.iter_actions_by_tier():
-            color_wrapper: t.Callable[[str], str] = self.STATUS_TO_COLOR_WRAPPER_MAP[action.status]
-            yield f"{color_wrapper(action.status.value)}: {action.name}"
-
     def _display_status_banner(self) -> None:
         """Show a text banner with the status info"""
         raise NotImplementedError
@@ -130,14 +125,24 @@ class PrefixDisplay(PrologueDisplay):
     def _display_status_banner(self) -> None:
         justification_len: int = self._action_names_max_len + 9  # "9" here stands for (e.g.) "SUCCESS: "
         self.display(Color.gray("=" * justification_len))
-        for state_string in self._iterate_states():
-            self.display(state_string)
+        for _, action in self._workflow.iter_actions_by_tier():
+            color_wrapper: t.Callable[[str], str] = self.STATUS_TO_COLOR_WRAPPER_MAP[action.status]
+            self.display(f"{color_wrapper(action.status.value)}: {action.name}")
 
 
 class HeaderDisplay(PrologueDisplay):
     """Adds headers to output chunks"""
 
     NAME = "headers"
+    _STATUS_TO_MARK_SYMBOL_MAP: t.Dict[ActionStatus, str] = {
+        ActionStatus.SKIPPED: "◯",
+        ActionStatus.PENDING: "◯",
+        ActionStatus.FAILURE: "✗",
+        ActionStatus.WARNING: "✓",
+        ActionStatus.RUNNING: "◯",
+        ActionStatus.SUCCESS: "✓",
+        ActionStatus.OMITTED: "◯",
+    }
 
     def _close_block_if_necessary(self) -> None:
         if self._last_displayed_name is not None:
@@ -153,8 +158,11 @@ class HeaderDisplay(PrologueDisplay):
 
     def _display_status_banner(self) -> None:
         self._close_block_if_necessary()
-        for state_string in self._iterate_states():
-            self.display(Color.gray(f" □ {state_string}"))
+        for _, action in self._workflow.iter_actions_by_tier():
+            color_wrapper: t.Callable[[str], str] = self.STATUS_TO_COLOR_WRAPPER_MAP[action.status]
+            mark_symbol: str = self._STATUS_TO_MARK_SYMBOL_MAP[action.status]
+            state_string = f" {mark_symbol} {action.status.value}: {action.name}"
+            self.display(color_wrapper(state_string))
 
 
 DefaultDisplay = PrefixDisplay
