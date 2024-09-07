@@ -30,13 +30,13 @@ def _noop(*args, **kwargs) -> None:  # pylint: disable=unused-argument
 
 def test_cli_version() -> None:
     """Check version command"""
-    assert _invoke(console.version) == [version.__version__]
+    assert _invoke(console.main, ["info", "version"]) == [version.__version__]
 
 
 def test_cli_env_vars() -> None:
     """Check env vars command"""
     doc: str = t.cast(str, Env.__doc__)
-    assert _invoke(console.env_vars) == doc.splitlines()
+    assert _invoke(console.main, ["info", "env-vars"]) == doc.splitlines()
 
 
 @pytest.fixture
