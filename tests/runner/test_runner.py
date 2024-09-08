@@ -574,7 +574,7 @@ def test_unsatisfied_package_requirements(run_text: RunFactoryType) -> None:
             configuration:
               requires_packages:
                 - wtf_is_this_package
-                - cjunct<1.0.0
+                - pytest<1.0.0
             actions:
               - name: Foo
                 type: echo
