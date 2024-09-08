@@ -8,6 +8,7 @@ aimed to make complex routine jobs easier to configure.
 [![PyPI version](https://badge.fury.io/py/cjunct.svg)](https://pypi.python.org/pypi/cjunct/)
 [![Tests](https://github.com/reartnew/cjunct/workflows/main/badge.svg)](https://github.com/reartnew/cjunct/actions/workflows/main.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
+[![Coverage Status](https://coveralls.io/repos/github/reartnew/cjunct/badge.svg?branch=devel)](https://coveralls.io/github/reartnew/cjunct?branch=devel)
 
 <details>
   <summary>Table of Contents</summary>
