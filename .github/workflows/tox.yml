@@ -45,3 +45,13 @@ jobs:
           flag-name: python-${{ matrix.python-version }}
           parallel: true
           path-to-lcov: coverage.lcov
+  coveralls-finish:
+    name: Finish Coveralls
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
