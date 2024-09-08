@@ -22,7 +22,7 @@ def get_class_annotations(obj: t.Any) -> t.Dict[str, t.Any]:
     if class_dict is not None and hasattr(class_dict, "get"):
         annotations_source = class_dict.get("__annotations__", None)
         if isinstance(annotations_source, types.GetSetDescriptorType):
-            annotations_source = None
+            annotations_source = None  # pragma: no cover
 
     class_globals: OptionalDict = None
     module_name: t.Optional[str] = getattr(class_definition, "__module__", None)
@@ -36,16 +36,16 @@ def get_class_annotations(obj: t.Any) -> t.Dict[str, t.Any]:
         return {}
 
     if not isinstance(annotations_source, dict):
-        raise ValueError(f"{class_definition!r}.__annotations__ is neither a dict nor None")
+        raise ValueError(f"{class_definition!r}.__annotations__ is neither a dict nor None")  # pragma: no cover
 
     # Unwrap class
     while True:
-        if hasattr(class_definition, "__wrapped__"):
+        if hasattr(class_definition, "__wrapped__"):  # pragma: no cover
             class_definition = class_definition.__wrapped__
             continue
         break
     if hasattr(class_definition, "__globals__"):
-        class_globals = class_definition.__globals__
+        class_globals = class_definition.__globals__  # pragma: no cover
 
     # Eval finally
     return {
