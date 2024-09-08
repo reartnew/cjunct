@@ -30,8 +30,18 @@ jobs:
       - name: Tox tests
         run: python -m tox
 
-      - name: Get coverage
-        run: |
-          python -m coverage combine
-          python -m coverage report
-          python -m coverage lcov
+
+      - name: Report coverage
+        run: python -m coverage report
+
+      - name: Export coverage to LCOV
+        run: python -m coverage lcov
+
+      - name: Coveralls Parallel
+        # Documentation : https://github.com/marketplace/actions/coveralls-github-action
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          flag-name: python-${{ matrix.python-version }}
+          parallel: true
+          path-to-lcov: coverage.lcov
