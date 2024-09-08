@@ -78,9 +78,9 @@ filterwarnings = [
 
 [tool.coverage.run]
 source = ["src"]
-omit = [
-    "src/cjunct/tools/inspect.py",
-]
+#omit = [
+#    "src/cjunct/tools/inspect.py",
+#]
 
 [tool.coverage.report]
 exclude_lines = [
