@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cjunct"
-version = "3.0.0a3"
+version = "3.0.0a4"
 description = "Declarative task runner"
 license = "MIT"
 authors = [
@@ -25,10 +25,10 @@ named-env = "^2.3.2"
 classlogging = "^1.1.1"
 python-dotenv = "^1.0.1"
 async-shell = "^1.0.7"
-pyyaml = "^6.0.1"
+pyyaml = "^6.0.2"
 click = "^8.1.7"
 dacite-cjunct = "1.8.1a0"
-inquirer = "^3.3.0"
+inquirer = "^3.4.0"
 aiodocker = { version = "^0.22.2", optional = true }
 lazy-object-proxy = "^1.10.0"
 packaging = "^24.1"
