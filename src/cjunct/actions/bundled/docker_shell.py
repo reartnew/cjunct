@@ -94,44 +94,54 @@ class DockerShellAction(EmissionScannerActionBase):
 
     args: DockerShellArgs
     _ENTRY_SCRIPT_FILE_NAME: str = "entry.sh"
-    _CONTAINER_TMP_DIRECTORY: str = "/tmp"  # nosec
+    _CONTAINER_TMP_DIRECTORY: str = "/tmp-cjunct"  # nosec
 
     @contextlib.asynccontextmanager
     async def _make_container(self, client: aiodocker.Docker) -> t.AsyncGenerator[DockerContainer, None]:
         container_name = f"cjunct-docker-shell-{uuid.uuid4().hex}"
         self.logger.info(f"Starting docker shell container {container_name!r}")
+        container_entry_file_path: str = f"{self._CONTAINER_TMP_DIRECTORY}/{self._ENTRY_SCRIPT_FILE_NAME}"
         with tempfile.TemporaryDirectory() as tmp_directory:
-            tmp_dir_path: Path = Path(tmp_directory)
-            script_container_directory: str = f"{self._CONTAINER_TMP_DIRECTORY}/{container_name}-exec-source"
-            script_container_file: Path = tmp_dir_path / self._ENTRY_SCRIPT_FILE_NAME
-            script_container_file_clauses: t.List[str] = [
-                self.args.command,
-            ]
+            local_tmp_dir_path: Path = Path(tmp_directory)
+            local_tmp_dir_path.chmod(0o777)
+            self.logger.trace(f"Local temp dir is {local_tmp_dir_path}")
+            entry_file_content: str = self.args.command
             if C.SHELL_INJECT_YIELD_FUNCTION:
-                script_container_file_clauses.insert(0, self._SHELL_SERVICE_FUNCTIONS_DEFINITIONS)
-            script_container_file.write_text(
-                data="\n".join(script_container_file_clauses),
-                encoding="utf-8",
-            )
-            container_binds: t.List[str] = [f"{tmp_directory}:{script_container_directory}:ro"]
-            for bind_config in self.args.bind or []:
+                entry_file_content = f"{self._SHELL_SERVICE_FUNCTIONS_DEFINITIONS}\n{entry_file_content}"
+            bind_configs: t.List[t.Union[FileDockerBind, ContentDockerBind]] = [
+                ContentDockerBind(
+                    contents=entry_file_content,
+                    dest=container_entry_file_path,
+                    mode=BindMode.READ_WRITE,
+                )
+            ]
+            if self.args.bind:
+                bind_configs += self.args.bind
+            container_binds: t.List[dict] = []
+            for bind_config in bind_configs:
                 if isinstance(bind_config, FileDockerBind):
-                    container_binds.append(f"{bind_config.src}:{bind_config.dest}:{bind_config.mode.value}")
+                    local_file_full_name: str = bind_config.src
                 else:
-                    bind_contents_local_file: Path = tmp_dir_path / uuid.uuid4().hex
-                    bind_contents_local_file.write_text(
-                        data=bind_config.contents,
-                        encoding="utf-8",
-                    )
-                    container_binds.append(f"{bind_contents_local_file}:{bind_config.dest}:{bind_config.mode.value}")
-
+                    bind_contents_local_file: Path = local_tmp_dir_path / uuid.uuid4().hex
+                    bind_contents_local_file.write_text(data=bind_config.contents, encoding="utf-8")
+                    bind_contents_local_file.chmod(0o777)
+                    local_file_full_name = str(bind_contents_local_file)
+                container_binds.append(
+                    {
+                        "Type": "bind",
+                        "Target": bind_config.dest,
+                        "Source": local_file_full_name,
+                        "ReadOnly": bind_config.mode == BindMode.READ_ONLY,
+                    }
+                )
+            self.logger.trace(f"Container volumes: {container_binds}")
             container: DockerContainer = await client.containers.run(
                 name=container_name,
                 config={
-                    "Cmd": [self.args.executable, f"{script_container_directory}/{self._ENTRY_SCRIPT_FILE_NAME}"],
+                    "Cmd": [self.args.executable, container_entry_file_path],
                     "Image": self.args.image,
                     "HostConfig": {
-                        "Binds": container_binds,
+                        "Mounts": container_binds,
                         "Init": True,
                         "NetworkMode": self.args.network.mode.value,
                     },
