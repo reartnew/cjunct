@@ -1,5 +1,8 @@
 """Colorizing utils"""
 
+import re
+import typing as t
+
 from ..config.constants import C
 
 __all__ = [
@@ -9,6 +12,8 @@ __all__ = [
 
 class Color:
     """Text color wrapping"""
+
+    _COLOR_RE: t.Pattern = re.compile(r"([^\n]+)")
 
     @classmethod
     def gray(cls, message: str) -> str:
@@ -32,4 +37,6 @@ class Color:
 
     @classmethod
     def _add_formatting(cls, message: str, code: int) -> str:
-        return message if not C.USE_COLOR else f"\u001b[{code}m{message}\u001b[0m"
+        if not C.USE_COLOR:
+            return message
+        return cls._COLOR_RE.sub(f"\u001b[{code}m\\1\u001b[0m", message)
