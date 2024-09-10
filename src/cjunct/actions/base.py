@@ -102,6 +102,7 @@ class ActionBase(classlogging.LoggerMixin):
 
         self._yielded_keys: OutcomeStorageType = {}
         self._status: ActionStatus = ActionStatus.PENDING
+        self._enabled: bool = True
         # Do not create asyncio-related objects on constructing object to decouple from the event loop
         self._maybe_finish_flag: t.Optional[asyncio.Future] = None
         self._maybe_event_queue: t.Optional[asyncio.Queue[EventType]] = None
@@ -111,15 +112,14 @@ class ActionBase(classlogging.LoggerMixin):
     @property
     def enabled(self) -> bool:
         """Check whether the action has not been disabled"""
-        return self._status != ActionStatus.OMITTED
+        return self._enabled
 
     def disable(self) -> None:
         """Marking the action as not planned for launch"""
         self.logger.info(f"Disabling {self}")
         if self._status != ActionStatus.PENDING:
             raise RuntimeError(f"Action {self.name} can't be disabled due to its status: {self._status!r}")
-        self._status = ActionStatus.OMITTED
-        self.get_future().set_result(None)
+        self._enabled = False
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r}, status={self._status.value})"
@@ -193,7 +193,13 @@ class ActionBase(classlogging.LoggerMixin):
 
     def _internal_skip(self) -> None:
         self._status = ActionStatus.SKIPPED
+        self.get_future().set_result(None)
         self.logger.info(f"Action {self.name!r} skipped")
+
+    def _internal_omit(self) -> None:
+        self._status = ActionStatus.OMITTED
+        self.get_future().set_result(None)
+        self.logger.info(f"Action {self.name!r} omitted")
 
     def fail(self, message: str) -> t.NoReturn:
         """Set corresponding error message and raise an exception"""

@@ -144,9 +144,6 @@ class Runner(classlogging.LoggerMixin):
         for action_name in self.workflow:
             self._outcomes[action_name] = {}
         async for action in self.strategy:  # type: ActionBase
-            if not action.enabled:
-                self.logger.debug(f"Skipping {action} as it is not enabled")
-                continue
             # Finalize all actions that have been done already
             for maybe_finished_action, corresponding_runner_task in list(action_runners.items()):
                 if maybe_finished_action.done():
@@ -169,6 +166,9 @@ class Runner(classlogging.LoggerMixin):
             cls.logger.exception(f"`emit_action_message` failed for {action.name!r}")
 
     async def _run_action(self, action: ActionBase) -> None:
+        if not action.enabled:
+            action._internal_omit()  # pylint: disable=protected-access
+            return None
         message: str
         try:
             self._render_action(action)

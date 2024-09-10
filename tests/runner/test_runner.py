@@ -370,7 +370,7 @@ def test_interaction_context(
     assert output == [
         "============",
         "SUCCESS: Foo",
-        "OMITTED: Bar",
+        "SUCCESS: Bar",
         "OMITTED: Baz",
     ]
 

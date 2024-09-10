@@ -76,7 +76,7 @@ class PrologueDisplay(BaseDisplay):
             default_selected_action_names=default_selected_action_names,
         )
         for action_name, action in workflow.items():
-            if action_name not in selected_action_names:
+            if action_name in displayed_action_names and action_name not in selected_action_names:
                 action.disable()
 
     @classmethod
@@ -88,7 +88,7 @@ class PrologueDisplay(BaseDisplay):
         if not sys.stdin.isatty():
             raise InteractionError
         answers: t.Dict[str, t.List[str]] = inquirer.prompt(
-            [
+            questions=[
                 inquirer.Checkbox(
                     name="actions",
                     message="Select actions (SPACE to check, RETURN to proceed)",
@@ -96,7 +96,8 @@ class PrologueDisplay(BaseDisplay):
                     default=default_selected_action_names,
                     carousel=True,
                 )
-            ]
+            ],
+            raise_keyboard_interrupt=True,
         )
         selected_action_names: t.List[str] = answers["actions"]
         return selected_action_names
